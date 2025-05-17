@@ -27,41 +27,44 @@ Key source files and directories for migration reside within `ra2web-react/extra
 
 3.  **Utility Modules Migration (from `extracted_modules_simple/util/` to `src/util/`):**
     *   `Base64.js` -> `Base64.ts`
-    *   `string.js` -> `string.ts` (depends on `Base64.ts`)
+    *   `string.js` -> `string.ts`
     *   `math.js` -> `math.ts`
     *   `event.js` -> `event.ts` (provides `EventDispatcher`)
-    *   `time.js` -> `time.ts` (provides `sleep`, `throttle`, `createThrottledMethod`)
+    *   `time.js` -> `time.ts`
     *   `typeGuard.js` -> `typeGuard.ts`
     *   `Routing.js` -> `Routing.ts`
-    *   `BoxedVar.js` -> `BoxedVar.ts` (depends on `event.ts`)
+    *   `BoxedVar.js` -> `BoxedVar.ts`
 
 4.  **Root-level Modules Migration (from `extracted_modules_simple/` to `src/`):**
     *   `version.js` -> `version.ts`
-    *   Skipped `Config.js` for now due to its INI parsing dependency.
 
-5.  **MVP - SplashScreen Display:**
-    *   **Goal:** Execute the application's entry point (`main.js` -> `Application.js`) to display a minimal viable product (the splash screen).
-    *   Analyzed `extracted_modules_simple/main.js`: it instantiates `Application` and calls its `main()` method.
-    *   Analyzed `extracted_modules_simple/Application.js` (partially, due to size): identified its core responsibilities and heavy dependencies related to config, translations, GameRes, and UI initialization.
-    *   Created `src/Application.ts` (MVP version):
-        *   Includes many mocked internal classes/dependencies (e.g., `MockSplashScreen`, `MockLocalPrefs`, `MockConsoleVars`, `MockDevToolsApi`, `MockFullScreen`) to allow the `main()` method to proceed to display a splash screen.
-        *   The `loadConfig()` and `loadTranslations()` methods within `Application.ts` are heavily mocked to provide minimal necessary data without full backend logic for these systems.
-        *   The `main()` method in `Application.ts` is simplified to focus on initializing and rendering the `MockSplashScreen`, skipping complex GameRes loading, Sentry, logging, etc., for this MVP.
-    *   Modified `index.html` to include `<div id="ra2web-root"></div>` for the `MockSplashScreen` to render into, alongside React's own `<div id="root"></div>`.
-    *   Modified `src/App.tsx` to:
-        *   Import and instantiate `Application` from `src/Application.ts`.
-        *   Call the `app.main()` method within a `useEffect` hook to simulate the original application startup, ensuring `#ra2web-root` exists.
-    *   **Outcome:** Successfully displayed the `MockSplashScreen` (a styled div with text managed by the `Application.ts` MVP code), confirming the basic application flow can be initiated from within the React host. Console logs confirm the mocked flow.
+5.  **Data Handling & VFS Primitives Migration (to `src/data/` and `src/data/vfs/`):**
+    *   `data/IniSection.js` -> `src/data/IniSection.ts`
+    *   `data/IniParser.js` -> `src/data/IniParser.ts`
+    *   `data/DataStream.js` -> `src/data/DataStream.ts`
+    *   `data/vfs/IOError.js` -> `src/data/vfs/IOError.ts`
+    *   `data/vfs/VirtualFile.js` -> `src/data/vfs/VirtualFile.ts`
+    *   `data/IniFile.js` -> `src/data/IniFile.ts`
+    *   `Config.js` (root) -> `src/Config.ts`
+
+6.  **MVP - SplashScreen Display & Real Config Load:**
+    *   Created `src/Application.ts` (MVP version) with mocked dependencies initially.
+    *   Modified `index.html` and `src/App.tsx` to initialize and run this MVP `Application`.
+    *   Successfully displayed a `MockSplashScreen`.
+    *   **Integrated Real Config Loading:** 
+        *   Modified `Application.ts` to fetch `/config.ini` (from `public/` dir).
+        *   Used migrated `IniFile.ts` and `Config.ts` to parse and load the configuration.
+        *   Replaced the mocked `this.config` in `Application.ts` with the instance loaded with real data.
+    *   **Outcome:** Successfully loaded and parsed `config.ini`. Console logs and slight behavior changes (e.g., `devMode` affecting sleep, locale in mock strings) confirmed that `Application.ts` now uses real configuration data for its initial steps. The final MVP screen also dumps the loaded config for verification.
 
 ## Current Status & Next Steps:
 
-1.  **MVP Achieved:** The first MVP (displaying a mock splash screen via the migrated `Application` class structure) is working.
-2.  **Next Major Goal:** Progress towards rendering the main game lobby/interface. This will likely involve a phased approach:
-    *   **Config Loading:** Migrate `Config.js` and its INI parsing dependencies (`data/IniFile.js`, `data/IniParser.js`, `data/IniSection.js`). This is a critical un-mocking step.
-    *   **SplashScreen Refinement:** Migrate the actual `gui/component/SplashScreen.js` to `src/gui/component/SplashScreen.tsx` (as a React component) or `SplashScreen.ts` and integrate it properly, replacing `MockSplashScreen`.
-    *   **Core UI Management (`Gui.js`):** Analyze and migrate `extracted_modules_simple/gui/Gui.js`. This module is likely responsible for overall UI orchestration, screen transitions, and rendering the main application shell (including the lobby).
-    *   **String/Localization (`Strings.js`, `CsfFile.js`):** Migrate these to enable real text rendering instead of mock strings.
-    *   **Gradual Un-mocking of `Application.ts`:** Incrementally replace mocked sections in `Application.ts` related to `GameRes` loading, error handling (Sentry), logging, and other services as their underlying modules are migrated.
-    *   **Engine and GameRes:** Tackle parts of `engine/Engine.js` and the `GameRes` loading pipeline that are essential for displaying any game-related data or UI.
+1.  **Real Config Loading Achieved:** The application now loads and uses configuration from an external `config.ini` file.
+2.  **Next Major Goal:** Progress towards rendering the main game lobby/interface. This will involve:
+    *   **SplashScreen Refinement:** Migrate the actual `gui/component/SplashScreen.js` to `src/gui/component/SplashScreen.tsx` (as a React component) or `SplashScreen.ts` and integrate it properly, replacing `MockSplashScreen`. This will be the immediate next step to get a more faithful initial UI.
+    *   **String/Localization (`Strings.js`, `CsfFile.js`):** Migrate these to enable real text rendering, especially for the SplashScreen and subsequent UI elements. This is a high priority after SplashScreen.
+    *   **Core UI Management (`Gui.js`):** Analyze and migrate `extracted_modules_simple/gui/Gui.js`. This is crucial for rendering the main application shell and lobby.
+    *   **Gradual Un-mocking of `Application.ts`:** Continue replacing mocked sections in `Application.ts` (e.g., `GameRes` loading, Sentry, logging) as their underlying modules are migrated and become necessary for further UI development.
+    *   **Engine and GameRes:** Tackle parts of `engine/Engine.js` and the `GameRes` loading pipeline.
 
 This summary should help anyone picking up this task to understand the progress and the immediate next steps. 

@@ -2,6 +2,9 @@ import { BoxedVar } from './util/BoxedVar';
 import { EventDispatcher } from './util/event'; // Import EventDispatcher
 import { Routing } from './util/Routing'; // Already migrated
 import { sleep } from './util/time'; // Already migrated
+import { Config } from './Config'; // Import the real Config class
+import { IniFile } from './data/IniFile'; // Import IniFile
+import { IniSection } from './data/IniSection'; // Added missing import
 
 // --- Stubs/Mocks for unmigrated dependencies (MVP) ---
 // These will be replaced by actual migrated modules later.
@@ -106,7 +109,7 @@ const mockSentry = {
 
 export class Application {
   public viewport: BoxedVar<{ x: number; y: number; width: number; height: number }>;
-  private config: any; // Will be properly typed when Config.ts is migrated
+  public config!: Config; // Will now be the real Config instance
   private strings: any; // Will be properly typed when Strings.ts is migrated
   private localPrefs: MockLocalPrefs; // Placeholder
   private rootEl: HTMLElement | null = null;
@@ -142,57 +145,68 @@ export class Application {
   // These would eventually be filled with migrated logic
 
   private async loadConfig(): Promise<void> {
-    console.log('[MVP] Skipping Application.loadConfig(), using mock config.');
-    this.config = {
-      defaultLocale: 'en-US',
-      devMode: true,
-      serversUrl: 'servers.ini', // Example value
-      // Add other minimal properties SplashScreen or early flow might need
-      generalData: { // Mocking the structure expected by original Config getters
-        getString: (key: string, defaultValue?: string) => {
-          if (key === 'defaultLanguage') return this.config.defaultLocale;
-          if (key === 'discordUrl') return 'https://discord.gg/example';
-          // Add more mocked getters as needed by SplashScreen from original Config
-          return defaultValue ?? key;
-        },
-        getBool: (key: string, defaultValue?: boolean) => {
-          if (key === 'dev') return this.config.devMode;
-          return defaultValue ?? false;
-        }
-      },
-      viewport: { // From original Config structure
-          width: 1024, // Default/mock
-          height: 768, // Default/mock
-      },
-      sentry: undefined, // Assuming Sentry might be optional or disabled in dev
-      corsProxies: [],
-      // ... other sections if absolutely needed by SplashScreen's direct config access
-    };
+    console.log('[Application] Attempting to load config.ini...');
+    try {
+      const response = await fetch('/config.ini'); // Vite serves from public/ directly
+      if (!response.ok) {
+        throw new Error(`Failed to fetch config.ini: ${response.status} ${response.statusText}`);
+      }
+      const iniString = await response.text();
+      
+      const iniFileInstance = new IniFile(iniString);
+      this.config = new Config(); // Create instance of our real Config class
+      this.config.load(iniFileInstance); // Load data into it
+
+      console.log('[Application] config.ini loaded and parsed successfully.');
+      console.log('[Application] Config object dump:', this.config);
+      // Log some specific values for verification
+      console.log('[Application] Verification: Default Locale from config:', this.config.defaultLocale);
+      console.log('[Application] Verification: Viewport Width from config:', this.config.viewport.width);
+      console.log('[Application] Verification: Dev Mode from config:', this.config.devMode);
+      console.log('[Application] Verification: Servers URL from config:', this.config.serversUrl);
+
+    } catch (error) {
+      console.error('[Application] Failed to load or parse config.ini:', error);
+      // Fallback to a minimal mock config so the app can somewhat proceed for MVP
+      console.warn('[Application] Falling back to minimal mock config due to error.');
+      this.config = new Config(); // Create a new instance
+      // Manually set some absolutely critical defaults if possible, or leave it empty
+      // For now, this will make getters use their defaults or throw if generalData is not set
+      // This is a critical failure path, so the app might not be very functional.
+      // Consider throwing the error to halt app or showing a user-friendly error message.
+      // For MVP, just logging and proceeding with a mostly empty config.
+      const mockGeneralSection = new IniSection("General");
+      mockGeneralSection.set("defaultLanguage", "en-US");
+      mockGeneralSection.set("dev", "true");
+      mockGeneralSection.set("viewport.width", "1024");
+      mockGeneralSection.set("viewport.height", "768");
+      const mockIniFile = new IniFile();
+      mockIniFile.sections.set("General", mockGeneralSection);
+      this.config.load(mockIniFile); // Load with minimal mock
+      alert("Failed to load application configuration (config.ini). Using minimal defaults. Some features may not work.");
+      throw error; // Re-throw to make it clear loading failed, App.main will catch
+    }
   }
 
   private async loadTranslations(locale: string): Promise<any> {
-    console.log(`[MVP] Skipping Application.loadTranslations(${locale}), using mock strings.`);
-    // Mocking the structure CsfFile / Strings might produce
-    return {
-      // Format that new Strings(csfData).fromJson(jsonData) would expect
-      // For MVP, we directly mock what `this.strings.get()` would return
-    };
+    console.log(`[MVP] Skipping Application.loadTranslations(${locale}), using mock strings based on loaded/mocked config.defaultLocale.`);
+    return {}; 
   }
   
   // Mock the Strings class behavior directly for MVP
   private initializeMockStrings(csfData?: any, jsonData?: any) {
+      const currentLocale = this.config?.defaultLocale || 'en-US'; // Use loaded locale if available
+      console.log(`[Application] Initializing mock strings for locale: ${currentLocale}`);
       this.strings = {
         get: (key: string, ...args: any[]): string => {
-          console.log(`Strings.get(\'${key}\')`);
-          if (key === 'GUI:LoadingEx') return 'Loading Game...';
-          if (key === 'TXT_COPYRIGHT') return '© 2024 RA2Web React Port';
-          if (key === 'GUI:WWBrand') return 'Westwood Studios (Mock)';
-          if (key === 'TS:Disclaimer') return 'This is a fan-made project for demonstration purposes.';
+          // console.log(`Strings.get(\'${key}\') for locale ${currentLocale}`);
+          if (key === 'GUI:LoadingEx') return `Loading Game... (Locale: ${currentLocale})`;
+          if (key === 'TXT_COPYRIGHT') return `© 2024 RA2Web React Port (Locale: ${currentLocale})`;
+          if (key === 'GUI:WWBrand') return `Westwood Studios (Mock)`;
+          if (key === 'TS:Disclaimer') return `This is a fan-made project for demonstration purposes. (Locale: ${currentLocale})`;
           if (key === 'TS:DownloadFailed') return 'A required file could not be downloaded. Please check your connection and try again.';
-          // Add more keys as needed by SplashScreen
-          return `[${key}]`; // Return key itself if not mocked
+          return `[${key}]`; 
         },
-        // Mock other methods if SplashScreen calls them
       };
   }
 
@@ -229,128 +243,85 @@ export class Application {
 
   // --- Main application entry point ---
   public async main(): Promise<void> {
-    console.log('Application.main() called [MVP]');
+    console.log('Application.main() called');
 
     try {
-      await this.loadConfig(); // Uses mocked version
+      await this.loadConfig(); // Now uses real loading logic
     } catch (e) {
-      console.error("Critical error during mocked config load (should not happen with mock):", e);
-      // Display a very basic error message if rootEl is available
+      console.error("CRITICAL: Application.loadConfig() failed. See previous errors.", e);
       const root = document.getElementById("ra2web-root");
-      if (root) root.innerHTML = "Error loading essential configuration.";
-      return;
+      if (root) root.innerHTML = "<h1>Error</h1><p>Failed to load critical application configuration. Please check console.</p>";
+      return; // Halt execution if config fails
     }
     
-    this.locale = this.config.defaultLocale;
+    this.locale = this.config.defaultLocale; // Use locale from loaded config
     try {
-      const jsonDataForStrings = await this.loadTranslations(this.locale); // Uses mocked version
-      this.initializeMockStrings(null, jsonDataForStrings); // Initialize mock strings
+      const jsonDataForStrings = await this.loadTranslations(this.locale);
+      this.initializeMockStrings(null, jsonDataForStrings); 
     } catch (e) {
-      console.error(`Critical error during mocked translations load for locale ${this.locale}:`, e);
-      // Fallback strings or error message
-      this.initializeMockStrings(); // Init with default fallback if load fails
-      // Display error if possible
-      const root = document.getElementById("ra2web-root");
-      if (root) root.innerHTML = `Error loading translations for ${this.locale}.`;
-      return;
+      console.error(`Error during mocked translations load for locale ${this.locale}:`, e);
+      this.initializeMockStrings(); 
     }
 
-
     try {
-      this.checkGlobalLibs(); // Uses mocked version
+      this.checkGlobalLibs(); 
     } catch (e: any) {
-      console.error("Global library check failed (mocked, should not fail):", e);
-      alert(this.strings.get("TS:DownloadFailed")); // Using mocked strings
+      console.error("Global library check failed:", e);
+      alert(this.strings.get("TS:DownloadFailed")); 
       return;
     }
     
     this.rootEl = document.getElementById("ra2web-root");
     if (!this.rootEl) {
       console.error("CRITICAL: Missing root element #ra2web-root in HTML.");
-      // Try to append to body or show an alert if no root element.
-      const tempRoot = document.createElement('div');
-      tempRoot.id = "ra2web-root";
-      document.body.appendChild(tempRoot);
-      this.rootEl = tempRoot;
-      alert("Root element #ra2web-root was missing and has been created. Please check your index.html.");
-      // return; // Decide if to halt or proceed with dynamically created root
+      alert("CRITICAL: Missing root element #ra2web-root for the application.");
+      return;
     }
 
-    // Mock DevToolsApi registration
     MockDevToolsApi.registerVar("freecamera", this.runtimeVars.freeCamera);
-    // ... other DevToolsApi calls can be mocked if needed for flow
-
-    await this.initLogging(); // Uses mocked version
-
-    this.fullScreen.init(); // Mocked
-    this.fullScreen.onChange.subscribe((isFS: boolean) => { // Added type for isFS
+    await this.initLogging(); 
+    this.fullScreen.init(); 
+    this.fullScreen.onChange.subscribe((isFS: boolean) => {
         this.onFullScreenChange(isFS);
         this.updateViewportSize(isFS);
     });
     
-    // Initial viewport size update
-    // In a React context, viewport updates might be handled differently or need to sync with React state.
-    // For this direct port MVP, we follow the original flow.
     if (typeof window !== 'undefined') {
         window.addEventListener('resize', () => this.updateViewportSize(this.fullScreen.isFullScreen()));
-        this.updateViewportSize(this.fullScreen.isFullScreen()); // Initial call
+        this.updateViewportSize(this.fullScreen.isFullScreen()); 
     }
 
-
-    console.log('[MVP] Initializing SplashScreen...');
     this.splashScreen = new MockSplashScreen(
       this.viewport.value.width,
       this.viewport.value.height
     );
-    
-    if (this.rootEl) {
-        this.splashScreen.render(this.rootEl);
-    } else {
-        console.error("Cannot render SplashScreen, rootEl is null!");
-        return; // Stop if no root element
-    }
-
+    this.splashScreen.render(this.rootEl);
     this.splashScreen.setLoadingText(this.strings.get('GUI:LoadingEx'));
     this.splashScreen.setCopyrightText(
       this.strings.get('TXT_COPYRIGHT') + "\n" + this.strings.get('GUI:WWBrand')
     );
     this.splashScreen.setDisclaimerText(this.strings.get('TS:Disclaimer'));
 
-    // Simulate some delay and further loading steps as in original
-    // const configDevMode = this.config.devMode !== undefined ? this.config.devMode : true;
-    // await sleep(configDevMode ? 0 : 2000); // Shorter delay for MVP
+    // Respect devMode for splash screen delay from original Application.js logic
+    const devMode = this.config && this.config.devMode !== undefined ? this.config.devMode : true;
+    console.log(`[Application] Splash screen delay based on devMode (${devMode}). Original delay: ${devMode ? 0 : 5000}ms`);
+    await sleep(devMode ? 500 : 3000); // Reduced delay for faster MVP testing, but respects devMode flag
     
     console.log('[MVP] Skipping GPU Benchmark, FileSystemAccess import, GameRes init for SplashScreen MVP.');
 
-    // ---- Original logic for GameRes and further init would go here ----
-    // For MVP, we stop after splash screen is shown.
-    // The goal is to get to initGui and see the lobby, but that requires GameRes.
-    // Let's make the splash screen "finish" after a delay for MVP.
+    await sleep(1500); 
+    if (this.splashScreen) this.splashScreen.setLoadingText("Almost ready...");
+    await sleep(1000);
 
-    await sleep(3000); // Simulate some loading time
-    this.splashScreen.setLoadingText("Almost ready...");
-    await sleep(1500);
-
-    // Transition out of splash screen (normally done by Gui.ts or other logic)
-    // For MVP, let's just remove it and show a message.
     if (this.splashScreen) {
         this.splashScreen.destroy();
+        this.splashScreen = undefined; // Clear it
     }
 
     if (this.rootEl) {
-        this.rootEl.innerHTML = '<h1>Splash Screen Finished (MVP)</h1><p>Next step: Integrate actual Gui and load lobby.</p>';
-        console.log('[MVP] Splash screen finished. Further initialization (initGui, etc.) skipped for this MVP.');
+        this.rootEl.innerHTML = '<div style="padding: 20px; text-align: center;"><h1>Splash Screen Finished (MVP)</h1><p>Configuration loaded. Next step: Integrate actual Gui and load lobby.</p><pre style="white-space: pre-wrap; text-align: left; background: #f0f0f0; padding: 10px; border-radius: 5px; max-height: 300px; overflow-y: auto;">Config dump:\n${JSON.stringify(this.config, null, 2)}</pre></div>';
     }
     
-    // Original would continue with:
-    // this.gameResConfig = l;
-    // ... load CsfFile for strings ...
-    // ... Engine.loadRules() ...
-    // ... Sentry init ...
-    // ... AudioContext polyfill ...
-    // this.routing.init(); // Already migrated, can be called if needed by next steps.
-    // await this.initGui(r, this.gameResConfig, this.cdnResourceLoader); // The BIG next step for lobby
-    
-    console.log("Application.main() [MVP] finished.");
+    console.log("Application.main() with real config load (MVP) finished.");
   }
 } 
