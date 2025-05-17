@@ -25,7 +25,7 @@ export class RealFileSystemDir {
 
   async *getEntries(): AsyncGenerator<string, void, undefined> {
     try {
-      for await (const key of this.handle.keys()) {
+      for await (const [key, _handle] of this.handle.entries()) {
         yield key;
       }
     } catch (e: any) {

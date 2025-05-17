@@ -355,17 +355,17 @@ const FileExplorerTest: React.FC = () => {
           AppLogger.info('[VFS_TEST] VirtualFileSystem instance created.');
 
           // Test 1: vfs.fileExists
-          const iniExists = await vfs.fileExists("test.ini");
+          const iniExists = vfs.fileExists("test.ini");
           AppLogger.info(`[VFS_TEST] vfs.fileExists("test.ini"): ${iniExists}`);
-          const mixExists = await vfs.fileExists("test.mix");
+          const mixExists = vfs.fileExists("test.mix");
           AppLogger.info(`[VFS_TEST] vfs.fileExists("test.mix"): ${mixExists}`);
-          const nonExistentExists = await vfs.fileExists("nonexistent.file");
+          const nonExistentExists = vfs.fileExists("nonexistent.file");
           AppLogger.info(`[VFS_TEST] vfs.fileExists("nonexistent.file"): ${nonExistentExists}`);
 
           // Test 2: vfs.openFile for INI
           if (iniExists) {
             try {
-              const virtualIni = await vfs.openFile("test.ini");
+              const virtualIni = vfs.openFile("test.ini");
               AppLogger.info(`[VFS_TEST] vfs.openFile("test.ini") success. Name: ${virtualIni.filename}, Size: ${virtualIni.getSize()}, Stream Pos: ${virtualIni.stream.position}`);
             } catch (e:any) {
               AppLogger.error('[VFS_TEST] Error opening "test.ini" via VFS:', e.message);
@@ -380,7 +380,7 @@ const FileExplorerTest: React.FC = () => {
           if (vfs.hasArchive("mem.archive")) {
             AppLogger.info('[VFS_TEST] mem.archive found after loadStandaloneFiles().');
             try {
-                const iniFromMem = await vfs.openFile("test.ini"); // Should pick from mem.archive if present
+                const iniFromMem = vfs.openFile("test.ini"); // Should pick from mem.archive if present
                 AppLogger.info(`[VFS_TEST] Re-opened "test.ini" (presumably from mem.archive). Name: ${iniFromMem.filename}, Size: ${iniFromMem.getSize()}`);
             } catch (e:any) {
                  AppLogger.error('[VFS_TEST] Error re-opening "test.ini" after loadStandaloneFiles:', e.message);
