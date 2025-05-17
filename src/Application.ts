@@ -450,10 +450,31 @@ export class Application {
     this.setSplashScreenProps(null); // This will hide/unmount the splash screen
     console.log("[Application] SplashScreen props set to null to hide/destroy. Callback invoked if registered.");
 
+    // The following DOM manipulation is now handled by App.tsx rendering FileExplorerTest
     if (this.rootEl) {
-        this.rootEl.innerHTML = `<div style="padding: 20px; text-align: center;"><h1>Splash Screen Finished</h1><p>Using locale: ${this.currentLocale}. Config & CSF loaded.</p><pre style="white-space: pre-wrap; text-align: left; background: #f0f0f0; padding: 10px; border-radius: 5px; max-height: 300px; overflow-y: auto;">Config dump:\n${JSON.stringify(this.config, null, 2)}</pre><p>Sample string 'GUI:OKAY': ${this.strings.get('GUI:OKAY')}</p></div>`;
+        // Clear previous content
+        this.rootEl.innerHTML = '';
+
+        // Create a placeholder for where the React component should go
+        const reactTestBed = document.createElement('div');
+        reactTestBed.id = "file-explorer-test-bed";
+        this.rootEl.appendChild(reactTestBed);
+
+        // Instruct the user or a subsequent script to render the React component here
+        const messageDiv = document.createElement('div');
+        messageDiv.style.padding = "20px";
+        messageDiv.style.textAlign = "center";
+        messageDiv.innerHTML = `
+            <h1>Application Initialized</h1>
+            <p><code>Application.main()</code> has completed.</p>
+            <p><strong>Next Step:</strong> To test the File Explorer, you need to ensure that the 
+            <code>FileExplorerTest</code> React component is rendered into the div with ID 
+            <code>file-explorer-test-bed</code>.</p>
+            // ... (rest of the instructional message) ...
+        `;
+        this.rootEl.appendChild(messageDiv);
     }
     
-    console.log("Application.main() with real config load (MVP) finished.");
+    console.log("Application.main() finished. UI rendering is now delegated to App.tsx.");
   }
 } 

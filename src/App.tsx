@@ -2,11 +2,13 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Application, SplashScreenUpdateCallback } from './Application'; // Adjust path if needed
 import SplashScreenComponent from './gui/component/SplashScreen'; // Renamed to avoid conflict
 import type { ComponentProps } from 'react';
+import FileExplorerTest from './components/FileExplorerTest'; // Import the test component
 
 function App() {
   const appRef = useRef<Application | null>(null);
   const appInitialized = useRef<boolean>(false); // Prevent double initialization in StrictMode
   const [splashScreenProps, setSplashScreenProps] = useState<ComponentProps<typeof SplashScreenComponent> | null>(null);
+  const [appMainFinished, setAppMainFinished] = useState(false); // New state to track if app.main() has run
 
   useEffect(() => {
     if (appInitialized.current) {
@@ -24,15 +26,17 @@ function App() {
     const app = new Application(handleSplashScreenUpdate);
     appRef.current = app;
     
-    // Ensure DOM is ready for ra2web-root element
-    // setTimeout is a bit of a hack here, ideally DOMContentLoaded or similar should be handled by Application itself
-    // but main.js had similar logic.
-    const startApp = () => {
+    const startApp = async () => {
       if (document.getElementById('ra2web-root')) {
         console.log('App.tsx: #ra2web-root found, calling app.main()');
-        app.main().catch(error => {
+        try {
+          await app.main();
+          console.log('App.tsx: app.main() completed.');
+          setAppMainFinished(true); // Signal that app.main() is done
+        } catch (error) {
           console.error("Error running Application.main():", error);
-        });
+          // Optionally set an error state here to display in UI
+        }
       } else {
         console.warn('App.tsx: #ra2web-root not found yet, retrying...');
         setTimeout(startApp, 100); // Retry if not found
@@ -48,8 +52,8 @@ function App() {
     // Cleanup function if needed, e.g., app.destroy()
     return () => {
       console.log('App.tsx: useEffect cleanup');
-      // Cleanup splash screen explicitly when App unmounts or re-initializes (though not expected for root App)
       setSplashScreenProps(null); 
+      // Potentially call appRef.current?.destroy() if Application has a cleanup method
     };
   }, []); // Empty dependency array ensures this runs only once on mount
 
@@ -58,13 +62,15 @@ function App() {
       {splashScreenProps && splashScreenProps.parentElement && (
         <SplashScreenComponent {...splashScreenProps} />
       )}
-      {/* The main content of the app will go here, potentially hidden while splash is active */}
-      {!splashScreenProps && (
-         <p style={{ textAlign: 'center', marginTop: '20px' }}>
-            React App Shell is running. <br />
-            (SplashScreen finished or not active)
-            {/* The Application.ts post-splash message will appear in #ra2web-root directly */} 
-          </p>
+      {/* Render FileExplorerTest only after splash screen is done AND app.main() has finished */}
+      {!splashScreenProps && appMainFinished && (
+        <FileExplorerTest />
+      )}
+      {/* Message if app.main() hasn't finished yet but splash is gone (should be brief) */}
+      {!splashScreenProps && !appMainFinished && (
+        <p style={{ textAlign: 'center', marginTop: '20px' }}>
+          Application main logic running...
+        </p>
       )}
     </div>
   );
