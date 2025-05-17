@@ -1,8 +1,25 @@
 // Type augmentation for File System Access API and FileExplorer
 declare global {
+  // Options for the IndexedDB adapter
+  interface FileSystemAccessIndexedDBAdapterOptions {
+    name: string; // Name of the IndexedDB database
+    rootName?: string; // Optional name for the root directory in the virtual file system
+    // ... any other options fsalib might take
+  }
+
+  // The FileSystemAccess object that fsalib might put on window
+  interface FileSystemAccessAPI {
+    adapters?: {
+      indexeddb: (options: FileSystemAccessIndexedDBAdapterOptions) => Promise<FileSystemDirectoryHandle>;
+      // Potentially other adapters like cacheApi could be defined here
+    };
+    // Potentially other top-level methods or properties of the polyfill
+  }
+
   interface Window {
     showDirectoryPicker?: () => Promise<FileSystemDirectoryHandle>;
     FileExplorer: any; // Type for the FileExplorer global
+    FileSystemAccess?: FileSystemAccessAPI; // Add the fsalib object here
   }
   // Basic types for File System Access API handles
   interface FileSystemHandle {
