@@ -1,9 +1,12 @@
-import React, { useEffect, useRef } from 'react';
-import { Application } from './Application'; // Adjust path if needed
+import React, { useEffect, useRef, useState } from 'react';
+import { Application, SplashScreenUpdateCallback } from './Application'; // Adjust path if needed
+import SplashScreenComponent from './gui/component/SplashScreen'; // Renamed to avoid conflict
+import type { ComponentProps } from 'react';
 
 function App() {
   const appRef = useRef<Application | null>(null);
   const appInitialized = useRef<boolean>(false); // Prevent double initialization in StrictMode
+  const [splashScreenProps, setSplashScreenProps] = useState<ComponentProps<typeof SplashScreenComponent> | null>(null);
 
   useEffect(() => {
     if (appInitialized.current) {
@@ -12,7 +15,13 @@ function App() {
     appInitialized.current = true;
 
     console.log('App.tsx: useEffect - Initializing Application');
-    const app = new Application();
+
+    const handleSplashScreenUpdate: SplashScreenUpdateCallback = (props) => {
+      console.log('App.tsx: SplashScreen update callback received', props);
+      setSplashScreenProps(props);
+    };
+
+    const app = new Application(handleSplashScreenUpdate);
     appRef.current = app;
     
     // Ensure DOM is ready for ra2web-root element
@@ -38,24 +47,25 @@ function App() {
 
     // Cleanup function if needed, e.g., app.destroy()
     return () => {
-      console.log('App.tsx: useEffect cleanup - Application might be destroyed here if it had a destroy method.');
-      // if (appRef.current && typeof appRef.current.destroy === 'function') {
-      //   appRef.current.destroy();
-      // }
+      console.log('App.tsx: useEffect cleanup');
+      // Cleanup splash screen explicitly when App unmounts or re-initializes (though not expected for root App)
+      setSplashScreenProps(null); 
     };
   }, []); // Empty dependency array ensures this runs only once on mount
 
   return (
     <div className="App">
-      {/* 
-        The main React app UI could go here. 
-        For the MVP, Application.ts will directly manipulate #ra2web-root.
-        We might eventually want Application's UI parts to be React components rendered here.
-      */}
-      <p style={{ textAlign: 'center', marginTop: '20px' }}>
-        React App Shell is running. <br />
-        The legacy application logic (SplashScreen MVP) should be managing the '#ra2web-root' div separately.
-      </p>
+      {splashScreenProps && splashScreenProps.parentElement && (
+        <SplashScreenComponent {...splashScreenProps} />
+      )}
+      {/* The main content of the app will go here, potentially hidden while splash is active */}
+      {!splashScreenProps && (
+         <p style={{ textAlign: 'center', marginTop: '20px' }}>
+            React App Shell is running. <br />
+            (SplashScreen finished or not active)
+            {/* The Application.ts post-splash message will appear in #ra2web-root directly */} 
+          </p>
+      )}
     </div>
   );
 }

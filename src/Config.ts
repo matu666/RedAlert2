@@ -69,6 +69,17 @@ export class Config {
     }
   }
 
+  // Public getter for the raw general data IniSection
+  public getGeneralData(): IniSection {
+    if (!this.generalData) {
+        // This should ideally not happen if load() is called correctly in constructor or early init
+        // But as a safeguard, or if load() can fail and leave generalData undefined:
+        console.warn("[Config] getGeneralData called before config was properly loaded. Returning empty section.");
+        return new IniSection("General"); // Return an empty section to prevent crashes
+    }
+    return this.generalData;
+  }
+
   // Getter methods, typed according to their expected return values
   get defaultLocale(): string {
     return this.generalData.getString("defaultLanguage", "en-US");

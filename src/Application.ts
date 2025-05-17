@@ -5,6 +5,17 @@ import { sleep } from './util/time'; // Already migrated
 import { Config } from './Config'; // Import the real Config class
 import { IniFile } from './data/IniFile'; // Import IniFile
 import { IniSection } from './data/IniSection'; // Added missing import
+import SplashScreenComponent from './gui/component/SplashScreen'; // Renamed import
+import type { ComponentProps } from 'react';
+
+import { CsfFile, CsfLanguage, csfLocaleMap } from './data/CsfFile';
+import { Strings } from './data/Strings';
+import { VirtualFile } from './data/vfs/VirtualFile';
+import { DataStream } from './data/DataStream';
+import { version as appVersion } from './version'; // Import app version
+
+// Type for the callback function
+export type SplashScreenUpdateCallback = (props: ComponentProps<typeof SplashScreenComponent> | null) => void;
 
 // --- Stubs/Mocks for unmigrated dependencies (MVP) ---
 // These will be replaced by actual migrated modules later.
@@ -110,35 +121,44 @@ const mockSentry = {
 export class Application {
   public viewport: BoxedVar<{ x: number; y: number; width: number; height: number }>;
   public config!: Config; // Will now be the real Config instance
-  private strings: any; // Will be properly typed when Strings.ts is migrated
+  private strings!: Strings; // Now definitely assigned after loadTranslations
   private localPrefs: MockLocalPrefs; // Placeholder
   private rootEl: HTMLElement | null = null;
   private runtimeVars: MockConsoleVars;
   private fullScreen: MockFullScreen;
-  private splashScreen: MockSplashScreen | undefined; // Initialized in main()
+  
+  // Store the component type and its current props
+  private splashScreenComponentType: typeof SplashScreenComponent | null = null; 
+  private currentSplashScreenProps: ComponentProps<typeof SplashScreenComponent> | null = null;
+  private splashScreenUpdateCb: SplashScreenUpdateCallback | null = null;
+
   public routing: Routing;
 
   // Add other necessary properties as stubs or with 'any' type for now
   private sentry: typeof mockSentry | undefined = mockSentry; // Assuming Sentry might be optional
-  private locale: string = 'en-US';
+  private currentLocale: string = 'en-US'; // Default, will be updated from config/CSF
   private fsAccessLib: any; // For SystemJS.import('file-system-access')
   private gameResConfig: any;
   private cdnResourceLoader: any;
   private gpuTier: any;
 
-
-  constructor() {
+  constructor(private onSplashScreenUpdate?: SplashScreenUpdateCallback) {
     this.viewport = new BoxedVar({ x: 0, y: 0, width: window.innerWidth, height: window.innerHeight });
     this.routing = new Routing(); // Routing is already migrated
+    this.splashScreenUpdateCb = onSplashScreenUpdate || null;
 
     // Initialize other properties that were in original constructor or early main
     // For MVP, many will be mocked or have placeholder values
     this.localPrefs = new MockLocalPrefs(localStorage);
     this.runtimeVars = new MockConsoleVars();
     this.fullScreen = new MockFullScreen(document);
-    // this.splashScreen is initialized in main()
+    // splashScreen is initialized in main()
 
     console.log('Application constructor finished.');
+  }
+
+  public getVersion(): string {
+    return appVersion;
   }
 
   // Simplified and mocked methods from original Application.js
@@ -177,6 +197,8 @@ export class Application {
       // For MVP, just logging and proceeding with a mostly empty config.
       const mockGeneralSection = new IniSection("General");
       mockGeneralSection.set("defaultLanguage", "en-US");
+      mockGeneralSection.set("language", "english"); // CSF file hint
+      mockGeneralSection.set("csfFile", "ra2/general.csf"); // Example path
       mockGeneralSection.set("dev", "true");
       mockGeneralSection.set("viewport.width", "1024");
       mockGeneralSection.set("viewport.height", "768");
@@ -188,29 +210,74 @@ export class Application {
     }
   }
 
-  private async loadTranslations(locale: string): Promise<any> {
-    console.log(`[MVP] Skipping Application.loadTranslations(${locale}), using mock strings based on loaded/mocked config.defaultLocale.`);
-    return {}; 
+  private async loadTranslations(): Promise<void> {
+    const currentConfig = this.config; // Capture for use in this method
+    if (!currentConfig) {
+        console.error("[Application] Config not loaded before loadTranslations. Skipping.");
+        this.strings = new Strings(); // Initialize with empty strings
+        this.currentLocale = 'en-US'; // Fallback locale
+        return;
+    }
+
+    // --- Step 1: Load and parse CSF file ---
+    let csfFileValue = currentConfig.getGeneralData().get('csfFile') || 'ra2/general.csf';
+    const csfFileName = Array.isArray(csfFileValue) ? csfFileValue[0] : csfFileValue;
+    
+    console.log(`[Application] Attempting to load CSF file: ${csfFileName}`);
+    try {
+      const csfResponse = await fetch(`/${csfFileName}`);
+      if (!csfResponse.ok) {
+        throw new Error(`Failed to fetch CSF file ${csfFileName}: ${csfResponse.status} ${csfResponse.statusText}`);
+      }
+      const arrayBuffer = await csfResponse.arrayBuffer();
+      const dataStream = new DataStream(arrayBuffer, 0, DataStream.LITTLE_ENDIAN);
+      dataStream.dynamicSize = false;
+      const virtualFile = new VirtualFile(dataStream, csfFileName);
+      
+      const csfFileInstance = new CsfFile(virtualFile);
+      this.strings = new Strings(csfFileInstance); // Initialize Strings with CSF data
+      this.currentLocale = csfFileInstance.getIsoLocale() || currentConfig.defaultLocale;
+      console.log(`[Application] CSF file "${csfFileName}" loaded. Detected/Set Locale: ${this.currentLocale}. Loaded ${Object.keys(this.strings.getKeys()).length} keys from CSF.`);
+
+    } catch (error) {
+      console.error(`[Application] Failed to load or parse CSF file "${csfFileName}":`, error);
+      console.warn('[Application] Falling back to empty Strings object for CSF part.');
+      this.strings = new Strings(); // Initialize with empty strings if CSF fails
+      this.currentLocale = currentConfig.defaultLocale; // Use config default locale
+      // We will still attempt to load JSON translations
+    }
+
+    // --- Step 2: Load and merge JSON locale file ---
+    // Use this.currentLocale determined from CSF or config default
+    const jsonLocaleFile = `res/locale/${this.currentLocale}.json?v=${this.getVersion()}`;
+    console.log(`[Application] Attempting to load JSON locale file: ${jsonLocaleFile}`);
+
+    try {
+        const jsonResponse = await fetch(`/${jsonLocaleFile}`); // Relative to public folder
+        if (!jsonResponse.ok) {
+            throw new Error(`Failed to fetch JSON locale ${jsonLocaleFile}: ${jsonResponse.status} ${jsonResponse.statusText}`);
+        }
+        const jsonData = await jsonResponse.json();
+        if (jsonData) {
+            this.strings.fromJson(jsonData); // Merge/overwrite with JSON data
+            console.log(`[Application] JSON locale file "${jsonLocaleFile}" loaded and merged. Total keys now: ${Object.keys(this.strings.getKeys()).length}.`);
+        } else {
+            console.warn(`[Application] JSON locale file "${jsonLocaleFile}" parsed to null or undefined data.`);
+        }
+    } catch (error) {
+        console.error(`[Application] Failed to load or parse JSON locale file "${jsonLocaleFile}":`, error);
+        console.warn(`[Application] Continuing without strings from ${jsonLocaleFile}.`);
+        // If JSON loading fails, this.strings will still contain CSF data (if loaded) or be empty.
+    }
+    
+    // Final check and log sample strings
+    console.log('[Application] Translations loading finished. Final locale: ', this.currentLocale);
+    console.log('[Application] Sample string GUI:OKAY ->', this.strings.get('GUI:OKAY'));
+    console.log('[Application] Sample string GUI:Cancel ->', this.strings.get('GUI:Cancel'));
+    console.log('[Application] Sample string GUI:LoadingEx ->', this.strings.get('GUI:LoadingEx'));
+    console.log('[Application] First 20 keys in Strings:', this.strings.getKeys().slice(0,20));
   }
   
-  // Mock the Strings class behavior directly for MVP
-  private initializeMockStrings(csfData?: any, jsonData?: any) {
-      const currentLocale = this.config?.defaultLocale || 'en-US'; // Use loaded locale if available
-      console.log(`[Application] Initializing mock strings for locale: ${currentLocale}`);
-      this.strings = {
-        get: (key: string, ...args: any[]): string => {
-          // console.log(`Strings.get(\'${key}\') for locale ${currentLocale}`);
-          if (key === 'GUI:LoadingEx') return `Loading Game... (Locale: ${currentLocale})`;
-          if (key === 'TXT_COPYRIGHT') return `© 2024 RA2Web React Port (Locale: ${currentLocale})`;
-          if (key === 'GUI:WWBrand') return `Westwood Studios (Mock)`;
-          if (key === 'TS:Disclaimer') return `This is a fan-made project for demonstration purposes. (Locale: ${currentLocale})`;
-          if (key === 'TS:DownloadFailed') return 'A required file could not be downloaded. Please check your connection and try again.';
-          return `[${key}]`; 
-        },
-      };
-  }
-
-
   private checkGlobalLibs(): void {
     console.log('[MVP] Skipping Application.checkGlobalLibs().');
     // Original checks for FontFaceObserver, detectGPU, Promise, fetch etc.
@@ -226,10 +293,13 @@ export class Application {
     const newHeight = isFullScreen ? window.screen.height : window.innerHeight;
     this.viewport.value = { ...this.viewport.value, width: newWidth, height: newHeight };
     console.log(`[MVP] updateViewportSize: ${newWidth}x${newHeight}, Fullscreen: ${isFullScreen}`);
-    if (this.splashScreen) {
-        // Original splash screen might have a resize method, mock doesn't yet.
-        // For now, the mock splash is full viewport via CSS.
-    }
+        if (this.currentSplashScreenProps) {
+            this.setSplashScreenProps({
+                ...this.currentSplashScreenProps,
+                width: newWidth,
+                height: newHeight,
+            });
+        }
   }
 
   private onFullScreenChange(isFullScreen: boolean): void {
@@ -239,6 +309,15 @@ export class Application {
   private async loadGpuBenchmarkData(): Promise<any> {
     console.log('[MVP] Skipping Application.loadGpuBenchmarkData()');
     return { tier: 1, type: 'MOCK_GPU' }; // Return some mock tier
+  }
+
+  // Method to update splash screen props and notify React layer
+  private setSplashScreenProps(props: ComponentProps<typeof SplashScreenComponent> | null): void {
+    this.currentSplashScreenProps = props;
+    this.splashScreenComponentType = props ? SplashScreenComponent : null;
+    if (this.splashScreenUpdateCb) {
+      this.splashScreenUpdateCb(this.currentSplashScreenProps);
+    }
   }
 
   // --- Main application entry point ---
@@ -254,14 +333,7 @@ export class Application {
       return; // Halt execution if config fails
     }
     
-    this.locale = this.config.defaultLocale; // Use locale from loaded config
-    try {
-      const jsonDataForStrings = await this.loadTranslations(this.locale);
-      this.initializeMockStrings(null, jsonDataForStrings); 
-    } catch (e) {
-      console.error(`Error during mocked translations load for locale ${this.locale}:`, e);
-      this.initializeMockStrings(); 
-    }
+    await this.loadTranslations(); // Load real translations
 
     try {
       this.checkGlobalLibs(); 
@@ -291,35 +363,41 @@ export class Application {
         this.updateViewportSize(this.fullScreen.isFullScreen()); 
     }
 
-    this.splashScreen = new MockSplashScreen(
-      this.viewport.value.width,
-      this.viewport.value.height
-    );
-    this.splashScreen.render(this.rootEl);
-    this.splashScreen.setLoadingText(this.strings.get('GUI:LoadingEx'));
-    this.splashScreen.setCopyrightText(
-      this.strings.get('TXT_COPYRIGHT') + "\n" + this.strings.get('GUI:WWBrand')
-    );
-    this.splashScreen.setDisclaimerText(this.strings.get('TS:Disclaimer'));
-
-    // Respect devMode for splash screen delay from original Application.js logic
+    this.setSplashScreenProps({
+        width: this.viewport.value.width,
+        height: this.viewport.value.height,
+        parentElement: this.rootEl,
+        loadingText: this.strings.get('GUI:LoadingEx', `(Locale: ${this.currentLocale})`),
+        copyrightText: this.strings.get('TXT_COPYRIGHT') + "\n" + this.strings.get('GUI:WWBrand'),
+        disclaimerText: this.strings.get('TS:Disclaimer'),
+        onRender: () => {
+            console.log("Real SplashScreen rendered with real strings (hopefully).");
+        }
+    });
+    
+    console.log("[Application] Initial SplashScreen props set with real strings. Callback invoked.");
+    
     const devMode = this.config && this.config.devMode !== undefined ? this.config.devMode : true;
     console.log(`[Application] Splash screen delay based on devMode (${devMode}). Original delay: ${devMode ? 0 : 5000}ms`);
-    await sleep(devMode ? 500 : 3000); // Reduced delay for faster MVP testing, but respects devMode flag
+    await sleep(devMode ? 500 : 3000);
     
     console.log('[MVP] Skipping GPU Benchmark, FileSystemAccess import, GameRes init for SplashScreen MVP.');
 
     await sleep(1500); 
-    if (this.splashScreen) this.splashScreen.setLoadingText("Almost ready...");
+    if (this.currentSplashScreenProps) {
+        this.setSplashScreenProps({
+            ...this.currentSplashScreenProps,
+            loadingText: this.strings.get('GUI:AlmostReady', '...')
+        });
+        console.log("[Application] SplashScreen loadingText updated with real string. Callback invoked.");
+    }
     await sleep(1000);
 
-    if (this.splashScreen) {
-        this.splashScreen.destroy();
-        this.splashScreen = undefined; // Clear it
-    }
+    this.setSplashScreenProps(null); // This will hide/unmount the splash screen
+    console.log("[Application] SplashScreen props set to null to hide/destroy. Callback invoked if registered.");
 
     if (this.rootEl) {
-        this.rootEl.innerHTML = '<div style="padding: 20px; text-align: center;"><h1>Splash Screen Finished (MVP)</h1><p>Configuration loaded. Next step: Integrate actual Gui and load lobby.</p><pre style="white-space: pre-wrap; text-align: left; background: #f0f0f0; padding: 10px; border-radius: 5px; max-height: 300px; overflow-y: auto;">Config dump:\n${JSON.stringify(this.config, null, 2)}</pre></div>';
+        this.rootEl.innerHTML = `<div style="padding: 20px; text-align: center;"><h1>Splash Screen Finished</h1><p>Using locale: ${this.currentLocale}. Config & CSF loaded.</p><pre style="white-space: pre-wrap; text-align: left; background: #f0f0f0; padding: 10px; border-radius: 5px; max-height: 300px; overflow-y: auto;">Config dump:\n${JSON.stringify(this.config, null, 2)}</pre><p>Sample string 'GUI:OKAY': ${this.strings.get('GUI:OKAY')}</p></div>`;
     }
     
     console.log("Application.main() with real config load (MVP) finished.");
