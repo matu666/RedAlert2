@@ -398,6 +398,19 @@ export class DataStream {
     }
     this.position += byteLength;
   }
+
+  public readUint32Array(count: number, endianness?: boolean): Uint32Array {
+    if (count < 0) throw new Error("Count cannot be negative.");
+    const byteLength = count * 4;
+    this._realloc(byteLength);
+    const result = new Uint32Array(count);
+    const specifiedEndian = endianness ?? this.endianness;
+    for (let i = 0; i < count; i++) {
+        result[i] = this._dataView.getUint32(this.position + i * 4, specifiedEndian);
+    }
+    this.position += byteLength;
+    return result;
+  }
   
   public static memcpy(dst: ArrayBuffer, dstOffset: number, src: ArrayBuffer, srcOffset: number, byteLength: number): void {
     if (byteLength === 0) return;

@@ -1,10 +1,11 @@
+/**
+ * Custom error type for I/O related errors, e.g., file not found, read error.
+ */
 export class IOError extends Error {
-  constructor(message?: string) {
+  constructor(message: string) {
     super(message);
     this.name = "IOError";
-
-    // Set the prototype explicitly to allow instanceof checks
-    // See: https://github.com/Microsoft/TypeScript/wiki/Breaking-Changes#extending-built-ins-like-error-array-and-map-may-no-longer-work
-    Object.setPrototypeOf(this, IOError.prototype);
+    // If targeting ES5 or an environment without proper Error subclassing support:
+    // Object.setPrototypeOf(this, IOError.prototype);
   }
 } 

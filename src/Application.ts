@@ -13,6 +13,7 @@ import { Strings } from './data/Strings';
 import { VirtualFile } from './data/vfs/VirtualFile';
 import { DataStream } from './data/DataStream';
 import { version as appVersion } from './version'; // Import app version
+import { MixFile } from './data/MixFile'; // Added static import for MixFile
 
 // Type for the callback function
 export type SplashScreenUpdateCallback = (props: ComponentProps<typeof SplashScreenComponent> | null) => void;
@@ -334,6 +335,59 @@ export class Application {
     }
     
     await this.loadTranslations(); // Load real translations
+
+    // --- BEGIN MixFile Test ---
+    console.log("[Application.main] Attempting to load and test ini.mix...");
+    try {
+      const mixFilePath = '/ini.mix'; // Assuming ini.mix is in public/
+      const response = await fetch(mixFilePath);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch ${mixFilePath}: ${response.status} ${response.statusText}`);
+      }
+      const arrayBuffer = await response.arrayBuffer();
+      const dataStream = new DataStream(arrayBuffer);
+      dataStream.dynamicSize = false; // The buffer is fixed size from fetch
+
+      console.log(`[MixFile Test] DataStream for ${mixFilePath} created, length: ${dataStream.byteLength}`);
+      
+      const mixFileInstance = new MixFile(dataStream); // Use the statically imported MixFile
+      console.log("[MixFile Test] MixFile instance created successfully for ini.mix!");
+
+      // List some entries
+      console.log("[MixFile Test] Listing first 5 entries (if available):");
+      let count = 0;
+      // @ts-ignore: Accessing private 'index' for testing purposes
+      const indexMap: Map<number, any> = mixFileInstance.index; 
+      for (const [hash, entry] of indexMap.entries()) {
+        if (count >= 5) break;
+        console.log(`  Entry ${count + 1}: Hash=0x${hash.toString(16).toUpperCase()}, Offset=${entry.offset}, Length=${entry.length}`);
+        count++;
+      }
+      if (count === 0) {
+        console.log("  No entries found in the MixFile index (or index is empty).");
+      }
+
+      // Test containsFile and openFile for a common file like 'rules.ini'
+      const testFileName = "rules.ini"; // Adjust if you know a specific file in ini.mix
+      console.log(`[MixFile Test] Checking for "${testFileName}"...`);
+      const دارد_فایل = mixFileInstance.containsFile(testFileName);
+      console.log(`[MixFile Test] mixFile.containsFile("${testFileName}"): ${ دارد_فایل}`);
+
+      if ( دارد_فایل) {
+        console.log(`[MixFile Test] Attempting to open "${testFileName}"...`);
+        try {
+          const virtualFile = mixFileInstance.openFile(testFileName);
+          console.log(`[MixFile Test] Successfully opened "${virtualFile.filename}", Size: ${virtualFile.getSize()} bytes.`);
+          // You could try reading a few bytes if needed: virtualFile.stream.readUint8Array(10)
+        } catch (openError) {
+          console.error(`[MixFile Test] Error opening "${testFileName}":`, openError);
+        }
+      }
+
+    } catch (error) {
+      console.error("[MixFile Test] Error during MixFile test:", error);
+    }
+    // --- END MixFile Test ---
 
     try {
       this.checkGlobalLibs(); 
