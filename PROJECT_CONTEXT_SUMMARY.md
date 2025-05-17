@@ -96,19 +96,52 @@ Key source files and directories for migration reside within `ra2web-react/extra
 1.  **Real Config Loading Achieved.**
 2.  **SplashScreen and Localization Foundation Established.**
 3.  **Core Resource Loading Pipeline (MIX/Crypto) - Foundational Parts Migrated & Validated:**
-    *   `Crc32.ts` and `MixEntry.ts` (including filename hashing) have been migrated and basic validation passed.
-    *   `BlowfishKey.ts` (RSA and bignum arithmetic for Blowfish key decryption) is substantially migrated. User has provided a trusted version of this file.
-    *   `Blowfish.ts` (Blowfish symmetric encryption) is considered complete, pending population of S-Box data by the user.
-    *   **`MixFile.ts` has been successfully migrated to TypeScript.**
-        *   **MVP Validation**: An MVP test in `Application.ts` confirmed that `MixFile.ts` can load `public/ini.mix`, parse its header/index, list file entries, and open an internal file (`rules.ini`).
-    *   **Immediate Next Step**: Integrate `MixFile.ts` functionality into the broader resource loading pipeline. This likely involves:
-        1.  Migrating `extracted_modules_simple/data/vfs/VirtualFileSystem.js` to `src/data/vfs/VirtualFileSystem.ts`, ensuring it correctly uses the new `MixFile.ts` for adding MIX archives.
-        2.  Analyzing `extracted_modules_simple/engine/Engine.js` to understand how it uses the VFS and its resource collections (`images`, `palettes`, `iniFiles`, etc.).
-        3.  Incrementally migrating `Engine.js` functionality or its dependencies to TypeScript, enabling it to use the migrated VFS and `MixFile` to load game resources from MIX archives.
-    *   Once MIX reading is robustly integrated into `Engine.js` via the VFS, the focus can shift to loading specific game assets (like SHP/PAL for UI) and then back to `Gui.js` and its UI components.
-4.  **Future Major Goal (Post Resource Loading):** Progress towards rendering the main game lobby/interface by migrating `Gui.js` functionality.
-    *   Analyze and migrate components like `MainMenu.js`, `RootController.js`, and individual screen files.
-    *   Address the custom JSX rendering system.
-    *   Gradual un-mocking of `Application.ts` dependencies.
+    *   `Crc32.ts`, `MixEntry.ts`, `BlowfishKey.ts`, `Blowfish.ts`, and **`MixFile.ts`** have been successfully migrated and MVP validated.
 
-This summary should help anyone picking up this task to understand the progress and the immediate next steps.
+4.  **Virtual File System (VFS) Primitives Migration & Initial Testing:**
+    *   Successfully migrated `extracted_modules_simple/data/vfs/VirtualFileSystem.js` to `src/data/vfs/VirtualFileSystem.ts`.
+    *   Migrated its core dependencies:
+        *   Error types: `FileNotFoundError.ts`, `IOError.ts` (confirmed pre-existing), `StorageQuotaError.ts`, `NameNotAllowedError.ts`.
+        *   VFS components: `VirtualFile.ts`, `MemArchive.ts`.
+        *   Data format handlers: `IdxEntry.ts`, `IdxFile.ts`, `AudioBagFile.ts`.
+        *   Utilities: `EngineType.ts`, `logger.ts` (using `js-logger`).
+    *   **`RealFileSystemDir.ts` and `RealFileSystem.ts` Migrated:** These components, wrapping the browser's File System Access API, have been migrated. They are used to interact with user-selected local directories.
+    *   **Identified `fsalib.min.js` (`file-system-access` module):** This is a crucial library in the original project, loaded via SystemJS. It acts as a polyfill/wrapper for the native File System Access API and, importantly, **provides adapters for IndexedDB (database named "fileSystem") and potentially Cache API, allowing browser storage to be treated with a file-system-like interface.**
+    *   **Understanding File Storage**: The original project appears to use a hybrid approach:
+        *   **Local File System Access**: Via File System Access API (wrapped by `fsalib` or used natively), for operations like allowing the user to designate local directories for specific content types (e.g., replays, mods).
+        *   **Browser Internal Storage (IndexedDB)**: For storing application-managed data like game resources, replay metadata, or other assets not directly tied to a user-selected local path. The `fsalib` IndexedDB adapter likely provides a `FileSystemHandle`-compatible interface to this storage.
+    *   **`FileExplorerTest.tsx` Component Created for VFS/RFS Testing:**
+        *   This component loads the original `file-explorer.js` and `file-explorer.css` (from `public/other/`).
+        *   It allows users to select a local directory using `window.showDirectoryPicker()`.
+        *   The selected `FileSystemDirectoryHandle` is used to initialize `RealFileSystem.ts`.
+        *   `VirtualFileSystem.ts` is initialized with this `RealFileSystem` instance.
+        *   `FileExplorer` UI is instantiated and its `onrefresh` callback is configured to list entries from the selected local directory via `RealFileSystem` and `FileSystemDirectoryHandle.entries()`.
+        *   **Current Test Status**:
+            *   Successfully displays contents of the selected local directory and its subdirectories.
+            *   Navigation within the local directory in `FileExplorer` UI works.
+            *   `onnewfolder` callback for creating folders in the local directory currently encounters a `NotFoundError`. User activation and document focus have been confirmed *not* to be the cause. Debugging is focused on path resolution within the `onnewfolder` callback and how `FileExplorer.js` path segments map to `FileSystemDirectoryHandle` operations.
+            *   Basic stubs for `onopenfile` and `ondelete` are in place.
+
+5.  **Next Immediate Steps & Goals:**
+    *   **A. Resolve `NotFoundError` in `FileExplorerTest.tsx -> onnewfolder`**:
+        *   Continue debugging the path resolution logic within `onnewfolder` when creating directories in the selected local file system. Ensure the `parentActualDirHandle` correctly points to the target directory where the new folder should be created.
+        *   Verify how `FileExplorer.js` path segments (ID, name) for the root and subdirectories should be interpreted when interacting with `FileSystemDirectoryHandle` API.
+    *   **B. Integrate and Test `fsalib.min.js` IndexedDB Adapter**:
+        *   Determine the best way to load `fsalib.min.js` in the Vite-React environment (e.g., via `index.html` script tag or dynamic import).
+        *   In `FileExplorerTest.tsx` (or a new test component), initialize the IndexedDB adapter from `window.FileSystemAccess.adapters.indexeddb()`. This should provide a root "directory handle" for the "fileSystem" IndexedDB database.
+        *   Configure an instance of `FileExplorer` to use this IndexedDB-backed handle as its data source (i.e., its `onrefresh` callback will interact with this handle).
+        *   Test browsing, creating, reading, and deleting files/folders within this IndexedDB-based virtual file system.
+    *   **C. Unified `FileExplorer` Data Handling**:
+        *   Refine `FileExplorerTest.tsx`'s `onrefresh` and other callbacks to intelligently switch between the real local `FileSystemDirectoryHandle` and the `fsalib`-provided IndexedDB/Cache API virtual handles based on the path or context.
+        *   Implement full file operations (open, save, delete, rename, etc.) for both local and IndexedDB-backed storage via the `FileExplorer` interface.
+    *   **D. Integrate `MixFile.ts` with `VirtualFileSystem.ts` for Browsing MIX Archives**:
+        *   Modify `VirtualFileSystem.ts` and `FileExplorerTest.tsx`'s `onrefresh` logic so that when a `.mix` file is encountered (either in the local file system or IndexedDB), `vfs.addMixFile()` is called.
+        *   The `FileExplorer` should then be able to navigate *into* the MIX file, with `onrefresh` fetching entries from the `MixFile` instance.
+        *   `MixFile.ts` will need a method to list its internal entries in a format compatible with `ExplorerEntry`.
+
+6.  **Future Major Goal (Post Resource Loading & Advanced VFS Testing):** Progress towards rendering the main game lobby/interface by migrating `Gui.js` functionality, leveraging the now more robust VFS.
+    *   Analyze and migrate components like `MainMenu.js`, `RootController.js`.
+    *   Address the custom JSX rendering system.
+    *   Gradual un-mocking of `Application.ts` dependencies, replacing them with real migrated modules that use the VFS for resource access.
+
+This summary should help anyone picking up this task to understand the progress and the immediate next steps, particularly concerning the dual nature of file storage (local FSA & IndexedDB via fsalib) and the plan to test both.
