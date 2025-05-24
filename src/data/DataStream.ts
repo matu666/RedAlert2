@@ -195,6 +195,24 @@ export class DataStream {
     this.position = isNaN(newPosition) || !isFinite(newPosition) ? 0 : newPosition;
   }
 
+  public skip(numberOfBytes: number): void {
+    if (numberOfBytes < 0) {
+        // Skipping backwards, ensure it doesn't go before 0
+        this.position = Math.max(0, this.position + numberOfBytes);
+    } else {
+        // Skipping forwards, ensure it doesn't go past effective end of stream
+        // this.byteLength is (this._byteLength - this._byteOffset)
+        const newPos = this.position + numberOfBytes;
+        // Check against the capacity of the current view, or realloc if dynamic
+        if (this._dynamicSize) {
+            this._realloc(numberOfBytes); // Ensure buffer can hold up to new position
+            this.position = newPos;
+        } else {
+            this.position = Math.min(newPos, this.byteLength);
+        }
+    }
+  }
+
   public isEof(): boolean {
     return this.position >= this.byteLength;
   }

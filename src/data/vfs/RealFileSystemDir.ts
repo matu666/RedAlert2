@@ -19,6 +19,10 @@ export class RealFileSystemDir {
     this.caseSensitive = caseSensitive;
   }
 
+  getNativeHandle(): FileSystemDirectoryHandle {
+    return this.handle;
+  }
+
   get name(): string {
     return this.handle.name;
   }
@@ -282,6 +286,20 @@ export class RealFileSystemDir {
       }
       throw e;
     }
+  }
+
+  /**
+   * Gets or creates a directory and returns its native FileSystemDirectoryHandle.
+   * Placeholder - might need more specific implementation based on Engine.ts usage.
+   */
+  async getOrCreateDirectoryHandle(
+    dirName: string,
+    isPrivate?: boolean, // isPrivate might map to forceCaseSensitive or other options
+  ): Promise<FileSystemDirectoryHandle> {
+    // This is a simplification. `isPrivate` might need specific handling.
+    // For now, assuming isPrivate might mean case-sensitive or influence other options.
+    const rfsDir = await this.getOrCreateDirectory(dirName, isPrivate);
+    return rfsDir.getNativeHandle();
   }
 
   async deleteDirectory(dirName: string, recursive: boolean = false): Promise<void> {

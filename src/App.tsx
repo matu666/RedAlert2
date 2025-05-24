@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Application, SplashScreenUpdateCallback } from './Application'; // Adjust path if needed
 import SplashScreenComponent from './gui/component/SplashScreen'; // Renamed to avoid conflict
 import type { ComponentProps } from 'react';
-import FileExplorerTest from './components/FileExplorerTest'; // Import the test component
+import FileExplorerTest from './testtools/FileExplorerTest'; // Import the test component
 
 function App() {
   const appRef = useRef<Application | null>(null);

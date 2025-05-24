@@ -14,6 +14,11 @@ import { VirtualFile } from './data/vfs/VirtualFile';
 import { DataStream } from './data/DataStream';
 import { version as appVersion } from './version'; // Import app version
 import { MixFile } from './data/MixFile'; // Added static import for MixFile
+import { GameRes } from './engine/gameRes/GameRes'; // Import GameRes class
+import { GameResConfig } from './engine/gameRes/GameResConfig'; // Import GameResConfig
+import { GameResSource } from './engine/gameRes/GameResSource'; // Import GameResSource enum
+import { LocalPrefs, StorageKey } from './LocalPrefs'; // Import LocalPrefs and StorageKey
+import type { Viewport } from './gui/Viewport'; // Import Viewport type
 
 // Type for the callback function
 export type SplashScreenUpdateCallback = (props: ComponentProps<typeof SplashScreenComponent> | null) => void;
@@ -23,65 +28,13 @@ export type SplashScreenUpdateCallback = (props: ComponentProps<typeof SplashScr
 
 // Mock for gui/component/SplashScreen.js
 // We'll create a proper SplashScreen.tsx or SplashScreen.ts later.
-class MockSplashScreen {
-  constructor(width: number, height: number) {
-    console.log(`MockSplashScreen initialized with ${width}x${height}`);
-    // Create a simple div for splash screen visual
-    this.element = document.createElement('div');
-    this.element.id = 'mock-splash-screen';
-    this.element.style.position = 'fixed';
-    this.element.style.left = '0';
-    this.element.style.top = '0';
-    this.element.style.width = '100vw';
-    this.element.style.height = '100vh';
-    this.element.style.backgroundColor = '#222';
-    this.element.style.color = 'white';
-    this.element.style.display = 'flex';
-    this.element.style.flexDirection = 'column';
-    this.element.style.justifyContent = 'center';
-    this.element.style.alignItems = 'center';
-    this.element.style.zIndex = '10000';
-    this.element.innerHTML = '<h1>RA2Web (React Port)</h1><p id="splash-loading-text">Loading...</p><p id="splash-copyright" style="font-size: 0.8em; margin-top: 20px;">Copyright</p><p id="splash-disclaimer" style="font-size: 0.7em;">Disclaimer</p>';
-  }
-  element: HTMLElement;
-  setLoadingText(text: string) {
-    const el = this.element.querySelector('#splash-loading-text');
-    if (el) el.textContent = text;
-    console.log(`MockSplashScreen: setLoadingText - ${text}`);
-  }
-  setCopyrightText(text: string) {
-     const el = this.element.querySelector('#splash-copyright');
-    if (el) el.innerHTML = text.replace(/\n/g, '<br>');
-    console.log(`MockSplashScreen: setCopyrightText - ${text}`);
-  }
-  setDisclaimerText(text: string) {
-    const el = this.element.querySelector('#splash-disclaimer');
-    if (el) el.textContent = text;
-    console.log(`MockSplashScreen: setDisclaimerText - ${text}`);
-  }
-  setBackgroundImage(url: string) {
-    console.log(`MockSplashScreen: setBackgroundImage - ${url}`);
-    if (url) this.element.style.backgroundImage = `url(${url})`;
-    else this.element.style.backgroundImage = 'none';
-  }
-  render(rootEl: HTMLElement) {
-    rootEl.appendChild(this.element);
-    console.log('MockSplashScreen rendered.');
-  }
-  destroy() {
-    this.element.remove();
-    console.log('MockSplashScreen destroyed.');
-  }
-}
 
-// Mock for LocalPrefs
-class MockLocalPrefs {
-  constructor(storage: Storage) { console.log('MockLocalPrefs initialized'); }
-  getItem(key: string, defaultValue?: any): any { return defaultValue; }
-  setItem(key: string, value: any): void {}
-  removeItem(key: string): void {}
-  getBool(key: string, defaultValue?: boolean): boolean { return defaultValue ?? false; }
-  getNumber(key: string, defaultValue?: number): number { return defaultValue ?? 0; }
+// Class that extends LocalPrefs
+class MockLocalPrefs extends LocalPrefs {
+  constructor(storage: Storage) { 
+    super(storage);
+    console.log('MockLocalPrefs initialized'); 
+  }
 }
 
 // Mock for ConsoleVars
@@ -117,21 +70,42 @@ const mockSentry = {
   configureScope: (cb: Function) => cb({ setTag: () => {}, setExtra: () => {} }),
 };
 
+// Mock viewport adapter that adapts BoxedVar to Viewport interface 
+class ViewportAdapter implements Viewport {
+  constructor(private boxedVar: BoxedVar<{ x: number; y: number; width: number; height: number }>) {}
+  
+  getValue(): { x: number; y: number; width: number; height: number } {
+    return this.boxedVar.value;
+  }
+  
+  // You can add any additional methods required by the Viewport interface
+  rootElement?: HTMLElement;
+}
+
 // --- End Stubs/Mocks ---
 
 export class Application {
+  // 一个帮助函数，用于格式化字符串并替换%s占位符
+  private formatString(template: string, ...args: any[]): string {
+    if (!args || args.length === 0) return template;
+    
+    let result = template;
+    for (let i = 0; i < args.length; i++) {
+      // 替换%s, %d等格式化占位符
+      const placeholder = new RegExp(`%s|%d`, 'i');
+      result = result.replace(placeholder, String(args[i]));
+    }
+    return result;
+  }
+
   public viewport: BoxedVar<{ x: number; y: number; width: number; height: number }>;
+  private viewportAdapter: ViewportAdapter;
   public config!: Config; // Will now be the real Config instance
   private strings!: Strings; // Now definitely assigned after loadTranslations
-  private localPrefs: MockLocalPrefs; // Placeholder
+  private localPrefs: LocalPrefs; // Changed from MockLocalPrefs to actual LocalPrefs interface
   private rootEl: HTMLElement | null = null;
   private runtimeVars: MockConsoleVars;
   private fullScreen: MockFullScreen;
-  
-  // Store the component type and its current props
-  private splashScreenComponentType: typeof SplashScreenComponent | null = null; 
-  private currentSplashScreenProps: ComponentProps<typeof SplashScreenComponent> | null = null;
-  private splashScreenUpdateCb: SplashScreenUpdateCallback | null = null;
 
   public routing: Routing;
 
@@ -139,21 +113,20 @@ export class Application {
   private sentry: typeof mockSentry | undefined = mockSentry; // Assuming Sentry might be optional
   private currentLocale: string = 'en-US'; // Default, will be updated from config/CSF
   private fsAccessLib: any; // For SystemJS.import('file-system-access')
-  private gameResConfig: any;
+  private gameResConfig: GameResConfig | undefined;
   private cdnResourceLoader: any;
   private gpuTier: any;
 
-  constructor(private onSplashScreenUpdate?: SplashScreenUpdateCallback) {
+  constructor() {
     this.viewport = new BoxedVar({ x: 0, y: 0, width: window.innerWidth, height: window.innerHeight });
+    this.viewportAdapter = new ViewportAdapter(this.viewport);
     this.routing = new Routing(); // Routing is already migrated
-    this.splashScreenUpdateCb = onSplashScreenUpdate || null;
 
     // Initialize other properties that were in original constructor or early main
     // For MVP, many will be mocked or have placeholder values
     this.localPrefs = new MockLocalPrefs(localStorage);
     this.runtimeVars = new MockConsoleVars();
     this.fullScreen = new MockFullScreen(document);
-    // splashScreen is initialized in main()
 
     console.log('Application constructor finished.');
   }
@@ -294,13 +267,6 @@ export class Application {
     const newHeight = isFullScreen ? window.screen.height : window.innerHeight;
     this.viewport.value = { ...this.viewport.value, width: newWidth, height: newHeight };
     console.log(`[MVP] updateViewportSize: ${newWidth}x${newHeight}, Fullscreen: ${isFullScreen}`);
-        if (this.currentSplashScreenProps) {
-            this.setSplashScreenProps({
-                ...this.currentSplashScreenProps,
-                width: newWidth,
-                height: newHeight,
-            });
-        }
   }
 
   private onFullScreenChange(isFullScreen: boolean): void {
@@ -310,15 +276,6 @@ export class Application {
   private async loadGpuBenchmarkData(): Promise<any> {
     console.log('[MVP] Skipping Application.loadGpuBenchmarkData()');
     return { tier: 1, type: 'MOCK_GPU' }; // Return some mock tier
-  }
-
-  // Method to update splash screen props and notify React layer
-  private setSplashScreenProps(props: ComponentProps<typeof SplashScreenComponent> | null): void {
-    this.currentSplashScreenProps = props;
-    this.splashScreenComponentType = props ? SplashScreenComponent : null;
-    if (this.splashScreenUpdateCb) {
-      this.splashScreenUpdateCb(this.currentSplashScreenProps);
-    }
   }
 
   // --- Main application entry point ---
@@ -334,60 +291,14 @@ export class Application {
       return; // Halt execution if config fails
     }
     
-    await this.loadTranslations(); // Load real translations
-
-    // --- BEGIN MixFile Test ---
-    console.log("[Application.main] Attempting to load and test ini.mix...");
+    const locale = this.config.defaultLocale;
+    
     try {
-      const mixFilePath = '/ini.mix'; // Assuming ini.mix is in public/
-      const response = await fetch(mixFilePath);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch ${mixFilePath}: ${response.status} ${response.statusText}`);
-      }
-      const arrayBuffer = await response.arrayBuffer();
-      const dataStream = new DataStream(arrayBuffer);
-      dataStream.dynamicSize = false; // The buffer is fixed size from fetch
-
-      console.log(`[MixFile Test] DataStream for ${mixFilePath} created, length: ${dataStream.byteLength}`);
-      
-      const mixFileInstance = new MixFile(dataStream); // Use the statically imported MixFile
-      console.log("[MixFile Test] MixFile instance created successfully for ini.mix!");
-
-      // List some entries
-      console.log("[MixFile Test] Listing first 5 entries (if available):");
-      let count = 0;
-      // @ts-ignore: Accessing private 'index' for testing purposes
-      const indexMap: Map<number, any> = mixFileInstance.index; 
-      for (const [hash, entry] of indexMap.entries()) {
-        if (count >= 5) break;
-        console.log(`  Entry ${count + 1}: Hash=0x${hash.toString(16).toUpperCase()}, Offset=${entry.offset}, Length=${entry.length}`);
-        count++;
-      }
-      if (count === 0) {
-        console.log("  No entries found in the MixFile index (or index is empty).");
-      }
-
-      // Test containsFile and openFile for a common file like 'rules.ini'
-      const testFileName = "rules.ini"; // Adjust if you know a specific file in ini.mix
-      console.log(`[MixFile Test] Checking for "${testFileName}"...`);
-      const دارد_فایل = mixFileInstance.containsFile(testFileName);
-      console.log(`[MixFile Test] mixFile.containsFile("${testFileName}"): ${ دارد_فایل}`);
-
-      if ( دارد_فایل) {
-        console.log(`[MixFile Test] Attempting to open "${testFileName}"...`);
-        try {
-          const virtualFile = mixFileInstance.openFile(testFileName);
-          console.log(`[MixFile Test] Successfully opened "${virtualFile.filename}", Size: ${virtualFile.getSize()} bytes.`);
-          // You could try reading a few bytes if needed: virtualFile.stream.readUint8Array(10)
-        } catch (openError) {
-          console.error(`[MixFile Test] Error opening "${testFileName}":`, openError);
-        }
-      }
-
-    } catch (error) {
-      console.error("[MixFile Test] Error during MixFile test:", error);
+      await this.loadTranslations(); // Load real translations
+    } catch (e) {
+      console.error(`Missing translation ${locale}.`, e);
+      return;
     }
-    // --- END MixFile Test ---
 
     try {
       this.checkGlobalLibs(); 
@@ -404,8 +315,11 @@ export class Application {
       return;
     }
 
+    this.runtimeVars = new MockConsoleVars();
     MockDevToolsApi.registerVar("freecamera", this.runtimeVars.freeCamera);
     await this.initLogging(); 
+    
+    this.fullScreen = new MockFullScreen(document);
     this.fullScreen.init(); 
     this.fullScreen.onChange.subscribe((isFS: boolean) => {
         this.onFullScreenChange(isFS);
@@ -417,64 +331,228 @@ export class Application {
         this.updateViewportSize(this.fullScreen.isFullScreen()); 
     }
 
-    this.setSplashScreenProps({
-        width: this.viewport.value.width,
-        height: this.viewport.value.height,
-        parentElement: this.rootEl,
-        loadingText: this.strings.get('GUI:LoadingEx', `(Locale: ${this.currentLocale})`),
-        copyrightText: this.strings.get('TXT_COPYRIGHT') + "\n" + this.strings.get('GUI:WWBrand'),
-        disclaimerText: this.strings.get('TS:Disclaimer'),
-        onRender: () => {
-            console.log("Real SplashScreen rendered with real strings (hopefully).");
+    // Load GPU benchmark data in parallel
+    this.loadGpuBenchmarkData()
+      .then(gpuData => this.gpuTier = gpuData)
+      .catch(e => this.sentry?.captureException(e));
+
+    // Check if File System Access library is loaded (from fsalib.min.js in index.html)
+    if (!window.FileSystemAccess) {
+      console.error("FileSystemAccess not available. Make sure fsalib.min.js is loaded.");
+      await this.handleGameResLoadError(new Error("Failed to load File System Access library"), this.strings, true);
+      return;
+    }
+    this.fsAccessLib = window.FileSystemAccess;
+
+    // Get mod name from URL if present
+    const urlParams = new URLSearchParams(window.location.search);
+    const modName = urlParams.get('mod');
+    
+    // Load game resources configuration from local preferences
+    let gameResConfig = this.loadGameResConfig(this.localPrefs);
+    
+    // Initialize GameRes
+    try {
+      // Set up real GameRes instance
+      const gameRes = new GameRes(
+        this.getVersion(),
+        modName || undefined,
+        this.fsAccessLib,
+        this.localPrefs,
+        this.strings,
+        this.rootEl,
+        { // Mock splash screen object for GameRes compatibility
+          setLoadingText: (text: string) => console.log(`[Application] GameRes Loading: ${text}`),
+          setBackgroundImage: (url: string) => console.log(`[Application] GameRes Background: ${url}`),
+          destroy: () => console.log('[Application] GameRes mock splash screen destroyed'),
+          element: { style: { display: 'none' } }
+        },
+        this.viewportAdapter, // Pass the viewport adapter that implements Viewport interface
+        this.config,
+        "res/", // Application.js uses a static resPath property
+        this.sentry
+      );
+
+      // Initialize game resources
+      const { configToPersist, cdnResLoader } = await gameRes.init(
+        gameResConfig,
+        (error, strings) => this.handleGameResLoadError(error, strings),
+        (error, strings) => this.handleGameResImportError(error, strings)
+      );
+
+      // Store config for future use if needed
+      if (configToPersist) {
+        if (configToPersist.isCdn()) {
+          this.localPrefs.removeItem(StorageKey.GameRes);
+        } else {
+          this.localPrefs.setItem(StorageKey.GameRes, configToPersist.serialize());
         }
-    });
-    
-    console.log("[Application] Initial SplashScreen props set with real strings. Callback invoked.");
-    
-    const devMode = this.config && this.config.devMode !== undefined ? this.config.devMode : true;
-    console.log(`[Application] Splash screen delay based on devMode (${devMode}). Original delay: ${devMode ? 0 : 5000}ms`);
-    await sleep(devMode ? 500 : 3000);
-    
-    console.log('[MVP] Skipping GPU Benchmark, FileSystemAccess import, GameRes init for SplashScreen MVP.');
+        gameResConfig = configToPersist;
+      }
 
-    await sleep(1500); 
-    if (this.currentSplashScreenProps) {
-        this.setSplashScreenProps({
-            ...this.currentSplashScreenProps,
-            loadingText: this.strings.get('GUI:AlmostReady', '...')
+      this.gameResConfig = gameResConfig;
+      this.cdnResourceLoader = cdnResLoader;
+      
+      // Send analytics event if enabled
+      if (typeof window.gtag === 'function') {
+        window.gtag('event', 'app_init', {
+          res: this.gameResConfig?.source || 'unknown',
+          modName: modName || '<none>'
         });
-        console.log("[Application] SplashScreen loadingText updated with real string. Callback invoked.");
+      }
+      
+      // Set up Sentry tags if available
+      this.sentry?.configureScope((scope: any) => {
+        scope.setTag('mod', modName || '<none>');
+        scope.setExtra('mod', modName || '<none>');
+        scope.setExtra('modHash', 'unknown'); // Engine.getModHash not implemented yet
+      });
+
+    } catch (e) {
+      console.error("Failed to initialize GameRes:", e);
+      await this.handleGameResLoadError(e as Error, this.strings, true);
+      return;
     }
-    await sleep(1000);
 
-    this.setSplashScreenProps(null); // This will hide/unmount the splash screen
-    console.log("[Application] SplashScreen props set to null to hide/destroy. Callback invoked if registered.");
+    // Initialize routing for navigation
+    this.initRouting();
+  }
 
-    // The following DOM manipulation is now handled by App.tsx rendering FileExplorerTest
-    if (this.rootEl) {
-        // Clear previous content
-        this.rootEl.innerHTML = '';
-
-        // Create a placeholder for where the React component should go
-        const reactTestBed = document.createElement('div');
-        reactTestBed.id = "file-explorer-test-bed";
-        this.rootEl.appendChild(reactTestBed);
-
-        // Instruct the user or a subsequent script to render the React component here
-        const messageDiv = document.createElement('div');
-        messageDiv.style.padding = "20px";
-        messageDiv.style.textAlign = "center";
-        messageDiv.innerHTML = `
-            <h1>Application Initialized</h1>
-            <p><code>Application.main()</code> has completed.</p>
-            <p><strong>Next Step:</strong> To test the File Explorer, you need to ensure that the 
-            <code>FileExplorerTest</code> React component is rendered into the div with ID 
-            <code>file-explorer-test-bed</code>.</p>
-            // ... (rest of the instructional message) ...
-        `;
-        this.rootEl.appendChild(messageDiv);
+  private loadGameResConfig(prefs: LocalPrefs): GameResConfig | undefined {
+    const serializedConfig = prefs.getItem(StorageKey.GameRes);
+    if (serializedConfig) {
+      try {
+        const config = new GameResConfig(this.config.gameresBaseUrl || "");
+        config.unserialize(serializedConfig);
+        
+        // Skip if it's CDN but no base URL is available
+        if (config.isCdn() && !config.getCdnBaseUrl()) {
+          return undefined;
+        }
+        return config;
+      } catch (e) {
+        console.error("Failed to load GameResConfig from preferences:", e);
+      }
     }
+    return undefined;
+  }
+
+  private initRouting(): void {
+    this.routing.addRoute("*", async () => {
+      // Handle any cleanup for all routes
+    });
+
+    this.routing.addRoute("/", async () => {
+      // Initialize main game UI
+      console.log("Main game UI would be initialized here.");
+    });
+
+    // Initialize routing
+    this.routing.init();
+  }
+
+  // Handler for GameRes load errors
+  private async handleGameResLoadError(error: Error, strings: Strings, fatal: boolean = false): Promise<void> {
+    let errorMessage = strings.get("ts:import_load_files_failed");
     
-    console.log("Application.main() finished. UI rendering is now delegated to App.tsx.");
+    // Check for specific error types and provide appropriate messages
+    if (error.name === "ChecksumError") {
+      const fileField = (error as any).file || '';
+      const template = strings.get("ts:import_checksum_mismatch");
+      const replaced = template.indexOf("%s") >= 0 ? 
+          template.replace(/%s/g, fileField) : 
+          template + " " + fileField;
+      errorMessage += "\n\n" + replaced;
+    } else if (error.name === "FileNotFoundError") {
+      const fileField = (error as any).file || '';
+      const template = strings.get("ts:import_file_not_found");
+      const replaced = template.indexOf("%s") >= 0 ? 
+          template.replace(/%s/g, fileField) : 
+          template + " " + fileField;
+      errorMessage += "\n\n" + replaced;
+    } else if (error.name === "DownloadError" || error.message?.match(/XHR error|Failed to fetch/i)) {
+      errorMessage += "\n\n" + strings.get("ts:downloadfailed");
+    } else if (error.name === "NoStorageError") {
+      errorMessage += "\n\n" + strings.get("ts:import_no_storage");
+    } else if (error.message?.match(/out of memory|allocation/i)) {
+      errorMessage += "\n\n" + strings.get("ts:gameinitoom");
+    } else if (error.name === "QuotaExceededError" || error.name === "StorageQuotaError") {
+      errorMessage += "\n\n" + strings.get("ts:storage_quota_exceeded");
+    } else if (error.name === "IOError") {
+      errorMessage += "\n\n" + strings.get("ts:storage_io_error");
+      fatal = true;
+    } else {
+      console.error("Unrecognized GameRes error:", error);
+      const wrappedError = new Error(`Game res load failed (${error.message ?? error.name})`);
+      (wrappedError as any).cause = error;
+      this.sentry?.captureException(wrappedError);
+    }
+
+    // Display error to user - simplified for now, will be replaced with proper dialog component
+    alert(errorMessage);
+  }
+
+  // Handler for GameRes import errors
+  private async handleGameResImportError(error: Error, strings: Strings): Promise<void> {
+    let errorMessage = strings.get("ts:import_failed");
+    
+    // Check for specific error types and provide appropriate messages
+    if (error.name === "FileNotFoundError") {
+      const fileField = (error as any).file || '';
+      const template = strings.get("ts:import_file_not_found");
+      const replaced = template.indexOf("%s") >= 0 ? 
+          template.replace(/%s/g, fileField) : 
+          template + " " + fileField;
+      errorMessage += "\n\n" + replaced;
+    } else if (error.name === "InvalidArchiveError") {
+      errorMessage += "\n\n" + strings.get("ts:import_invalid_archive");
+    } else if (error.name === "ArchiveExtractionError") {
+      if ((error as any).cause?.message?.match(/out of memory|allocation/i)) {
+        errorMessage += "\n\n" + strings.get("ts:import_out_of_memory");
+      } else {
+        errorMessage += "\n\n" + strings.get("ts:import_archive_extract_failed");
+        const wrappedError = new Error(`Game res import failed (${error.message ?? error.name})`);
+        (wrappedError as any).cause = error;
+        this.sentry?.captureException(wrappedError);
+      }
+    } else if (error.name === "NoWebAssemblyError") {
+      errorMessage += "\n\n" + strings.get("ts:import_no_web_assembly");
+    } else if (error.name === "ChecksumError") {
+      const fileField = (error as any).file || '';
+      const template = strings.get("ts:import_checksum_mismatch");
+      const replaced = template.indexOf("%s") >= 0 ? 
+          template.replace(/%s/g, fileField) : 
+          template + " " + fileField;
+      errorMessage += "\n\n" + replaced;
+    } else if (error.name === "DownloadError" || error.message?.match(/XHR error|Failed to fetch|CompileError: WebAssembly|SystemJS|NetworkError|Load failed/i)) {
+      errorMessage += "\n\n" + strings.get("ts:downloadfailed");
+    } else if (error.name === "ArchiveDownloadError") {
+      const urlField = (error as any).url || '';
+      const template = strings.get("ts:import_archive_download_failed");
+      const replaced = template.indexOf("%s") >= 0 ? 
+          template.replace(/%s/g, urlField) : 
+          template + " " + urlField;
+      errorMessage = replaced;
+    } else if (error.name === "NoStorageError") {
+      errorMessage += "\n\n" + strings.get("ts:import_no_storage");
+    } else if (error.message?.match(/out of memory|allocation/i) || error.name.match(/NS_ERROR_FAILURE|NS_ERROR_OUT_OF_MEMORY/)) {
+      errorMessage += "\n\n" + strings.get("ts:import_out_of_memory");
+    } else if (error.name === "QuotaExceededError" || error.name === "StorageQuotaError") {
+      errorMessage += "\n\n" + strings.get("ts:storage_quota_exceeded");
+    } else if (error.name !== "IOError" && error.name !== "FileNotFoundError" && error.name !== "AbortError") {
+      const wrappedError = new Error("Game res import failed " + (error.message ?? error.name));
+      (wrappedError as any).cause = error;
+      this.sentry?.captureException(wrappedError);
+    }
+
+    // Display error to user - simplified for now, will be replaced with proper dialog component
+    alert(errorMessage);
+  }
+}
+
+// Add FileSystemHandle handling to the Window interface
+declare global {
+  interface Window {
+    gtag?: (...args: any[]) => void;
   }
 } 
