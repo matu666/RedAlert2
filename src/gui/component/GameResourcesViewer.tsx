@@ -132,9 +132,9 @@ const GameResourcesViewer: React.FC = () => {
           name: name,
           type: handle.kind === 'directory' ? 'folder' : 'file',
           hash: name,
-          attrs: handle.kind === 'directory' && !isSystemFile(entryPath) ? 
-            undefined : 
-            { canmodify: false }, // Mark system files as non-modifiable
+          attrs: isSystemFile(entryPath) ? 
+            { canmodify: false } : // 系统文件不可修改
+            { canmodify: true },   // 非系统文件可修改
           ...(handle.kind === 'file' ? { size: itemFile?.size } : {}),
           tooltip: handle.kind === 'file' ? 
             `File: ${name} (${formatFileSize(itemFile?.size || 0)})` : 
@@ -181,7 +181,7 @@ const GameResourcesViewer: React.FC = () => {
 
       if (window.FileExplorer && fileExplorerContainerRef.current) {
         const explorerOptions = {
-          initpath: [['', 'Game Storage', { canmodify: isSystemFile('/') }]], // Following original pattern
+          initpath: [['', 'Game Storage', { canmodify: !isSystemFile('/') }]], // 修正：根目录允许修改
           onrefresh: async (feFolder: any, isFirstLoad: boolean) => {
             AppLogger.info('[GameResourcesViewer] Storage onrefresh', feFolder.GetPath());
             feFolder.SetBusyRef(1);
