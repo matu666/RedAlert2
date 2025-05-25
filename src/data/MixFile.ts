@@ -24,6 +24,7 @@ export class MixFile {
 
   private parseHeader(): void {
     const flags = this.stream.readUint32();
+    
     // Original logic: t = 0 == (e & ~(r.Checksum | r.Encrypted));
     // This checks if flags, after clearing Checksum and Encrypted bits, is zero.
     // Meaning, flags only contains Checksum, Encrypted, or both, or is zero.
@@ -50,7 +51,9 @@ export class MixFile {
     const currentStream = this.stream; // Alias for clarity, 'e' in original
     
     const rsaKeyMaterial = currentStream.readUint8Array(80); // 't' in original
+    
     const blowfishKeyBytes = new BlowfishKey().decryptKey(rsaKeyMaterial); // 'i' in original, BlowfishKey instance created and used
+    
     const blowfishKeyNumericArray = Array.from(blowfishKeyBytes); // Blowfish constructor expects number[]
 
     const encryptedHeaderInfo = currentStream.readUint32Array(2); // 'r' in original, reads numFiles and encryptedIndexLength
@@ -58,27 +61,31 @@ export class MixFile {
     const blowfish = new Blowfish(blowfishKeyNumericArray); // 's' in original Blowfish instance
     
     // Decrypt numFiles and encryptedIndexLength
-    // 'a' in original: let a = new n.DataStream(s.decrypt(r));
-    let decryptedInfoStream = new DataStream(blowfish.decrypt(encryptedHeaderInfo).buffer);
+    const decryptedHeaderInfo = blowfish.decrypt(encryptedHeaderInfo);
+    
+    let decryptedInfoStream = new DataStream(decryptedHeaderInfo.buffer);
 
     const numFiles = decryptedInfoStream.readUint16(); // 't' in original was re-assigned
-    /* const encryptedIndexBodyLength = */ decryptedInfoStream.readUint32(); // Original: a.readUint32()
+    const encryptedIndexBodyLength = decryptedInfoStream.readUint32(); // Original: a.readUint32()
 
     currentStream.position = this.headerStart; // Original: e.position = this.headerStart;
 
     // Calculate size of the encrypted index body
-    // 'i' in original: (i = 6 + t * c.MixEntry.size)
     const indexBodySize = 6 + numFiles * MixEntry.size; 
-    
+
     // 't' in original: (t = ((3 + i) / 4) | 0) - calculate dword blocks for Blowfish
     // This is equivalent to Math.ceil(indexBodySize / 4) for positive integers.
     const numDwordBlocks = Math.ceil(indexBodySize / 4); 
     
     // 'r' in original: (r = e.readUint32Array(t + (t % 2))); Read possibly padded dword blocks
-    const encryptedIndexBody = currentStream.readUint32Array(numDwordBlocks + (numDwordBlocks % 2));
+    const blocksToRead = numDwordBlocks + (numDwordBlocks % 2);
+    
+    const encryptedIndexBody = currentStream.readUint32Array(blocksToRead);
     
     // 'a' in original: a = new n.DataStream(s.decrypt(r)); Decrypt the index body
-    const decryptedIndexStream = new DataStream(blowfish.decrypt(encryptedIndexBody).buffer);
+    const decryptedIndexBuffer = blowfish.decrypt(encryptedIndexBody);
+    
+    const decryptedIndexStream = new DataStream(decryptedIndexBuffer.buffer);
 
     // Calculate where actual file data starts after header and padded index
     // 'i' in original: i = this.headerStart + i + ((1 + (~i >>> 0)) & 7);
@@ -95,16 +102,17 @@ export class MixFile {
 
   private parseTdHeader(indexStream: DataStream): number { // 'e' in original
     const numEntries = indexStream.readUint16(); // 't' in original
-    /* const totalSizeOfIndexEntries = */ indexStream.readUint32(); // Original just read it, might be useful for validation
+    const totalSizeOfIndexEntries = indexStream.readUint32(); // Original just read it, might be useful for validation
 
     for (let i = 0; i < numEntries; i++) { // 'r' in original loop was loop counter
-      const entry = new MixEntry( // 'i' in original was the MixEntry instance
-        indexStream.readUint32(), // hash
-        indexStream.readUint32(), // offset
-        indexStream.readUint32()  // length
-      );
+      const hash = indexStream.readUint32();
+      const offset = indexStream.readUint32();
+      const length = indexStream.readUint32();
+      
+      const entry = new MixEntry(hash, offset, length);
       this.index.set(entry.hash, entry);
     }
+    
     // For an unencrypted MIX, this is the stream position after header, which is dataStart.
     // For an encrypted MIX, this is the position within the decryptedIndexStream after reading entries.
     // The return value is assigned to this.dataStart if it's the main call from parseHeader,

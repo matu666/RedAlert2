@@ -1,17 +1,3 @@
-/**
- * Performs a byte swap on a 32-bit integer.
- * (e.g., 0xAABBCCDD -> 0xDDCCBBAA)
- * @param val The input 32-bit integer.
- * @returns The byte-swapped 32-bit integer.
- */
-function byteSwap(val: number): number {
-  return (
-    ((((val = (((val << 16) >>> 0) | (val >>> 16)) >>> 0) << 8) >>> 0) &
-      0xffff00ff) | // Mask for high and low words after first swap
-    ((val >>> 8) & 0x00ffff00) // Mask for middle bytes after first swap
-  ) >>> 0;
-}
-
 export class Blowfish {
   private m_p: Uint32Array;
   private m_s: Uint32Array[];
@@ -247,11 +233,11 @@ export class Blowfish {
     let dataIndex = 0;
 
     for (; numBlocks > 0; numBlocks--) {
-      let l = byteSwap(data[dataIndex]);
-      let r = byteSwap(data[dataIndex + 1]);
+      let l = data[dataIndex];
+      let r = data[dataIndex + 1];
       [l, r] = cipherFunc(l, r);
-      result[dataIndex++] = byteSwap(l);
-      result[dataIndex++] = byteSwap(r);
+      result[dataIndex++] = l;
+      result[dataIndex++] = r;
     }
     return result;
   }
