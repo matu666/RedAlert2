@@ -3,12 +3,14 @@ import { Application, SplashScreenUpdateCallback } from './Application'; // Adju
 import SplashScreenComponent from './gui/component/SplashScreen'; // Renamed to avoid conflict
 import type { ComponentProps } from 'react';
 import GameResourcesViewer from './gui/component/GameResourcesViewer'; // Import the new component
+import { GlslGenerationTest } from './test/GlslGenerationTest'; // Import the test component
 
 function App() {
   const appRef = useRef<Application | null>(null);
   const appInitialized = useRef<boolean>(false); // Prevent double initialization in StrictMode
   const [splashScreenProps, setSplashScreenProps] = useState<ComponentProps<typeof SplashScreenComponent> | null>(null);
   const [appMainFinished, setAppMainFinished] = useState(false); // New state to track if app.main() has run
+  const [showTestMode, setShowTestMode] = useState(false); // New state for test mode
 
   useEffect(() => {
     if (appInitialized.current) {
@@ -43,6 +45,13 @@ function App() {
       }
     };
 
+    // Check if we should skip normal app initialization for test mode
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('test') === 'glsl') {
+      setShowTestMode(true);
+      return; // Skip normal app initialization
+    }
+
     if (document.readyState === 'complete' || document.readyState === 'interactive') {
         startApp();
     } else {
@@ -57,6 +66,37 @@ function App() {
     };
   }, []); // Empty dependency array ensures this runs only once on mount
 
+  // If in test mode, show the test component
+  if (showTestMode) {
+    return (
+      <div className="App">
+        <div style={{ 
+          position: 'fixed', 
+          top: '10px', 
+          right: '10px', 
+          zIndex: 1000 
+        }}>
+          <button 
+            onClick={() => {
+              window.location.href = window.location.pathname; // Remove query params
+            }}
+            style={{
+              background: '#6c757d',
+              color: 'white',
+              border: 'none',
+              padding: '8px 16px',
+              borderRadius: '4px',
+              cursor: 'pointer'
+            }}
+          >
+            返回正常模式
+          </button>
+        </div>
+        <GlslGenerationTest />
+      </div>
+    );
+  }
+
   return (
     <div className="App">
       {splashScreenProps && splashScreenProps.parentElement && (
@@ -64,7 +104,31 @@ function App() {
       )}
       {/* Render GameResourcesViewer only after splash screen is done AND app.main() has finished */}
       {!splashScreenProps && appMainFinished && (
-        <GameResourcesViewer />
+        <>
+          <div style={{ 
+            position: 'fixed', 
+            top: '10px', 
+            right: '10px', 
+            zIndex: 1000 
+          }}>
+            <button 
+              onClick={() => {
+                window.location.href = window.location.pathname + '?test=glsl';
+              }}
+              style={{
+                background: '#007bff',
+                color: 'white',
+                border: 'none',
+                padding: '8px 16px',
+                borderRadius: '4px',
+                cursor: 'pointer'
+              }}
+            >
+              GLSL测试模式
+            </button>
+          </div>
+          <GameResourcesViewer />
+        </>
       )}
       {/* Message if app.main() hasn't finished yet but splash is gone (should be brief) */}
       {!splashScreenProps && !appMainFinished && (

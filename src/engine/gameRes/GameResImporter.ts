@@ -22,6 +22,7 @@ import type { Config } from '../../Config';
 import type { Strings } from '../../data/Strings';
 import type { DataStream } from '../../data/DataStream';
 import type { FFmpeg } from '@ffmpeg/ffmpeg'; // Import actual FFmpeg type
+import { OriginalMixFile } from '../../test/OriginalMixFile';
 
 // Types for 7z-wasm (these are simplified placeholders)
 interface SevenZipWasmModule {
@@ -560,52 +561,61 @@ export class GameResImporter {
     }
 
     private async importSplashImage(ra2MixVirtualFile: VirtualFile, targetRfsRootDir: RealFileSystemDir): Promise<Blob | undefined> {
+        console.log('[GameResImporter] Starting splash image import from ra2.mix...');
+        
         const ra2Mix = new MixFile(ra2MixVirtualFile.stream as DataStream);
         
-        // Debug: List all files in ra2.mix
-        console.log('[GameResImporter] Checking contents of ra2.mix');
-        
-        // Try to list all files (if the MixFile class supports it)
-        try {
-            if (typeof (ra2Mix as any).listFiles === 'function') {
-                const fileList = (ra2Mix as any).listFiles();
-                console.log('[GameResImporter] Files in ra2.mix:', fileList);
-            } else {
-                console.log('[GameResImporter] Cannot list files in ra2.mix (method not available)');
-            }
-        } catch (e) {
-            console.log('[GameResImporter] Error listing files in ra2.mix:', e);
-        }
-        
         if (!ra2Mix.containsFile("local.mix")) {
-            console.warn('[GameResImporter] local.mix not found in ra2.mix, skipping splash image import');
-            return undefined; // Return undefined instead of throwing error
+            throw new GameResFileNotFoundError("local.mix");
         }
-        const localMixStream = ra2Mix.openFile("local.mix").stream as DataStream;
-        const localMix = new MixFile(localMixStream);
-
-        const shpFileName = "glsl.shp";
-        const palFileName = "gls.pal";
-
-        if (!localMix.containsFile(shpFileName)) throw new GameResFileNotFoundError(shpFileName, "from local.mix");
-        const shpFile = new ShpFile(localMix.openFile(shpFileName));
         
-        if (!localMix.containsFile(palFileName)) throw new GameResFileNotFoundError(palFileName, "from local.mix");
-        const palFile = new Palette(localMix.openFile(palFileName));
-
-        let splashBlob: Blob | undefined;
-        try {
-            splashBlob = await ImageUtils.convertShpToPng(shpFile, palFile);
-            const targetFileName = Engine.rfsSettings.splashImgFileName;
-            const virtualSplashFile = VirtualFile.fromBytes(new Uint8Array(await splashBlob.arrayBuffer()), targetFileName);
-            await targetRfsRootDir.writeFile(virtualSplashFile);
-            return splashBlob;
-        } catch (e: any) {
-            console.error("Failed to convert or write splash image. Skipping.", e);
-            this.sentry?.captureException(
-                new Error(`Failed to convert splash image (type=${splashBlob?.type})`)
-            );
-            return undefined; // Return undefined if conversion or write failed
+        console.log('[GameResImporter] Found local.mix, opening...');
+        const localMixFile = ra2Mix.openFile("local.mix");
+        const localMix = new MixFile(localMixFile.stream);
+        
+        if (!localMix.containsFile("glsl.shp")) {
+            throw new GameResFileNotFoundError("glsl.shp");
         }
+        
+        if (!localMix.containsFile("gls.pal")) {
+            throw new GameResFileNotFoundError("gls.pal");
+        }
+        
+        console.log('[GameResImporter] Found glsl.shp and gls.pal, extracting...');
+        const glslShpFile = localMix.openFile("glsl.shp");
+        const glsPalFile = localMix.openFile("gls.pal");
+        
+        console.log('[GameResImporter] Parsing SHP and palette...');
+        const shpFile = new ShpFile(glslShpFile);
+        const palette = new Palette(glsPalFile);
+        
+        console.log('[GameResImporter] Converting SHP to PNG...');
+        const pngBlob = await ImageUtils.convertShpToPng(shpFile, palette);
+        
+        const splashImgFileName = Engine.rfsSettings.splashImgFileName;
+        console.log(`[GameResImporter] Creating file "${splashImgFileName}" for RFS...`);
+        
+        let splashFile: File | undefined;
+        try {
+            splashFile = new File([pngBlob], splashImgFileName, { type: pngBlob.type });
+        } catch (e) {
+            console.error('[GameResImporter] Failed to create splash image file. Skipping.', e);
+            this.sentry?.captureException(
+                new Error(`Failed to create splash image file (type=${pngBlob.type})`),
+                { extra: { error: e } }
+            );
+        }
+        
+        if (splashFile) {
+            console.log(`[GameResImporter] Writing "${splashImgFileName}" to RFS...`);
+            const virtualSplashFile = VirtualFile.fromBytes(
+                new Uint8Array(await splashFile.arrayBuffer()), 
+                splashImgFileName
+            );
+            await targetRfsRootDir.writeFile(virtualSplashFile);
+            console.log(`[GameResImporter] ✅ Successfully wrote "${splashImgFileName}" to RFS`);
+        }
+        
+        return pngBlob;
     }
 } 

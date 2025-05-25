@@ -1,6 +1,7 @@
 import { AudioBagFile } from "../AudioBagFile";
 import { IdxFile } from "../IdxFile";
 import { MixFile } from "../MixFile";
+import { OriginalMixFile } from "../../test/OriginalMixFile";
 import { EngineType } from "../../engine/EngineType"; // Assuming EngineType will be in this path
 import { pad } from "../../util/string";
 import { FileNotFoundError } from "./FileNotFoundError";
@@ -124,7 +125,36 @@ export class VirtualFileSystem {
   async addMixFile(filename: string): Promise<void> {
     await this.addArchiveByFilename(
       filename,
-      async (fileStreamHolder) => new MixFile(fileStreamHolder.stream), // MixFile constructor expects a DataStream
+      async (fileStreamHolder) => {
+        // 如果是ra2.mix，测试原始实现
+        if (filename === "ra2.mix") {
+          this.logger.info(`Testing original MixFile implementation for ${filename}...`);
+          try {
+            const originalMix = new OriginalMixFile(fileStreamHolder.stream);
+            this.logger.info(`Original MixFile created successfully for ${filename}`);
+            this.logger.info(`Original index size: ${originalMix.index.size}`);
+            
+            // 测试是否能找到local.mix
+            const hasLocalMix = originalMix.containsFile('local.mix');
+            this.logger.info(`Original implementation - local.mix exists: ${hasLocalMix}`);
+            
+            if (hasLocalMix) {
+              this.logger.info(`SUCCESS! Original implementation found local.mix in ${filename}`);
+              return originalMix;
+            } else {
+              this.logger.warn(`Original implementation could not find local.mix in ${filename}`);
+            }
+          } catch (error) {
+            this.logger.error(`Original MixFile failed for ${filename}:`, error);
+          }
+          
+          // 重置stream位置
+          fileStreamHolder.stream.seek(0);
+        }
+        
+        // 使用我们的实现
+        return new MixFile(fileStreamHolder.stream);
+      }
     );
   }
 

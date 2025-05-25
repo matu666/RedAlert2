@@ -161,11 +161,11 @@ export class ShpFile {
     const width = s.readInt16();
     const height = s.readInt16();
     const compressionType = s.readUint8();
-    s.skip(3); // Skip 3 reserved bytes
-    // const refOffset = s.readInt32(); // RefOffset (often 0)
-    // const unknown = s.readInt32();   // Unknown (often 0)
-    // The original code read these two int32s without assigning them, then read imageDataStartOffset
-    s.skip(8); // Skip the two Int32s (RefOffset, Unknown)
+    s.readUint8();
+    s.readUint8();
+    s.readUint8();
+    s.readInt32();
+    s.readInt32();
     const imageDataStartOffset = s.readInt32();
     return {
       x,

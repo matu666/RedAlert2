@@ -79,7 +79,7 @@ export class TmpImage {
       stream.readInt8(),
       stream.readInt8()
     );
-    stream.skip(3); // Skip 3 reserved bytes
+    stream.seek(stream.position + 3); // Skip 3 reserved bytes
 
     // Main tile data: (width * height) cells, 2 cells per byte (4 bits per cell)
     const mainTileDataByteLength = (tileWidthCells * tileHeightCells) / 2;

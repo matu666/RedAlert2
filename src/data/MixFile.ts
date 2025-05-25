@@ -3,7 +3,6 @@ import { Blowfish } from "./encoding/Blowfish";
 import { BlowfishKey } from "./encoding/BlowfishKey";
 import { MixEntry } from "./MixEntry";
 import { VirtualFile } from "./vfs/VirtualFile";
-import { IOError } from "./vfs/IOError"; // Included from previous attempts, might be useful for error handling
 
 enum MixFileFlags {
   Checksum = 0x00010000, // 65536
@@ -48,76 +47,98 @@ export class MixFile {
   }
 
   private parseRaHeader(): number {
-    const currentStream = this.stream; // Alias for clarity, 'e' in original
+    const e = this.stream;
+    var t: any = e.readUint8Array(80),
+      i: any = new BlowfishKey().decryptKey(t),
+      r: any = e.readUint32Array(2);
     
-    const rsaKeyMaterial = currentStream.readUint8Array(80); // 't' in original
+    const s = new Blowfish(i);
+    let a = new DataStream(s.decrypt(r));
     
-    const blowfishKeyBytes = new BlowfishKey().decryptKey(rsaKeyMaterial); // 'i' in original, BlowfishKey instance created and used
+    t = a.readUint16(); // 重新赋值t为文件数量，就像原项目一样
     
-    const blowfishKeyNumericArray = Array.from(blowfishKeyBytes); // Blowfish constructor expects number[]
-
-    const encryptedHeaderInfo = currentStream.readUint32Array(2); // 'r' in original, reads numFiles and encryptedIndexLength
-
-    const blowfish = new Blowfish(blowfishKeyNumericArray); // 's' in original Blowfish instance
+    a.readUint32(), (e.position = this.headerStart);
+    (i = 6 + t * MixEntry.size),
+      (t = ((3 + i) / 4) | 0),
+      (r = e.readUint32Array(t + (t % 2)));
     
-    // Decrypt numFiles and encryptedIndexLength
-    const decryptedHeaderInfo = blowfish.decrypt(encryptedHeaderInfo);
+    a = new DataStream(s.decrypt(r));
     
-    let decryptedInfoStream = new DataStream(decryptedHeaderInfo.buffer);
-
-    const numFiles = decryptedInfoStream.readUint16(); // 't' in original was re-assigned
-    const encryptedIndexBodyLength = decryptedInfoStream.readUint32(); // Original: a.readUint32()
-
-    currentStream.position = this.headerStart; // Original: e.position = this.headerStart;
-
-    // Calculate size of the encrypted index body
-    const indexBodySize = 6 + numFiles * MixEntry.size; 
-
-    // 't' in original: (t = ((3 + i) / 4) | 0) - calculate dword blocks for Blowfish
-    // This is equivalent to Math.ceil(indexBodySize / 4) for positive integers.
-    const numDwordBlocks = Math.ceil(indexBodySize / 4); 
+    i = this.headerStart + i + ((1 + (~i >>> 0)) & 7);
     
-    // 'r' in original: (r = e.readUint32Array(t + (t % 2))); Read possibly padded dword blocks
-    const blocksToRead = numDwordBlocks + (numDwordBlocks % 2);
-    
-    const encryptedIndexBody = currentStream.readUint32Array(blocksToRead);
-    
-    // 'a' in original: a = new n.DataStream(s.decrypt(r)); Decrypt the index body
-    const decryptedIndexBuffer = blowfish.decrypt(encryptedIndexBody);
-    
-    const decryptedIndexStream = new DataStream(decryptedIndexBuffer.buffer);
-
-    // Calculate where actual file data starts after header and padded index
-    // 'i' in original: i = this.headerStart + i + ((1 + (~i >>> 0)) & 7);
-    // ((1 + (~indexBodySize >>> 0)) & 7) is a way to get padding to 8-byte boundary
-    // (~indexBodySize >>> 0) is like -indexBodySize (unsigned). (1 - indexBodySize) & 7.
-    // A simpler way for 8-byte alignment padding: (8 - (indexBodySize % 8)) % 8
-    // Or, if indexBodySize is multiple of 8, padding is 0. Otherwise 8 - (indexBodySize % 8).
-    // Let's use the original bitwise logic for exactness:
-    const dataAreaStartOffset = this.headerStart + indexBodySize + ((1 + (~indexBodySize >>> 0)) & 7);
-
-    this.parseTdHeader(decryptedIndexStream); // Parse the decrypted index entries
-    return dataAreaStartOffset; // This is the start of the actual file data content
+    this.parseTdHeader(a);
+    return i;
   }
 
-  private parseTdHeader(indexStream: DataStream): number { // 'e' in original
-    const numEntries = indexStream.readUint16(); // 't' in original
-    const totalSizeOfIndexEntries = indexStream.readUint32(); // Original just read it, might be useful for validation
-
-    for (let i = 0; i < numEntries; i++) { // 'r' in original loop was loop counter
-      const hash = indexStream.readUint32();
-      const offset = indexStream.readUint32();
-      const length = indexStream.readUint32();
-      
-      const entry = new MixEntry(hash, offset, length);
-      this.index.set(entry.hash, entry);
+  private parseTdHeader(e: DataStream): number {
+    console.log('[Our] *** UPDATED parseTdHeader with duplicate hash detection ***');
+    console.log('[Our] parseTdHeader called with DataStream:');
+    console.log('[Our] parseTdHeader stream position:', e.position);
+    console.log('[Our] parseTdHeader stream byteLength:', e.byteLength);
+    console.log('[Our] parseTdHeader stream endianness:', e.endianness);
+    
+    var t = e.readUint16();
+    console.log('[Our] parseTdHeader numFiles:', t);
+    
+    e.readUint32();
+    console.log('[Our] parseTdHeader after readUint32, position:', e.position);
+    
+    let successfulEntries = 0;
+    let failedEntries = 0;
+    let duplicateHashes = 0;
+    const seenHashes = new Set<number>();
+    
+    for (let r = 0; r < t; r++) {
+      try {
+        // 检查是否有足够的数据读取一个完整的条目（12字节）
+        if (e.position + 12 > e.byteLength) {
+          console.log(`[Our] Entry ${r + 1}: Not enough data remaining. Position: ${e.position}, Remaining: ${e.byteLength - e.position}`);
+          failedEntries++;
+          break;
+        }
+        
+        var i = new MixEntry(
+          e.readUint32(),
+          e.readUint32(),
+          e.readUint32(),
+        );
+        
+        if (r < 5) {
+          console.log(`[Our] Entry ${r + 1}: hash=0x${i.hash.toString(16).toUpperCase()}, offset=${i.offset}, length=${i.length}`);
+          // 显示当前位置的原始字节数据
+          const currentPos = e.position - 12; // 回到条目开始位置
+          const rawBytes = new Uint8Array(e.buffer, e.byteOffset + currentPos, 12);
+          console.log(`[Our] Entry ${r + 1} raw bytes:`, Array.from(rawBytes));
+        }
+        
+        // 检查重复哈希
+        if (seenHashes.has(i.hash)) {
+          duplicateHashes++;
+          if (duplicateHashes <= 10) {
+            console.log(`[Our] Duplicate hash detected at entry ${r + 1}: 0x${i.hash.toString(16).toUpperCase()}`);
+          }
+        } else {
+          seenHashes.add(i.hash);
+        }
+        
+        this.index.set(i.hash, i);
+        successfulEntries++;
+      } catch (error) {
+        console.log(`[Our] Entry ${r + 1}: Error reading entry:`, error);
+        failedEntries++;
+        break;
+      }
     }
     
-    // For an unencrypted MIX, this is the stream position after header, which is dataStart.
-    // For an encrypted MIX, this is the position within the decryptedIndexStream after reading entries.
-    // The return value is assigned to this.dataStart if it's the main call from parseHeader,
-    // or it's the return from parseRaHeader.
-    return indexStream.position; 
+    console.log('[Our] parseTdHeader completed, successful entries:', successfulEntries);
+    console.log('[Our] parseTdHeader completed, failed entries:', failedEntries);
+    console.log('[Our] parseTdHeader completed, duplicate hashes:', duplicateHashes);
+    console.log('[Our] parseTdHeader completed, unique hashes:', seenHashes.size);
+    console.log('[Our] parseTdHeader completed, total entries in index:', this.index.size);
+    console.log('[Our] parseTdHeader final position:', e.position);
+    console.log('[Our] parseTdHeader remaining bytes:', e.byteLength - e.position);
+    
+    return e.position;
   }
 
   public containsFile(filename: string): boolean { // 'e' in original
@@ -131,15 +152,14 @@ export class MixFile {
     const entry = this.index.get(fileId); // 't' in original
 
     if (!entry) {
-      // Using IOError for consistency if other parts of VFS might throw it.
-      throw new IOError(`File "${filename}" (hash ${fileId}) not found in MIX archive.`);
+      throw new Error(`File "${filename}" not found`);
     }
 
     // The 'this.stream' here is the DataStream of the entire MIX file.
     // 'VirtualFile.factory' in original was i.VirtualFile.factory
     // It expects the source DataStream (or DataView), filename, absolute offset, and length.
     return VirtualFile.factory(
-      this.stream.dataView, // Pass the DataView from the full MixFile's DataStream
+      this.stream, // Pass the DataStream, not the DataView
       filename,
       this.dataStart + entry.offset, // entry.offset is relative to dataStart
       entry.length

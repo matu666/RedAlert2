@@ -90,9 +90,9 @@ export class VxlFile {
 
   private readSectionHeader(section: Section, stream: DataStream): void {
     section.name = stream.readCString(16);
-    stream.skip(4); // Skip SectionDataLength (uint32) - not used directly by original parsing here
-    stream.skip(4); // Skip SpanStartTableOffset (uint32)
-    stream.skip(4); // Skip SpanEndTableOffset (uint32)
+    stream.readUint32(); // Skip SectionDataLength (uint32) - not used directly by original parsing here
+    stream.readUint32(); // Skip SpanStartTableOffset (uint32)
+    stream.readUint32(); // Skip SpanEndTableOffset (uint32)
     // Total 16 + 12 = 28 bytes for this header part per section in some VXL versions.
     // Original code just read name then 3 uint32s. Assuming they were these offsets.
   }

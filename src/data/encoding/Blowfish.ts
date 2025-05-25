@@ -2,7 +2,16 @@ export class Blowfish {
   private m_p: Uint32Array;
   private m_s: Uint32Array[];
 
-  constructor(key: number[]) {
+  // 原项目的字节序转换函数 'o'
+  private static byteSwap32(value: number): number {
+    return (
+      ((((value = (((value << 16) >>> 0) | (value >>> 16)) >>> 0) << 8) >>> 0) &
+        4278255360) |
+        ((value >>> 8) & 16711935)
+    ) >>> 0;
+  }
+
+  constructor(key: number[] | Uint8Array) {
     this.m_p = new Uint32Array([
       608135816, 2242054355, 320440878, 57701188, 2752067618, 698298832,
       137296536, 3964562569, 1160258022, 953160567, 3193202383, 887688300,
@@ -232,12 +241,12 @@ export class Blowfish {
     let numBlocks = (data.length / 2) | 0;
     let dataIndex = 0;
 
-    for (; numBlocks > 0; numBlocks--) {
-      let l = data[dataIndex];
-      let r = data[dataIndex + 1];
+    for (; 0 < numBlocks--; ) {
+      let l = Blowfish.byteSwap32(data[dataIndex]);
+      let r = Blowfish.byteSwap32(data[dataIndex + 1]);
       [l, r] = cipherFunc(l, r);
-      result[dataIndex++] = l;
-      result[dataIndex++] = r;
+      result[dataIndex++] = Blowfish.byteSwap32(l);
+      result[dataIndex++] = Blowfish.byteSwap32(r);
     }
     return result;
   }
@@ -274,19 +283,19 @@ export class Blowfish {
     return [currentR, currentL];
   }
 
-  private sBox(val: number, boxIndex: number): number {
-    return this.m_s[boxIndex][(val >>> ((3 - boxIndex) << 3)) & 0xff];
+  private s(val: number, boxIndex: number): number {
+    return this.m_s[boxIndex][(val >>> ((3 - boxIndex) << 3)) & 255];
   }
 
-  private feistelFunction(val: number): number {
+  private bf_f(val: number): number {
     return (
-      (((this.sBox(val, 0) + this.sBox(val, 1)) >>> 0) ^
-        this.sBox(val, 2)) +
-      this.sBox(val, 3)
+      (((this.s(val, 0) + this.s(val, 1)) >>> 0) ^
+        this.s(val, 2)) +
+      this.s(val, 3)
     ) >>> 0;
   }
 
   private round(l: number, r: number, pIndex: number): number {
-    return l ^ (this.feistelFunction(r) ^ this.m_p[pIndex]);
+    return l ^ (this.bf_f(r) ^ this.m_p[pIndex]);
   }
 } 

@@ -20,6 +20,6 @@ export class VxlHeader {
     this.bodySize = stream.readUint32();
     this.paletteRemapStart = stream.readUint8();
     this.paletteRemapEnd = stream.readUint8();
-    stream.skip(768); // Skip the embedded palette data in the header block
+    stream.seek(stream.position + 768); // Skip the embedded palette data in the header block
   }
 } 

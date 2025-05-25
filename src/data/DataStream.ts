@@ -12,18 +12,21 @@ type TypedArray =
 export class DataStream {
   public static LITTLE_ENDIAN: boolean = true;
   public static BIG_ENDIAN: boolean = false;
+  
+  // 检测系统字节序，与原始项目逻辑一致
+  public static readonly endianness: boolean = new Int8Array(new Int16Array([1]).buffer)[0] > 0;
 
   private _buffer: ArrayBuffer;
   private _dataView: DataView;
   private _byteOffset: number;
-  private _byteLength: number; // Actual used length, can be less than _buffer.byteLength if not trimmed
+  private _byteLength: number;
   private _dynamicSize: boolean;
   
   public position: number;
-  public endianness: boolean; // true for little-endian, false for big-endian
+  public endianness: boolean;
 
   constructor(
-    bufferOrSize: ArrayBuffer | DataView | number = 0,
+    bufferOrSize: ArrayBuffer | DataView | TypedArray | number = 0,
     byteOffset: number = 0,
     endianness: boolean = DataStream.LITTLE_ENDIAN
   ) {
@@ -31,26 +34,17 @@ export class DataStream {
     this.position = 0;
     this._dynamicSize = true;
     this._byteLength = 0;
-    this._byteOffset = byteOffset;
+    this._byteOffset = byteOffset || 0;
 
     if (bufferOrSize instanceof ArrayBuffer) {
-      this._buffer = bufferOrSize;
-      // byteOffset in constructor is from the start of this provided buffer
-      this._dataView = new DataView(this._buffer, this._byteOffset);
-      this._byteLength = this._buffer.byteLength; 
-    } else if (bufferOrSize instanceof DataView) {
-      // byteOffset in constructor is an *additional* offset from the start of the DataView's underlying ArrayBuffer
-      this._byteOffset = bufferOrSize.byteOffset + byteOffset; 
-      this._buffer = bufferOrSize.buffer;
-      // The new DataView for the stream starts at the combined offset, 
-      // and its length is the original DataView's length minus the additional constructor byteOffset.
-      this._dataView = new DataView(this._buffer, this._byteOffset, bufferOrSize.byteLength - byteOffset); 
-      this._byteLength = this._byteOffset + (bufferOrSize.byteLength - byteOffset);
-    } else { // bufferOrSize is a number (initial capacity)
-      this._buffer = new ArrayBuffer(bufferOrSize || 0);
-      // byteOffset here is from the start of the newly created buffer
-      this._dataView = new DataView(this._buffer, this._byteOffset);
-      this._byteLength = this._buffer.byteLength; 
+      this.buffer = bufferOrSize;
+    } else if (typeof bufferOrSize === 'object') {
+      this.dataView = bufferOrSize as DataView | TypedArray;
+      if (byteOffset) {
+        this._byteOffset += byteOffset;
+      }
+    } else {
+      this.buffer = new ArrayBuffer((bufferOrSize as number) || 0);
     }
   }
 
@@ -66,10 +60,6 @@ export class DataStream {
   }
 
   get byteLength(): number {
-    // This is the effective length of the stream segment being managed,
-    // relative to the start of the underlying ArrayBuffer if _byteOffset > 0.
-    // It represents the total span from _byteOffset to the end of used data.
-    // So, the actual number of usable bytes in the stream is (_byteLength - _byteOffset).
     return this._byteLength - this._byteOffset;
   }
 
@@ -91,18 +81,13 @@ export class DataStream {
   set byteOffset(newOffset: number) {
     this._byteOffset = newOffset;
     this._dataView = new DataView(this._buffer, this._byteOffset);
-    // _byteLength is the total span, should not change just by changing offset within the buffer
-    // unless the intent is to redefine the stream boundaries, which is complex.
-    // Original code set this._byteLength = this._buffer.byteLength here, which might be an oversight
-    // if byteOffset was meant to view a sub-segment of an existing logical stream.
-    // For now, assume _byteLength means total allocated/used from physical buffer start.
   }
 
   get dataView(): DataView {
     return this._dataView;
   }
 
-  set dataView(newDataView: DataView) {
+  set dataView(newDataView: DataView | TypedArray) {
     this._byteOffset = newDataView.byteOffset;
     this._buffer = newDataView.buffer;
     this._dataView = new DataView(this._buffer, this._byteOffset); 
@@ -124,69 +109,49 @@ export class DataStream {
     const requiredEffectivePos = currentStreamPosRelativeToView + bytesNeededForOperation;
     
     if (!this._dynamicSize) {
-      if (requiredEffectivePos > this.byteLength) { // byteLength is (this._byteLength - this._byteOffset)
+      if (requiredEffectivePos > this.byteLength) {
           throw new Error("DataStream buffer overflow: dynamicSize is false and operation exceeds buffer limit.");
       }
       return; 
     }
 
-    // Total offset from the start of the physical ArrayBuffer to the end of the new data
     const requiredTotalAbsoluteOffset = this._byteOffset + requiredEffectivePos;
     
     if (requiredTotalAbsoluteOffset <= this._buffer.byteLength) {
-        // Enough capacity in underlying ArrayBuffer, just update the logical _byteLength if needed
         if (requiredTotalAbsoluteOffset > this._byteLength) {
             this._byteLength = requiredTotalAbsoluteOffset;
         }
-        // Re-create dataview to ensure its internal length is updated if _byteLength changed
-        // This is important because _dataView.byteLength depends on how it was constructed.
-        // The _dataView should span from _byteOffset to (_byteLength - _byteOffset)
         this._dataView = new DataView(this._buffer, this._byteOffset, this._byteLength - this._byteOffset);
         return;
     }
 
-    // Need to reallocate the underlying ArrayBuffer
     let newCapacity = this._buffer.byteLength < 1 ? 1 : this._buffer.byteLength;
     while (requiredTotalAbsoluteOffset > newCapacity) {
       newCapacity *= 2;
     }
 
     const newBuffer = new ArrayBuffer(newCapacity);
-    const oldUint8Array = new Uint8Array(this._buffer, 0, this._byteLength); // Copy only the used part of old buffer
+    const oldUint8Array = new Uint8Array(this._buffer, 0, this._byteLength);
     const newUint8Array = new Uint8Array(newBuffer);
     
     newUint8Array.set(oldUint8Array); 
 
     this._buffer = newBuffer;
-    this._byteLength = requiredTotalAbsoluteOffset; // Update logical length to new required absolute offset
-    // Re-create DataView based on the new buffer and existing _byteOffset
+    this._byteLength = requiredTotalAbsoluteOffset;
     this._dataView = new DataView(this._buffer, this._byteOffset, this._byteLength - this._byteOffset);
   }
 
   private _trimAlloc(): void {
-    // Effective length of data within the stream view
-    const effectiveStreamLength = this._byteLength - this._byteOffset;
-    // Total capacity of the underlying buffer for the stream view
-    const currentViewCapacity = this._dataView.byteLength;
-
-    // If the logical end of data (_byteLength) is already at the physical end of the buffer,
-    // or if the dataview itself is already minimal for the data it contains.
-    // This logic is tricky. The original was: `this._byteLength !== this._buffer.byteLength`.
-    // This means trim if the logical full length isn't the buffer full length.
     if (this._byteLength === this._buffer.byteLength) {
       return; 
     }
     
-    // Create a new buffer that holds exactly from physical start (0) up to _byteLength.
     const newBuffer = new ArrayBuffer(this._byteLength); 
     const newUint8Array = new Uint8Array(newBuffer);
-    // Copy from old buffer, from its start (0) up to the logical end of data (_byteLength).
     const oldUint8Array = new Uint8Array(this._buffer, 0, this._byteLength); 
     newUint8Array.set(oldUint8Array);
     
     this._buffer = newBuffer;
-    // The _byteOffset remains the same relative to the start of this new, trimmed buffer.
-    // The DataView now views this new buffer from _byteOffset, for a length of (_byteLength - _byteOffset).
     this._dataView = new DataView(this._buffer, this._byteOffset, this._byteLength - this._byteOffset);
   }
 
@@ -195,80 +160,54 @@ export class DataStream {
     this.position = isNaN(newPosition) || !isFinite(newPosition) ? 0 : newPosition;
   }
 
-  public skip(numberOfBytes: number): void {
-    if (numberOfBytes < 0) {
-        // Skipping backwards, ensure it doesn't go before 0
-        this.position = Math.max(0, this.position + numberOfBytes);
-    } else {
-        // Skipping forwards, ensure it doesn't go past effective end of stream
-        // this.byteLength is (this._byteLength - this._byteOffset)
-        const newPos = this.position + numberOfBytes;
-        // Check against the capacity of the current view, or realloc if dynamic
-        if (this._dynamicSize) {
-            this._realloc(numberOfBytes); // Ensure buffer can hold up to new position
-            this.position = newPos;
-        } else {
-            this.position = Math.min(newPos, this.byteLength);
-        }
-    }
-  }
-
   public isEof(): boolean {
     return this.position >= this.byteLength;
   }
 
   // --- Read methods ---
   public readInt8(): number {
-    this._realloc(1);
     const value = this._dataView.getInt8(this.position);
     this.position += 1;
     return value;
   }
 
   public readUint8(): number {
-    this._realloc(1);
     const value = this._dataView.getUint8(this.position);
     this.position += 1;
     return value;
   }
 
   public readInt16(endianness?: boolean): number {
-    this._realloc(2);
     const value = this._dataView.getInt16(this.position, endianness ?? this.endianness);
     this.position += 2;
     return value;
   }
 
   public readUint16(endianness?: boolean): number {
-    this._realloc(2);
     const value = this._dataView.getUint16(this.position, endianness ?? this.endianness);
     this.position += 2;
     return value;
   }
 
   public readInt32(endianness?: boolean): number {
-    this._realloc(4);
     const value = this._dataView.getInt32(this.position, endianness ?? this.endianness);
     this.position += 4;
     return value;
   }
 
   public readUint32(endianness?: boolean): number {
-    this._realloc(4);
     const value = this._dataView.getUint32(this.position, endianness ?? this.endianness);
     this.position += 4;
     return value;
   }
 
   public readFloat32(endianness?: boolean): number {
-    this._realloc(4);
     const value = this._dataView.getFloat32(this.position, endianness ?? this.endianness);
     this.position += 4;
     return value;
   }
 
   public readFloat64(endianness?: boolean): number {
-    this._realloc(8);
     const value = this._dataView.getFloat64(this.position, endianness ?? this.endianness);
     this.position += 8;
     return value;
@@ -322,52 +261,268 @@ export class DataStream {
     this._dataView.setFloat64(this.position, value, endianness ?? this.endianness);
     this.position += 8;
   }
-  
-  // --- String methods ---
-  public readString(length?: number, encoding: string = 'utf-8'): string {
-    if (length === undefined) {
-        length = this.byteLength - this.position; // byteLength is effective length of stream view
-    }
-    if (length <= 0) return "";
-    this._realloc(length);
-    // Read from the view's current position, within the view's underlying buffer segment
-    const uint8Array = new Uint8Array(this._dataView.buffer, this._dataView.byteOffset + this.position, length);
-    this.position += length;
-    return new TextDecoder(encoding).decode(uint8Array);
+
+  // --- Map methods ---
+  public mapInt32Array(count: number, endianness?: boolean): Int32Array {
+    this._realloc(4 * count);
+    const result = new Int32Array(this._buffer, this.byteOffset + this.position, count);
+    DataStream.arrayToNative(result, endianness ?? this.endianness);
+    this.position += 4 * count;
+    return result;
   }
 
-  public writeString(str: string, encoding: string = 'utf-8'): void {
-    const uint8Array = new TextEncoder().encode(str);
-    this._realloc(uint8Array.length);
-    // Write into the view's current position, within the view's underlying buffer segment
-    new Uint8Array(this._dataView.buffer, this._dataView.byteOffset + this.position).set(uint8Array);
-    this.position += uint8Array.length;
+  public mapInt16Array(count: number, endianness?: boolean): Int16Array {
+    this._realloc(2 * count);
+    const result = new Int16Array(this._buffer, this.byteOffset + this.position, count);
+    DataStream.arrayToNative(result, endianness ?? this.endianness);
+    this.position += 2 * count;
+    return result;
+  }
+
+  public mapInt8Array(count: number): Int8Array {
+    this._realloc(count);
+    const result = new Int8Array(this._buffer, this.byteOffset + this.position, count);
+    this.position += count;
+    return result;
+  }
+
+  public mapUint32Array(count: number, endianness?: boolean): Uint32Array {
+    this._realloc(4 * count);
+    const result = new Uint32Array(this._buffer, this.byteOffset + this.position, count);
+    DataStream.arrayToNative(result, endianness ?? this.endianness);
+    this.position += 4 * count;
+    return result;
+  }
+
+  public mapUint16Array(count: number, endianness?: boolean): Uint16Array {
+    this._realloc(2 * count);
+    const result = new Uint16Array(this._buffer, this.byteOffset + this.position, count);
+    DataStream.arrayToNative(result, endianness ?? this.endianness);
+    this.position += 2 * count;
+    return result;
+  }
+
+  public mapUint8Array(count: number): Uint8Array {
+    this._realloc(count);
+    const result = new Uint8Array(this._buffer, this.byteOffset + this.position, count);
+    this.position += count;
+    return result;
+  }
+
+  public mapFloat64Array(count: number, endianness?: boolean): Float64Array {
+    this._realloc(8 * count);
+    const result = new Float64Array(this._buffer, this.byteOffset + this.position, count);
+    DataStream.arrayToNative(result, endianness ?? this.endianness);
+    this.position += 8 * count;
+    return result;
+  }
+
+  public mapFloat32Array(count: number, endianness?: boolean): Float32Array {
+    this._realloc(4 * count);
+    const result = new Float32Array(this._buffer, this.byteOffset + this.position, count);
+    DataStream.arrayToNative(result, endianness ?? this.endianness);
+    this.position += 4 * count;
+    return result;
+  }
+
+  // --- Array read methods with original bugs ---
+  public readInt32Array(count?: number, endianness?: boolean): Int32Array {
+    const actualCount = count === undefined ? this.byteLength - this.position / 4 : count;
+    const result = new Int32Array(actualCount);
+    
+    DataStream.memcpy(
+      result.buffer,
+      0,
+      this.buffer,
+      this.byteOffset + this.position,
+      actualCount * result.BYTES_PER_ELEMENT
+    );
+    
+    DataStream.arrayToNative(result, endianness ?? this.endianness);
+    this.position += result.byteLength;
+    return result;
+  }
+
+  public readInt16Array(count?: number, endianness?: boolean): Int16Array {
+    const actualCount = count === undefined ? this.byteLength - this.position / 2 : count;
+    const result = new Int16Array(actualCount);
+    
+    DataStream.memcpy(
+      result.buffer,
+      0,
+      this.buffer,
+      this.byteOffset + this.position,
+      actualCount * result.BYTES_PER_ELEMENT
+    );
+    
+    DataStream.arrayToNative(result, endianness ?? this.endianness);
+    this.position += result.byteLength;
+    return result;
+  }
+
+  public readInt8Array(count?: number): Int8Array {
+    const actualCount = count === undefined ? this.byteLength - this.position : count;
+    const result = new Int8Array(actualCount);
+    
+    DataStream.memcpy(
+      result.buffer,
+      0,
+      this.buffer,
+      this.byteOffset + this.position,
+      actualCount * result.BYTES_PER_ELEMENT
+    );
+    
+    this.position += result.byteLength;
+    return result;
+  }
+
+  public readUint32Array(count?: number, endianness?: boolean): Uint32Array {
+    const actualCount = count === undefined ? this.byteLength - this.position / 4 : count;
+    const result = new Uint32Array(actualCount);
+    
+    DataStream.memcpy(
+      result.buffer,
+      0,
+      this.buffer,
+      this.byteOffset + this.position,
+      actualCount * result.BYTES_PER_ELEMENT
+    );
+    
+    DataStream.arrayToNative(result, endianness ?? this.endianness);
+    this.position += result.byteLength;
+    return result;
+  }
+
+  public readUint16Array(count?: number, endianness?: boolean): Uint16Array {
+    const actualCount = count === undefined ? this.byteLength - this.position / 2 : count;
+    const result = new Uint16Array(actualCount);
+    
+    DataStream.memcpy(
+      result.buffer,
+      0,
+      this.buffer,
+      this.byteOffset + this.position,
+      actualCount * result.BYTES_PER_ELEMENT
+    );
+    
+    DataStream.arrayToNative(result, endianness ?? this.endianness);
+    this.position += result.byteLength;
+    return result;
+  }
+
+  public readUint8Array(count?: number): Uint8Array {
+    const actualCount = count === undefined ? this.byteLength - this.position : count;
+    const result = new Uint8Array(actualCount);
+    
+    DataStream.memcpy(
+      result.buffer,
+      0,
+      this.buffer,
+      this.byteOffset + this.position,
+      actualCount * result.BYTES_PER_ELEMENT
+    );
+    
+    this.position += result.byteLength;
+    return result;
+  }
+
+  public readFloat64Array(count?: number, endianness?: boolean): Float64Array {
+    const actualCount = count === undefined ? this.byteLength - this.position / 8 : count;
+    const result = new Float64Array(actualCount);
+    
+    DataStream.memcpy(
+      result.buffer,
+      0,
+      this.buffer,
+      this.byteOffset + this.position,
+      actualCount * result.BYTES_PER_ELEMENT
+    );
+    
+    DataStream.arrayToNative(result, endianness ?? this.endianness);
+    this.position += result.byteLength;
+    return result;
+  }
+
+  public readFloat32Array(count?: number, endianness?: boolean): Float32Array {
+    const actualCount = count === undefined ? this.byteLength - this.position / 4 : count;
+    const result = new Float32Array(actualCount);
+    
+    DataStream.memcpy(
+      result.buffer,
+      0,
+      this.buffer,
+      this.byteOffset + this.position,
+      actualCount * result.BYTES_PER_ELEMENT
+    );
+    
+    DataStream.arrayToNative(result, endianness ?? this.endianness);
+    this.position += result.byteLength;
+    return result;
+  }
+
+  // --- Array write methods ---
+  public writeUint8Array(array: Uint8Array): void {
+    this._realloc(array.length);
+    new Uint8Array(this._dataView.buffer, this._dataView.byteOffset + this.position).set(array);
+    this.position += array.length;
+  }
+
+  // --- String methods ---
+  public readString(length?: number, encoding?: string): string {
+    if (encoding === undefined || encoding === 'ASCII') {
+      return DataStream.createStringFromArray(
+        this.mapUint8Array(length === undefined ? this.byteLength - this.position : length)
+      );
+    } else {
+      return new TextDecoder(encoding).decode(this.mapUint8Array(length!));
+    }
+  }
+
+  public writeString(str: string, encoding?: string, fixedLength?: number): this {
+    if (encoding === undefined || encoding === 'ASCII') {
+      if (fixedLength !== undefined) {
+        const actualLength = Math.min(str.length, fixedLength);
+        let i = 0;
+        for (; i < actualLength; i++) {
+          this.writeUint8(str.charCodeAt(i));
+        }
+        for (; i < fixedLength; i++) {
+          this.writeUint8(0);
+        }
+      } else {
+        for (let i = 0; i < str.length; i++) {
+          this.writeUint8(str.charCodeAt(i));
+        }
+      }
+    } else {
+      this.writeUint8Array(new TextEncoder().encode(str.substring(0, fixedLength)));
+    }
+    return this;
   }
 
   public readCString(maxLength?: number): string {
-    const bytes: number[] = [];
-    let charCode = -1;
-    let count = 0;
-
-    while (this.position < this.byteLength && (maxLength === undefined || count < maxLength)) {
-      // Use this.readUint8() to ensure _realloc is called and position is advanced correctly
-      const currentByte = this.readUint8(); 
-      if (currentByte === 0) break; 
-      bytes.push(currentByte);
-      count++;
+    const remainingBytes = this.byteLength - this.position;
+    const buffer = new Uint8Array(this._buffer, this._byteOffset + this.position);
+    
+    let searchLength = remainingBytes;
+    if (maxLength !== undefined) {
+      searchLength = Math.min(maxLength, remainingBytes);
     }
-    // If loop terminated by null, readUint8 already advanced position past null.
-    // If by EOF or maxLength, position is at EOF or after last char read.
-
-    if (maxLength !== undefined && bytes.length === maxLength && charCode !== 0) {
-        // charCode here would be from the last iteration before loop check, which isn't quite right.
-        // Better to check if the loop terminated *before* finding a null, if maxLength was a constraint.
-        // The main check is if we read maxLength bytes and didn't end on a null.
-        // However, if the *last* byte read to fill maxLength *was* a null, it would have broken loop.
-        // So, if bytes.length === maxLength, it implies no null was found *within* those maxLength bytes.
-        console.warn("DataStream.readCString: MaxLength reached without a null terminator.");
+    
+    let nullIndex = 0;
+    while (nullIndex < searchLength && buffer[nullIndex] !== 0) {
+      nullIndex++;
     }
-    return String.fromCharCode(...bytes); 
+    
+    const result = DataStream.createStringFromArray(this.mapUint8Array(nullIndex));
+    
+    if (maxLength !== undefined) {
+      this.position += searchLength - nullIndex;
+    } else if (nullIndex !== remainingBytes) {
+      this.position += 1;
+    }
+    
+    return result;
   }
 
   public writeCString(str: string): void {
@@ -376,60 +531,41 @@ export class DataStream {
     }
     this.writeUint8(0); 
   }
-  
-  // --- Array methods ---
-  public readUint8Array(length: number): Uint8Array {
-    if (length < 0) throw new Error("Length cannot be negative.");
-    this._realloc(length);
-    // Create a view on the relevant segment of the DataView's buffer
-    const subArray = new Uint8Array(this._dataView.buffer, this._dataView.byteOffset + this.position, length);
-    this.position += length;
-    return new Uint8Array(subArray); // Return a copy
-  }
-  
-  public writeUint8Array(array: Uint8Array): void {
-    this._realloc(array.length);
-    // Set into the DataView's buffer at the current position
-    new Uint8Array(this._dataView.buffer, this._dataView.byteOffset + this.position).set(array);
-    this.position += array.length;
+
+  public readUCS2String(length: number, endianness?: boolean): string {
+    return DataStream.createStringFromArray(this.readUint16Array(length, endianness));
   }
 
-  public readInt32Array(count: number, endianness?: boolean): Int32Array {
-    if (count < 0) throw new Error("Count cannot be negative.");
-    const byteLength = count * 4;
-    this._realloc(byteLength);
-    const result = new Int32Array(count);
-    const specifiedEndian = endianness ?? this.endianness;
-    for (let i = 0; i < count; i++) {
-        result[i] = this._dataView.getInt32(this.position + i * 4, specifiedEndian);
+  public writeUCS2String(str: string, endianness?: boolean, fixedLength?: number): this {
+    const actualLength = fixedLength ?? str.length;
+    let i = 0;
+    for (; i < str.length && i < actualLength; i++) {
+      this.writeUint16(str.charCodeAt(i), endianness);
     }
-    this.position += byteLength;
-    return result;
+    for (; i < actualLength; i++) {
+      this.writeUint16(0);
+    }
+    return this;
   }
 
-  public writeInt32Array(array: Int32Array | number[], endianness?: boolean): void {
-    const byteLength = array.length * 4;
-    this._realloc(byteLength);
-    const specifiedEndian = endianness ?? this.endianness;
-    for (let i = 0; i < array.length; i++) {
-        this._dataView.setInt32(this.position + i * 4, array[i], specifiedEndian);
-    }
-    this.position += byteLength;
+  public writeUtf8WithLen(str: string): this {
+    const encoded = new TextEncoder().encode(str);
+    this.writeUint16(encoded.length);
+    this.writeUint8Array(encoded);
+    return this;
   }
 
-  public readUint32Array(count: number, endianness?: boolean): Uint32Array {
-    if (count < 0) throw new Error("Count cannot be negative.");
-    const byteLength = count * 4;
-    this._realloc(byteLength);
-    const result = new Uint32Array(count);
-    const specifiedEndian = endianness ?? this.endianness;
-    for (let i = 0; i < count; i++) {
-        result[i] = this._dataView.getUint32(this.position + i * 4, specifiedEndian);
-    }
-    this.position += byteLength;
-    return result;
+  public readUtf8WithLen(): string {
+    const length = this.readUint16();
+    return new TextDecoder().decode(this.mapUint8Array(length));
   }
-  
+
+  public toUint8Array(): Uint8Array {
+    this._trimAlloc();
+    return new Uint8Array(this._dataView.buffer, this._dataView.byteOffset, this._dataView.byteLength);
+  }
+
+  // --- Static methods ---
   public static memcpy(dst: ArrayBuffer, dstOffset: number, src: ArrayBuffer, srcOffset: number, byteLength: number): void {
     if (byteLength === 0) return;
     const dstU8 = new Uint8Array(dst, dstOffset, byteLength);
@@ -437,43 +573,34 @@ export class DataStream {
     dstU8.set(srcU8);
   }
 
-  public static flipArrayEndianness(array: TypedArray): void {
+  public static flipArrayEndianness(array: TypedArray): TypedArray {
     const bytesPerElement = array.BYTES_PER_ELEMENT;
-    if (bytesPerElement === 1) return; 
+    if (bytesPerElement === 1) return array; 
 
-    const buffer = array.buffer;
-    const byteOffset = array.byteOffset;
-    const length = array.length;
-    const view = new DataView(buffer, byteOffset, length * bytesPerElement);
-    const isCurrentlyLittleEndian = DataStream.LITTLE_ENDIAN; // Or determine from system/target if relevant
-
-    for (let i = 0; i < length; i++) {
-      const offset = i * bytesPerElement;
-      switch (bytesPerElement) {
-        case 2:
-          // Read with one endian, write with the other to flip
-          view.setUint16(offset, view.getUint16(offset, isCurrentlyLittleEndian), !isCurrentlyLittleEndian);
-          break;
-        case 4:
-          if (array instanceof Float32Array) {
-            view.setFloat32(offset, view.getFloat32(offset, isCurrentlyLittleEndian), !isCurrentlyLittleEndian);
-          } else { // Int32Array, Uint32Array
-            view.setUint32(offset, view.getUint32(offset, isCurrentlyLittleEndian), !isCurrentlyLittleEndian);
-          }
-          break;
-        case 8:
-          if (array instanceof Float64Array) {
-            view.setFloat64(offset, view.getFloat64(offset, isCurrentlyLittleEndian), !isCurrentlyLittleEndian);
-          }
-          break;
+    const r = new Uint8Array(array.buffer, array.byteOffset, array.byteLength);
+    for (let a = 0; a < array.byteLength; a += array.BYTES_PER_ELEMENT) {
+      for (let e = a + array.BYTES_PER_ELEMENT - 1, t = a; e > t; e--, t++) {
+        const s = r[t];
+        r[t] = r[e];
+        r[e] = s;
       }
     }
+    return array;
   }
-  
-  public toUint8Array(): Uint8Array {
-    this._trimAlloc();
-    // Create a Uint8Array view of the effective part of the stream
-    // This should be relative to the DataView's own view on the buffer.
-    return new Uint8Array(this._dataView.buffer, this._dataView.byteOffset, this._dataView.byteLength);
+
+  public static arrayToNative(array: TypedArray, endianness: boolean): TypedArray {
+    return endianness === this.endianness ? array : this.flipArrayEndianness(array);
+  }
+
+  public static nativeToEndian(array: TypedArray, endianness: boolean): TypedArray {
+    return this.endianness === endianness ? array : this.flipArrayEndianness(array);
+  }
+
+  public static createStringFromArray(array: Uint8Array | Uint16Array): string {
+    const chunks: string[] = [];
+    for (let i = 0; i < array.length; i += 32768) {
+      chunks.push(String.fromCharCode.apply(undefined, Array.from(array.subarray(i, i + 32768))));
+    }
+    return chunks.join("");
   }
 } 
