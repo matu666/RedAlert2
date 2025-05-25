@@ -1,7 +1,6 @@
 import { BoxedVar } from './util/BoxedVar';
 import { EventDispatcher } from './util/event'; // Import EventDispatcher
 import { Routing } from './util/Routing'; // Already migrated
-import { sleep } from './util/time'; // Already migrated
 import { Config } from './Config'; // Import the real Config class
 import { IniFile } from './data/IniFile'; // Import IniFile
 import { IniSection } from './data/IniSection'; // Added missing import
@@ -116,11 +115,13 @@ export class Application {
   private gameResConfig: GameResConfig | undefined;
   private cdnResourceLoader: any;
   private gpuTier: any;
+  private splashScreenUpdateCallback?: SplashScreenUpdateCallback; // Add callback property
 
-  constructor() {
+  constructor(splashScreenUpdateCallback?: SplashScreenUpdateCallback) {
     this.viewport = new BoxedVar({ x: 0, y: 0, width: window.innerWidth, height: window.innerHeight });
     this.viewportAdapter = new ViewportAdapter(this.viewport);
     this.routing = new Routing(); // Routing is already migrated
+    this.splashScreenUpdateCallback = splashScreenUpdateCallback;
 
     // Initialize other properties that were in original constructor or early main
     // For MVP, many will be mocked or have placeholder values

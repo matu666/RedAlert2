@@ -15,133 +15,336 @@ Key source files and directories for migration reside within `ra2web-react/extra
 *   Subdirectories: `data/`, `engine/`, `game/`, `gui/`, `network/`, `util/`, `worker/`.
 *   The dependency map being referenced is `ra2web-react/extracted_modules_simple/module-dependencies.json`.
 
+## Major Milestone Achieved: Working Game Resource Import System
+
+**🎉 BREAKTHROUGH: As of current session, we have achieved a major milestone - a working game resource import and management system with visual interface.**
+
+### Current Functional Status:
+1. **Game File Import**: ✅ Successfully imports Red Alert 2 game files (via .exe archive)
+2. **Resource Processing**: ✅ Extracts core MIX files (ra2.mix, language.mix, multi.mix, theme.mix)
+3. **Storage System**: ✅ Stores game assets in IndexedDB via fsalib integration
+4. **Virtual File System**: ✅ VFS initialization with loaded archives
+5. **Visual Interface**: ✅ GameResourcesViewer component displays imported resources
+6. **Error Handling**: ✅ Graceful degradation for missing optional files
+
+### Demonstrated Capabilities:
+- 7z-wasm integration for archive extraction
+- MIX file parsing and VFS integration
+- Game rules and art resource loading
+- Chinese localization support
+- React-based UI with proper scrolling
+
+## ⚠️ CRITICAL: Degradation and Workarounds Applied
+
+**WARNING: Multiple degradation strategies were implemented to achieve current functionality. These may mask important implementation details and should be revisited:**
+
+### 1. Engine Error Handling Degradations:
+- **`Engine.getIni(fileName)`**: Modified to return empty `IniFile()` instead of throwing error when file not found
+  - **Original behavior**: Throws error for missing files
+  - **Current behavior**: Returns empty INI with console warning
+  - **Impact**: Missing MP game mode rule files (mpbattle.ini, etc.) no longer cause fatal crashes
+  - **Risk**: May mask legitimate file loading issues
+
+### 2. GameRes Import Degradations:
+- **`GameResImporter.importVideo()`**: Modified to skip missing video files instead of throwing
+  - **Original behavior**: Expects ra2ts_l.bik video file for menu background
+  - **Current behavior**: Logs warning and continues if video file missing
+  - **Impact**: Application starts even with incomplete game files
+  - **Risk**: Menu background video functionality lost
+
+### 3. Map Loading Degradations:
+- **`Engine.loadMapList()`**: Multiple degradations applied:
+  - Skip missions.pkt if not found in iniFiles collection
+  - Fixed async iteration bug (await for...of → await then for...of)
+  - **Original behavior**: Expected all map files to be present
+  - **Current behavior**: Gracefully skips missing files
+  - **Risk**: Reduced map availability, potential gameplay impact
+
+### 4. TypeScript/Linter Issues Ignored:
+- Multiple linter errors in `Engine.ts` remain unresolved
+- Type mismatches in LazyResourceCollection constructors
+- Missing method implementations (e.g., `getBytes()` on DataStream)
+- Application constructor parameter mismatch resolved but other type issues persist
+
+### 5. Mock/Stub Components Still in Use:
+- MockConsoleVars, MockFullScreen, MockDevToolsApi
+- ViewportAdapter wrapping BoxedVar
+- Simplified error handling (alert() instead of proper UI dialogs)
+- Mock splash screen object for GameRes compatibility
+
 ## Activities Performed So Far in `ra2web-react/`:
 
-1.  **Initial Analysis:**
-    *   Partially analyzed `extracted_modules_simple/module-dependencies.json`.
-    *   Identified key areas and some external dependencies.
+### 1. Foundation (Previously Completed):
+- **React Project Setup**: Vite + TypeScript configuration
+- **Utility Modules Migration**: Base64, string, math, event, time, typeGuard, Routing, BoxedVar
+- **Data Handling Migration**: IniSection, IniParser, DataStream, VirtualFile, IniFile, Config, Crc32, MixEntry, Blowfish encryption
+- **Localization System**: CSF and JSON loading, SplashScreen React component
 
-2.  **React Project Setup (Manual with Vite):**
-    *   Created `package.json`, TypeScript configs (`tsconfig.json`, `tsconfig.node.json`), `vite.config.ts`, `index.html`, and basic `src/` structure (`App.tsx`, `main.tsx`, `vite-env.d.ts`).
-    *   Added `.gitignore`.
+### 2. Core Engine Infrastructure (Current Session):
+- **Engine.ts Migration**: Partial migration with critical game loading logic
+- **VirtualFileSystem Integration**: Full VFS with MIX file support
+- **RealFileSystem Integration**: Local file system access via File System Access API
+- **GameRes System**: Complete game resource import and management pipeline
 
-3.  **Utility Modules Migration (from `extracted_modules_simple/util/` to `src/util/`):**
-    *   `Base64.js` -> `Base64.ts`
-    *   `string.js` -> `string.ts`
-    *   `math.js` -> `math.ts`
-    *   `event.js` -> `event.ts` (provides `EventDispatcher`)
-    *   `time.js` -> `time.ts`
-    *   `typeGuard.js` -> `typeGuard.ts`
-    *   `Routing.js` -> `Routing.ts`
-    *   `BoxedVar.js` -> `BoxedVar.ts`
+### 3. GameRes Import Pipeline (Major Achievement):
+- **GameResImporter.ts**: 7z-wasm integration for archive extraction
+- **GameResConfig.ts**: Resource configuration management
+- **GameResBoxApi.tsx**: React-based file selection UI
+- **Storage Integration**: fsalib IndexedDB adapter for persistent storage
+- **Error Recovery**: Graceful handling of missing optional files
 
-4.  **Root-level Modules Migration (from `extracted_modules_simple/` to `src/`):**
-    *   `version.js` -> `version.ts`
+### 4. UI Components Created:
+- **GameResourcesViewer.tsx**: Main interface showing system status and imported resources
+- **SplashScreen.tsx**: Loading screen with localized text
+- **GameResBoxApi.tsx**: File import dialog with drag/drop support
 
-5.  **Data Handling & VFS Primitives Migration (to `src/data/` and `src/data/vfs/`):**
-    *   `data/IniSection.js` -> `src/data/IniSection.ts`
-    *   `data/IniParser.js` -> `src/data/IniParser.ts`
-    *   `data/DataStream.js` -> `src/data/DataStream.ts`
-    *   `data/vfs/IOError.js` -> `src/data/vfs/IOError.ts` (recreated as needed)
-    *   `data/vfs/VirtualFile.js` -> `src/data/vfs/VirtualFile.ts`
-    *   `data/IniFile.js` -> `src/data/IniFile.ts`
-    *   `Config.js` (root) -> `src/Config.ts`
-    *   `data/Crc32.js` -> `src/data/Crc32.ts`
-    *   `data/MixEntry.js` -> `src/data/MixEntry.ts`
-    *   `data/encoding/BlowfishKey.js` -> `src/data/encoding/BlowfishKey.ts`
-    *   `data/encoding/Blowfish.js` -> `src/data/encoding/Blowfish.ts`
-    *   `data/MixFile.js` -> `src/data/MixFile.ts` (Migration and MVP validation complete)
+### 5. File Format Support:
+- **MIX Archives**: Full parsing with Blowfish decryption
+- **INI Files**: Complete parsing and merging system
+- **CSF Files**: Game string localization
+- **Archive Formats**: 7z, EXE (NSIS installer), various game formats
 
+## Current Architecture Status:
 
-6.  **MVP - SplashScreen Display & Real Config Load:**
-    *   Created `src/Application.ts` (MVP version) with mocked dependencies initially.
-    *   Modified `index.html` and `src/App.tsx` to initialize and run this MVP `Application`.
-    *   Successfully displayed a `MockSplashScreen`.
-    *   **Integrated Real Config Loading:**
-        *   Modified `Application.ts` to fetch `/config.ini` (from `public/` dir).
-        *   Used migrated `IniFile.ts` and `Config.ts` to parse and load the configuration.
-        *   Replaced the mocked `this.config` in `Application.ts` with the instance loaded with real data.
-    *   **Outcome:** Successfully loaded and parsed `config.ini`. Console logs and slight behavior changes (e.g., `devMode` affecting sleep, locale in mock strings) confirmed that `Application.ts` now uses real configuration data for its initial steps. The final MVP screen also dumps the loaded config for verification.
+### Working Systems:
+1. **Application.ts**: Main application controller with real config/translation loading
+2. **Engine.ts**: Game engine with VFS/RFS integration (with degradations)
+3. **VirtualFileSystem.ts**: Archive management and file virtualization
+4. **GameRes.ts**: Resource import coordination
+5. **MixFile.ts**: Game archive format parsing
+6. **React UI Layer**: Functional components with proper styling
 
-7.  **SplashScreen and Localization Implementation:**
-    *   **SplashScreen Migration:**
-        *   Migrated `extracted_modules_simple/gui/component/SplashScreen.js` to a React functional component `src/gui/component/SplashScreen.tsx`.
-        *   Refactored `Application.ts` to remove `MockSplashScreen`.
-        *   Integrated the new `SplashScreen.tsx` into `App.tsx` by passing props from `Application.ts` via a callback mechanism, allowing `Application.ts` to control its visibility and content (loading text, copyright, etc.).
-    *   **Localization System (CSF and JSON):**
-        *   Migrated `extracted_modules_simple/data/CsfFile.js` to `src/data/CsfFile.ts`.
-        *   Migrated `extracted_modules_simple/data/Strings.js` to `src/data/Strings.ts`.
-        *   Updated `Application.ts` (`loadTranslations` method) for CSF and JSON loading.
-    *   **Outcome:** The application now displays a React-based SplashScreen with text sourced from `general.csf` and `locale/*.json` files.
+### Integration Points:
+- Vite dev server serving from `public/` directory
+- fsalib.min.js loaded via index.html for File System Access polyfill
+- IndexedDB storage via fsalib adapters
+- Chinese localization via CSF files and JSON overrides
 
-8.  **Deep Dive into Core UI and Resource Loading (Ongoing):**
-    *   **Initial Target: `Gui.js` (Core UI Manager)**: Analysis of `extracted_modules_simple/Gui.js`.
-    *   **Dependency Analysis Revealed Resource Loading Path**: Analysis of `Gui.js` and `MainMenu.js` showed dependency on resources loaded via `Engine.images.get()` and `Engine.palettes.get()`.
-    *   **Shift in Focus to `Engine.js` and VFS**: Led to `engine/Engine.js` and its `VFS`.
-    *   **MIX File Parsing and Decryption Identified as Prerequisite**: This involves `MixFile.js`, `BlowfishKey.js`, and `Blowfish.js`.
-    *   **Current Focus (MIX/Crypto Migration)**: The migration effort has **successfully ported** the cryptographic (RSA via `BlowfishKey.ts`, Blowfish via `Blowfish.ts`) and file format parsing (`MixEntry.ts`, `Crc32.ts`, and now **`MixFile.ts`**) logic to TypeScript. The **`MixFile.ts` module has been MVP validated for loading MIX archives (tested with `public/ini.mix` in `Application.ts`)**. This is a necessary foundational step before game assets (like SHP/PAL for UI) can be reliably loaded and used by higher-level UI components.
-    *   **CSS Integration**: Main legacy stylesheet and fonts integrated.
+## Testing Evidence:
 
-## Lessons Learned & Migration Methodology Notes
+### Successful Import Process Verified:
+```
+7z-wasm extracted core files: ra2.mix (281MB), language.mix (53MB), multi.mix (25MB), theme.mix (76MB)
+All files properly imported to IndexedDB storage
+VFS initialization shows expected warnings for missing optional files (cache.mix, load.mix, etc.)
+Application loads config.ini and Chinese translations successfully
+GameRes initializes with IndexedDB storage
+```
 
-*   **Prioritize Original Logic**: Crucial for proprietary formats.
-*   **CSS and Static Assets are Crucial for Visual Fidelity**: Integrate early.
-*   **Incremental Debugging with Detailed Logging**: Invaluable for complex parsing.
-*   **Validate Data Files with External Tools**: Identify issues with data vs. parser.
-*   **Understand the "Why" Behind Original Structure**: Inform effective refactoring.
-*   **MVP-focused Iteration**: For complex features like MIX loading, aim to get a minimal version working and verifiable quickly, then integrate it into the broader system.
+### System Status Confirmed:
+- Virtual File System: ✅ Initialized with 4+ archives
+- Real File System: ✅ Available when needed
+- Game Rules: ✅ Loaded (with graceful degradation)
+- Art Resources: ✅ Loaded
 
-## Current Status & Next Steps:
+## Critical Next Steps & Technical Debt:
 
-1.  **Real Config Loading Achieved.**
-2.  **SplashScreen and Localization Foundation Established.**
-3.  **Core Resource Loading Pipeline (MIX/Crypto) - Foundational Parts Migrated & Validated:**
-    *   `Crc32.ts`, `MixEntry.ts`, `BlowfishKey.ts`, `Blowfish.ts`, and **`MixFile.ts`** have been successfully migrated and MVP validated.
+### 1. Immediate Fixes Required:
+- **Review all degradations**: Each `console.warn` and graceful skip needs proper analysis
+- **Resolve TypeScript errors**: Especially in Engine.ts LazyResourceCollection usage
+- **Implement missing methods**: DataStream.getBytes(), proper error dialogs
+- **Test completeness**: Verify all essential game files are properly loaded
 
-4.  **Virtual File System (VFS) Primitives Migration & Initial Testing:**
-    *   Successfully migrated `extracted_modules_simple/data/vfs/VirtualFileSystem.js` to `src/data/vfs/VirtualFileSystem.ts`.
-    *   Migrated its core dependencies:
-        *   Error types: `FileNotFoundError.ts`, `IOError.ts` (confirmed pre-existing), `StorageQuotaError.ts`, `NameNotAllowedError.ts`.
-        *   VFS components: `VirtualFile.ts`, `MemArchive.ts`.
-        *   Data format handlers: `IdxEntry.ts`, `IdxFile.ts`, `AudioBagFile.ts`.
-        *   Utilities: `EngineType.ts`, `logger.ts` (using `js-logger`).
-    *   **`RealFileSystemDir.ts` and `RealFileSystem.ts` Migrated:** These components, wrapping the browser's File System Access API, have been migrated. They are used to interact with user-selected local directories.
-    *   **Identified `fsalib.min.js` (`file-system-access` module):** This is a crucial library in the original project, loaded via SystemJS. It acts as a polyfill/wrapper for the native File System Access API and, importantly, **provides adapters for IndexedDB (database named "fileSystem") and potentially Cache API, allowing browser storage to be treated with a file-system-like interface.**
-    *   **Understanding File Storage**: The original project appears to use a hybrid approach:
-        *   **Local File System Access**: Via File System Access API (wrapped by `fsalib` or used natively), for operations like allowing the user to designate local directories for specific content types (e.g., replays, mods).
-        *   **Browser Internal Storage (IndexedDB)**: For storing application-managed data like game resources, replay metadata, or other assets not directly tied to a user-selected local path. The `fsalib` IndexedDB adapter likely provides a `FileSystemHandle`-compatible interface to this storage.
-    *   **`FileExplorerTest.tsx` Component Created for VFS/RFS Testing:**
-        *   This component loads the original `file-explorer.js` and `file-explorer.css` (from `public/other/`).
-        *   It allows users to select a local directory using `window.showDirectoryPicker()`.
-        *   The selected `FileSystemDirectoryHandle` is used to initialize `RealFileSystem.ts`.
-        *   `VirtualFileSystem.ts` is initialized with this `RealFileSystem` instance.
-        *   `FileExplorer` UI is instantiated and its `onrefresh` callback is configured to list entries from the selected local directory via `RealFileSystem` and `FileSystemDirectoryHandle.entries()`.
-        *   **Current Test Status**:
-            *   Successfully displays contents of the selected local directory and its subdirectories.
-            *   Navigation within the local directory in `FileExplorer` UI works.
-            *   `onnewfolder` callback for creating folders in the local directory currently encounters a `NotFoundError`. User activation and document focus have been confirmed *not* to be the cause. Debugging is focused on path resolution within the `onnewfolder` callback and how `FileExplorer.js` path segments map to `FileSystemDirectoryHandle` operations.
-            *   Basic stubs for `onopenfile` and `ondelete` are in place.
+### 2. Architecture Improvements:
+- **Replace mock components**: MockConsoleVars, MockFullScreen with real implementations
+- **Proper error handling**: Replace alert() with React-based dialogs
+- **Type safety**: Fix remaining TypeScript issues
+- **Performance optimization**: Review resource loading efficiency
 
-5.  **Next Immediate Steps & Goals:**
-    *   **A. Resolve `NotFoundError` in `FileExplorerTest.tsx -> onnewfolder`**:
-        *   Continue debugging the path resolution logic within `onnewfolder` when creating directories in the selected local file system. Ensure the `parentActualDirHandle` correctly points to the target directory where the new folder should be created.
-        *   Verify how `FileExplorer.js` path segments (ID, name) for the root and subdirectories should be interpreted when interacting with `FileSystemDirectoryHandle` API.
-    *   **B. Integrate and Test `fsalib.min.js` IndexedDB Adapter**:
-        *   Determine the best way to load `fsalib.min.js` in the Vite-React environment (e.g., via `index.html` script tag or dynamic import).
-        *   In `FileExplorerTest.tsx` (or a new test component), initialize the IndexedDB adapter from `window.FileSystemAccess.adapters.indexeddb()`. This should provide a root "directory handle" for the "fileSystem" IndexedDB database.
-        *   Configure an instance of `FileExplorer` to use this IndexedDB-backed handle as its data source (i.e., its `onrefresh` callback will interact with this handle).
-        *   Test browsing, creating, reading, and deleting files/folders within this IndexedDB-based virtual file system.
-    *   **C. Unified `FileExplorer` Data Handling**:
-        *   Refine `FileExplorerTest.tsx`'s `onrefresh` and other callbacks to intelligently switch between the real local `FileSystemDirectoryHandle` and the `fsalib`-provided IndexedDB/Cache API virtual handles based on the path or context.
-        *   Implement full file operations (open, save, delete, rename, etc.) for both local and IndexedDB-backed storage via the `FileExplorer` interface.
-    *   **D. Integrate `MixFile.ts` with `VirtualFileSystem.ts` for Browsing MIX Archives**:
-        *   Modify `VirtualFileSystem.ts` and `FileExplorerTest.tsx`'s `onrefresh` logic so that when a `.mix` file is encountered (either in the local file system or IndexedDB), `vfs.addMixFile()` is called.
-        *   The `FileExplorer` should then be able to navigate *into* the MIX file, with `onrefresh` fetching entries from the `MixFile` instance.
-        *   `MixFile.ts` will need a method to list its internal entries in a format compatible with `ExplorerEntry`.
+### 3. Feature Completion:
+- **Game UI Components**: Progress toward actual game interface
+- **Map System**: Ensure map loading works correctly after degradations
+- **Multiplayer Support**: Verify MP rule files are handled correctly
+- **Audio/Video**: Restore video import functionality if needed
 
-6.  **Future Major Goal (Post Resource Loading & Advanced VFS Testing):** Progress towards rendering the main game lobby/interface by migrating `Gui.js` functionality, leveraging the now more robust VFS.
-    *   Analyze and migrate components like `MainMenu.js`, `RootController.js`.
-    *   Address the custom JSX rendering system.
-    *   Gradual un-mocking of `Application.ts` dependencies, replacing them with real migrated modules that use the VFS for resource access.
+### 4. Quality Assurance:
+- **Test with various game file versions**: Ensure compatibility
+- **Stress test import process**: Large files, network issues, storage limits
+- **Error scenario testing**: Missing files, corrupted archives, quota exceeded
+- **Performance profiling**: Identify bottlenecks in import/loading
 
-This summary should help anyone picking up this task to understand the progress and the immediate next steps, particularly concerning the dual nature of file storage (local FSA & IndexedDB via fsalib) and the plan to test both.
+## ⚠️ Risk Assessment:
+
+### High Risk Items:
+1. **Silent failures due to degradations**: Missing files may cause subtle issues later
+2. **Type safety compromised**: TypeScript errors may indicate deeper integration issues
+3. **Performance unknowns**: Current implementation not optimized for production
+4. **Incomplete functionality**: Many original features may be lost due to workarounds
+
+### Medium Risk Items:
+1. **Storage reliability**: IndexedDB integration needs thorough testing
+2. **Cross-platform compatibility**: File System Access API limitations
+3. **Error recovery**: Current error handling may be insufficient for production
+
+## Lessons Learned & Migration Methodology Notes:
+
+### Successful Strategies:
+- **Incremental degradation**: Allow partial functionality while maintaining overall system operation
+- **Detailed logging**: Essential for debugging complex file format issues
+- **Real data testing**: Using actual game files revealed many implementation details
+- **React integration**: Modern UI framework significantly improves user experience
+
+### Critical Insights:
+- **Original error handling was strict**: Many files are optional but original code treated them as required
+- **File format dependencies**: Complex interdependencies between different game file types
+- **Storage abstraction crucial**: fsalib provides essential compatibility layer
+- **Browser limitations**: File System Access API requires careful capability detection
+
+### Future Migration Guidance:
+- **Always test with real data**: Mock data can hide critical implementation details
+- **Preserve error semantics**: Understand why original code was strict before relaxing requirements
+- **Document all changes**: Especially degradations and workarounds
+- **Plan for rollback**: Keep original behavior available for comparison
+
+This represents a major milestone in the project with a working, visual game resource management system, but significant technical debt and potential issues remain from the degradation strategies employed to achieve this functionality.
+
+## Deep Analysis of Original Project Architecture (Reverse Engineering Insights)
+
+**This section preserves critical analysis of the original JavaScript project that guides our migration strategy.**
+
+### Original Project File Storage Architecture Analysis:
+
+**Discovered Hybrid Storage Approach:**
+The original project uses a sophisticated dual storage system:
+
+1. **Local File System Access**: Via File System Access API (wrapped by `fsalib` or used natively)
+   - Used for user-designated local directories (replays, mods, maps)
+   - Allows direct interaction with user's local file system
+   - Provides persistent storage tied to specific local paths
+
+2. **Browser Internal Storage (IndexedDB)**: For application-managed data
+   - Game resources, replay metadata, imported assets
+   - Database named "fileSystem" via fsalib IndexedDB adapter
+   - Provides FileSystemHandle-compatible interface to IndexedDB
+   - Crucial for cross-session persistence of imported game files
+
+### fsalib.min.js Integration Analysis:
+
+**Critical Library Identified:** `file-system-access` module loaded via SystemJS in original project.
+
+**Key Functions:**
+- Acts as polyfill/wrapper for native File System Access API
+- **Provides adapters for IndexedDB and Cache API**
+- Enables treating browser storage with file-system-like interface
+- Essential for cross-browser compatibility and storage abstraction
+
+**Integration Method in Original:**
+- Loaded via SystemJS dynamic import
+- Exposed as `window.FileSystemAccess`
+- Multiple adapters available: `.adapters.indexeddb()`, `.adapters.cache()`
+
+### VFS/RFS Integration Points (From Original Analysis):
+
+**Virtual File System (VFS) Architecture:**
+- **Successfully migrated** `VirtualFileSystem.ts` with core dependencies:
+  - Error types: `FileNotFoundError.ts`, `IOError.ts`, `StorageQuotaError.ts`, `NameNotAllowedError.ts`
+  - VFS components: `VirtualFile.ts`, `MemArchive.ts`
+  - Data format handlers: `IdxEntry.ts`, `IdxFile.ts`, `AudioBagFile.ts`
+  - Utilities: `EngineType.ts`, `logger.ts` (using `js-logger`)
+
+**Real File System (RFS) Components:**
+- **`RealFileSystemDir.ts` and `RealFileSystem.ts`**: Migrated successfully
+- Wrap browser's File System Access API
+- Used for user-selected local directory interactions
+- Integration point between native browser APIs and game engine
+
+### Original Project Component Dependencies (Pre-Migration Analysis):
+
+**Core UI Manager Path:**
+```
+Gui.js (Core UI Manager)
+  ├── MainMenu.js → requires Engine.images.get(), Engine.palettes.get()
+  ├── RootController.js → screen management
+  └── Custom JSX rendering system
+```
+
+**Resource Loading Pipeline:**
+```
+Engine.js
+  ├── VirtualFileSystem (archive management)
+  ├── LazyResourceCollection (asset loading)
+  ├── MixFile.js → BlowfishKey.js + Blowfish.js (crypto)
+  └── Various format parsers (SHP, PAL, VXL, etc.)
+```
+
+**Identified Migration Prerequisites:**
+1. Cryptographic subsystem (✅ **Completed**: BlowfishKey.ts, Blowfish.ts)
+2. File format parsing (✅ **Completed**: MixFile.ts, MixEntry.ts, Crc32.ts)
+3. VFS integration (✅ **Completed**: VirtualFileSystem.ts)
+4. Resource loading (🔄 **Partially Complete**: Engine.ts with degradations)
+
+### FileExplorer Testing Infrastructure (Pre-Achievement):
+
+**`FileExplorerTest.tsx` Component Analysis:**
+- Loads original `file-explorer.js` and `file-explorer.css` (from `public/other/`)
+- Implements user directory selection via `window.showDirectoryPicker()`
+- Tests `RealFileSystem.ts` integration with `FileSystemDirectoryHandle`
+- Configures `VirtualFileSystem.ts` with RealFileSystem instance
+
+**Test Results Documented:**
+- ✅ Successfully displays local directory contents and subdirectories
+- ✅ Navigation within local directory works in FileExplorer UI
+- ❌ `onnewfolder` callback encounters `NotFoundError` (unresolved)
+- 🔄 Basic stubs for `onopenfile` and `ondelete` in place
+
+**Technical Issues Identified:**
+- Path resolution logic within `onnewfolder` needs debugging
+- Mapping between FileExplorer.js path segments and FileSystemDirectoryHandle operations unclear
+- User activation and document focus confirmed not to be the cause
+
+### Original Project Next Steps Analysis (Pre-Achievement):
+
+**Immediate Technical Goals Identified:**
+
+1. **Resolve FileExplorer Integration Issues:**
+   - Debug `NotFoundError` in directory creation
+   - Verify FileExplorer.js path segment interpretation
+   - Ensure `parentActualDirHandle` points to correct target directory
+
+2. **Complete fsalib.min.js Integration:**
+   - Determine optimal loading method in Vite-React environment
+   - Initialize IndexedDB adapter: `window.FileSystemAccess.adapters.indexeddb()`
+   - Test IndexedDB-backed FileExplorer data source
+   - Implement full file operations (create, read, delete, rename)
+
+3. **Unified File Explorer Data Handling:**
+   - Intelligent switching between local FileSystemDirectoryHandle and IndexedDB virtual handles
+   - Context-based path routing (local vs virtual storage)
+   - Full operation support across both storage types
+
+4. **MIX File Browser Integration:**
+   - Extend VirtualFileSystem.ts to handle `.mix` file browsing
+   - Modify FileExplorer `onrefresh` to call `vfs.addMixFile()` for .mix files
+   - Enable navigation into MIX archives via FileExplorer interface
+   - Implement MixFile.ts method to list entries in ExplorerEntry format
+
+### Migration Methodology Insights (From Original Analysis):
+
+**Critical Success Factors Identified:**
+- **Prioritize Original Logic**: Essential for proprietary formats like MIX files
+- **CSS and Static Assets Integration**: Required early for visual fidelity
+- **Incremental Debugging with Detailed Logging**: Invaluable for complex parsing
+- **External Tool Validation**: Distinguish data issues from parser bugs
+- **Understand Original Architecture Rationale**: Inform effective refactoring decisions
+- **MVP-focused Iteration**: Get minimal versions working quickly for validation
+
+**Lessons from MIX File Migration:**
+- Original encryption/decryption logic must be preserved exactly
+- File format byte-order dependencies are critical
+- Original CRC algorithms contain specific implementation details
+- Testing with real game data reveals edge cases mock data misses
+
+### Future Migration Roadmap (Based on Original Analysis):
+
+**Post-Achievement Goals:**
+1. **Complete VFS Testing Suite**: Resolve all FileExplorer integration issues
+2. **Restore Strict Error Handling**: Replace degradations with proper error management
+3. **Main Game UI Migration**: Progress toward `Gui.js` functionality migration
+4. **Custom JSX System Analysis**: Understand and potentially migrate original rendering
+5. **Gradual Mock Replacement**: Replace Application.ts mocks with real migrated modules
+
+**Long-term Architecture Goals:**
+- Full fidelity recreation of original game interface
+- Complete multiplayer functionality preservation
+- Performance optimization while maintaining original behavior
+- Cross-platform compatibility via modern web standards

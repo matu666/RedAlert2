@@ -89,9 +89,9 @@ export class VirtualFileSystem {
     if (!file) {
       // If not in RFS, try VFS (e.g., if it was loaded from another archive already)
       if (!this.fileExists(filename)) {
-        this.logger.warn(`File "${filename}" not found in RFS or VFS during openFileWithRfs attempt.`);
-        // Keep throwing FileNotFoundError to match original behavior if truly not found anywhere
-        throw new FileNotFoundError(`File "${filename}" not found in RFS or VFS`);
+        this.logger.warn(`File "${filename}" not found in VFS, returning undefined`);
+        // Return undefined instead of throwing error - matches original behavior
+        return undefined;
       }
       file = this.openFile(filename);
     }

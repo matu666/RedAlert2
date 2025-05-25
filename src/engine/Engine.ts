@@ -447,7 +447,8 @@ export class Engine {
   static getIni(fileName: string): IniFile {
     const iniFile = this.iniFiles.get(fileName);
     if (!iniFile) {
-      throw new Error(`INI file ${fileName} not found.`);
+      console.warn(`INI file "${fileName}" not found, returning empty INI file`);
+      return new IniFile(); // Return empty INI file instead of throwing error
     }
     return iniFile;
   }
@@ -458,9 +459,13 @@ export class Engine {
     const gameModes = this.getMpModes();
     const combinedMapList = new MapList(gameModes);
 
-    combinedMapList.addFromIni(
-      this.getIni(this.getFileNameVariant("missions.pkt")),
-    );
+    // Only try to load missions.pkt if it exists
+    const missionsPktFileName = this.getFileNameVariant("missions.pkt");
+    if (this.iniFiles.has(missionsPktFileName)) {
+      combinedMapList.addFromIni(this.getIni(missionsPktFileName));
+    } else {
+      console.warn(`Map list file "${missionsPktFileName}" not found, skipping`);
+    }
 
     for (const archiveName of this.vfs.listArchives()) {
       const pktFileName = archiveName.toLowerCase().replace(/\.[^.]+$/, "") + ".pkt";
@@ -473,7 +478,8 @@ export class Engine {
     if (this.rfs) {
         const rootDir = this.rfs.getRootDirectory();
         if (rootDir) {
-            for await (const entryName of rootDir.listEntries()) { // Assuming listEntries returns string[] or AsyncIterable<string>
+            const entries = await rootDir.listEntries(); // Wait for Promise to resolve
+            for (const entryName of entries) { // Regular for...of, not for await...of
                 const lowerEntryName = entryName.toLowerCase();
                 try {
                     if (lowerEntryName.endsWith(".pkt")) {

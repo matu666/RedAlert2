@@ -73,6 +73,20 @@ export class RealFileSystem {
   // named 'e', and if so, try to get it as a directory. This could be ambiguous if 'e' is a file.
   // The revised getDirectory above tries to be a bit more explicit.
 
+  async findDirectory(directoryName: string): Promise<RealFileSystemDir | undefined> {
+    for (const dir of this.directories) {
+      if (await dir.containsEntry(directoryName)) {
+        try {
+          return await dir.getDirectory(directoryName);
+        } catch (e) {
+          // If entry exists but can't be accessed as directory, continue searching
+          continue;
+        }
+      }
+    }
+    return undefined; // Return undefined if not found (matches Engine.ts optional chaining usage)
+  }
+
   getRootDirectory(): RealFileSystemDir | undefined {
     return this.rootDirectory;
   }

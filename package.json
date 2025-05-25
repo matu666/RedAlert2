@@ -9,7 +9,9 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@ffmpeg/ffmpeg": "^0.12.15",
     "@puzzl/core": "^1.0.0-beta.1",
+    "7z-wasm": "^1.1.0",
     "classnames": "^2.5.1",
     "js-logger": "^1.6.1",
     "pcx-js": "^1.1.1",

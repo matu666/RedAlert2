@@ -1,5 +1,7 @@
 import { DataStream } from '../../data/DataStream';
 import { MixFile } from '../../data/MixFile';
+import { MixEntry } from '../../data/MixEntry';
+import { VirtualFileSystem } from '../../data/vfs/VirtualFileSystem';
 import { Engine, EngineType } from '../Engine';
 import { ResourceLoader, LoaderResult } from '../ResourceLoader';
 import { DownloadError } from '../../network/HttpRequest';
@@ -210,6 +212,12 @@ export class GameRes {
         resourcesLoadedSuccessfully = true;
       } catch (e: any) {
         console.error("Failed to load initial game resources", e);
+        console.error("Error details:", {
+          name: e.name,
+          message: e.message,
+          stack: e.stack,
+          cause: e.cause
+        });
         this.splashScreen.setLoadingText("");
         this.splashScreen.setBackgroundImage("");
         await onFatalError(e, this.strings);
@@ -292,6 +300,13 @@ export class GameRes {
           console.info("Game assets successfully imported.");
         } catch (e: any) {
           console.error("Failed to import game assets", e);
+          console.error("Import error details:", {
+            name: e.name,
+            message: e.message,
+            stack: e.stack,
+            originalError: e.originalError,
+            userSelection: userSelection
+          });
           this.splashScreen.setLoadingText("");
           this.splashScreen.setBackgroundImage("");
           await onImportError(e, this.strings); 
@@ -307,6 +322,13 @@ export class GameRes {
         resourcesLoadedSuccessfully = true;
       } catch (e: any) {
         console.error("Failed to load game assets after prompt/import", e);
+        console.error("Load error details:", {
+          name: e.name,
+          message: e.message,
+          stack: e.stack,
+          cause: e.cause,
+          config: currentConfig
+        });
         this.splashScreen.setLoadingText("");
         this.splashScreen.setBackgroundImage("");
         await onFatalError(e, this.strings); // This might re-throw or exit, or loop could continue if handled
@@ -447,7 +469,7 @@ export class GameRes {
         const cleanedName = entry.name.replace(/\u200f/g, ""); 
         const targetFileHandle = await targetDirHandle.getFileHandle(cleanedName, { create: true });
         const writable = await targetFileHandle.createWritable();
-        const sourceFile = await entry.getFile();
+        const sourceFile = await (entry as FileSystemFileHandle).getFile(); // Cast to FileSystemFileHandle
         await sourceFile.stream().pipeTo(writable); // This pipes the stream directly
       }
     }
@@ -558,6 +580,7 @@ export class GameRes {
     // Original has ?v=appVersion for cache busting, might not be needed if server handles ETag/cache headers
     const mixDataBuffer = await resourceLoader.loadBinary(`ra2cd.mix?v=${this.appVersion}`);
     const mixFile = new MixFile(new DataStream(mixDataBuffer));
+    
     vfs.addArchive(mixFile, "ra2cd.mix");
   }
 
@@ -590,12 +613,8 @@ export class GameRes {
       onProgress(this.strings.get("GUI:LoadingEx"));
 
       for (const resType of coreMixesToLoad) {
-        const resourceConfig = resourcesForPrefetch.find(rt => rt === resType) ? resourceConfigs.get(resType) : undefined;
-        if (!resourceConfig) {
-             console.warn(`Resource config not found for CDN mix type: ${ResourceType[resType]}`); continue;
-        }
         const mixFileName = cdnLoader.getResourceFileName(resType); // Get filename from CDN loader which knows actual source
-        const mixData = loadedCoreMixes.pop(resType);
+        const mixData = loadedCoreMixes.pop(resType); // Use pop with resType parameter
         if (mixData instanceof ArrayBuffer) {
             const mixFile = new MixFile(new DataStream(mixData));
             vfs.addArchive(mixFile, mixFileName);
@@ -784,15 +803,18 @@ export class GameRes {
       let imageBlob: Blob | undefined;
       try {
         if (fileName.endsWith(".shp")) {
-          const shpFile = vfs.openFileTyped(fileName, ShpFile.fromVirtualFile); // Use typed open
+          const shpFile = vfs.openFile(fileName); // Use regular openFile
+          const shpFileInstance = new ShpFile(shpFile);
           if (!paletteName) {
             throw new Error(`No palette specified for SHP image "${fileName}"`);
           }
-          const palFile = vfs.openFileTyped(paletteName, Palette.fromVirtualFile);
-          imageBlob = await ImageUtils.convertShpToPng(shpFile, palFile);
+          const palFile = vfs.openFile(paletteName);
+          const paletteInstance = new Palette(palFile);
+          imageBlob = await ImageUtils.convertShpToPng(shpFileInstance, paletteInstance);
         } else if (fileName.endsWith(".pcx")) {
-          const pcxFile = vfs.openFileTyped(fileName, PcxFile.fromVirtualFile);
-          imageBlob = await pcxFile.toPngBlob();
+          const pcxFile = vfs.openFile(fileName);
+          const pcxFileInstance = new PcxFile(pcxFile);
+          imageBlob = await pcxFileInstance.toPngBlob();
         } else {
           console.warn(`Unknown image type for conversion: "${fileName}"`);
           continue;
@@ -817,7 +839,8 @@ export class GameRes {
     const pcxFiles: PcxFile[] = [];
     for (const fileName of iconFiles) {
         try {
-            pcxFiles.push(vfs.openFileTyped(fileName, PcxFile.fromVirtualFile));
+            const virtualFile = vfs.openFile(fileName);
+            pcxFiles.push(new PcxFile(virtualFile));
         } catch (e) {
             console.error(`Failed to load PCX for icon sprite: ${fileName}`, e);
             // Potentially add a placeholder or skip this icon

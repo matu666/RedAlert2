@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Application, SplashScreenUpdateCallback } from './Application'; // Adjust path if needed
 import SplashScreenComponent from './gui/component/SplashScreen'; // Renamed to avoid conflict
 import type { ComponentProps } from 'react';
-import FileExplorerTest from './testtools/FileExplorerTest'; // Import the test component
+import GameResourcesViewer from './gui/component/GameResourcesViewer'; // Import the new component
 
 function App() {
   const appRef = useRef<Application | null>(null);
@@ -62,9 +62,9 @@ function App() {
       {splashScreenProps && splashScreenProps.parentElement && (
         <SplashScreenComponent {...splashScreenProps} />
       )}
-      {/* Render FileExplorerTest only after splash screen is done AND app.main() has finished */}
+      {/* Render GameResourcesViewer only after splash screen is done AND app.main() has finished */}
       {!splashScreenProps && appMainFinished && (
-        <FileExplorerTest />
+        <GameResourcesViewer />
       )}
       {/* Message if app.main() hasn't finished yet but splash is gone (should be brief) */}
       {!splashScreenProps && !appMainFinished && (
