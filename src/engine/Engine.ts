@@ -4,7 +4,7 @@ import { VxlFile } from '../data/VxlFile';
 import { TmpFile } from '../data/TmpFile';
 import { Palette } from '../data/Palette';
 import { Theater } from './Theater'; // Assuming Theater.ts will be in the same directory
-import { TheaterType, type TheaterSettings } from './TheaterType'; // Assuming TheaterType.ts will be in the same directory
+import { TheaterType } from './TheaterType'; // Assuming TheaterType.ts will be in the same directory
 import { version as appVersion } from '../version';
 import { VirtualFileSystem } from '../data/vfs/VirtualFileSystem';
 import { RealFileSystem } from '../data/vfs/RealFileSystem'; // Removed FileSystemDirectoryHandleBrowser import from here

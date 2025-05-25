@@ -1,13 +1,11 @@
 import React, { ComponentType, ReactElement } from 'react';
 import ReactDOM from 'react-dom';
-import { createRoot, Root } from 'react-dom/client';
 import { HtmlContainer } from './HtmlContainer';
 
 // P represents the props type for the React component
 export class HtmlReactElement<P extends object> extends HtmlContainer {
     private options: P;
     private Component: ComponentType<P>;
-    private root: Root | null = null;
 
     static factory<P extends object>(
         Component: ComponentType<P>, 
@@ -38,18 +36,16 @@ export class HtmlReactElement<P extends object> extends HtmlContainer {
         if (element) {
             const reactElement = React.createElement(this.Component, this.options);
             
-            // Use React 18 createRoot API
-            if (!this.root) {
-                this.root = createRoot(element);
-            }
-            this.root.render(reactElement);
+            // Use legacy ReactDOM.render API (matching original project)
+            // @ts-ignore - Using legacy API for compatibility
+            ReactDOM.render(reactElement, element);
         } else {
             console.warn("HtmlReactElement: Attempted to renderReactElement but no DOM element is set.");
         }
     }
 
-    applyOptions(updater: (currentOptions: P) => P): void {
-        this.options = updater(this.options);
+    applyOptions(updater: (currentOptions: P) => void): void {
+        updater(this.options);
         this.refresh();
     }
 
@@ -60,9 +56,10 @@ export class HtmlReactElement<P extends object> extends HtmlContainer {
     }
 
     unrender(): void {
-        if (this.root && this.isRendered()) {
-            this.root.unmount();
-            this.root = null;
+        const element = this.getElement();
+        if (element && this.isRendered()) {
+            // @ts-ignore - Using legacy API for compatibility
+            ReactDOM.unmountComponentAtNode(element);
         }
         super.unrender();
     }

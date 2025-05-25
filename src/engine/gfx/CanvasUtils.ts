@@ -1,4 +1,4 @@
-import type { Palette } from '../../data/Palette'; // For indexed image data conversion
+import { Palette } from '../../data/Palette';
 
 interface DrawTextOptions {
   color?: string;
@@ -28,104 +28,123 @@ interface TextRect {
 }
 
 export class CanvasUtils {
-  static canvasFromRgbImageData(rgbData: Uint8Array | Uint8ClampedArray, width: number, height: number): HTMLCanvasElement {
-    const canvas = document.createElement("canvas");
-    canvas.width = width;
-    canvas.height = height;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) {
+  static canvasFromRgbImageData(data: Uint8Array, width: number, height: number): HTMLCanvasElement {
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
+    
+    if (!context) {
       throw new Error("Couldn't acquire canvas 2d context");
     }
-    const imageData = ctx.createImageData(width, height);
-    let dataIndex = 0;
-    for (let i = 0; i < rgbData.length; i += 3) {
-      imageData.data[dataIndex++] = rgbData[i];     // R
-      imageData.data[dataIndex++] = rgbData[i + 1]; // G
-      imageData.data[dataIndex++] = rgbData[i + 2]; // B
-      imageData.data[dataIndex++] = 255;            // Alpha (opaque)
+    
+    const imageData = context.createImageData(width, height);
+    canvas.width = width;
+    canvas.height = height;
+    
+    let targetIndex = 0;
+    for (let i = 0; i < data.length; i += 3) {
+      imageData.data[targetIndex] = data[i];
+      imageData.data[targetIndex + 1] = data[i + 1];
+      imageData.data[targetIndex + 2] = data[i + 2];
+      imageData.data[targetIndex + 3] = 255;
+      targetIndex += 4;
     }
-    ctx.putImageData(imageData, 0, 0);
+    
+    context.putImageData(imageData, 0, 0);
     return canvas;
   }
 
-  static canvasFromRgbaImageData(rgbaData: Uint8Array | Uint8ClampedArray, width: number, height: number): HTMLCanvasElement {
-    const canvas = document.createElement("canvas");
-    canvas.width = width;
-    canvas.height = height;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) {
+  static canvasFromRgbaImageData(data: Uint8Array, width: number, height: number): HTMLCanvasElement {
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
+    
+    if (!context) {
       throw new Error("Couldn't acquire canvas 2d context");
     }
-    const imageData = ctx.createImageData(width, height);
-    // Ensure rgbaData is not smaller than imageData.data. If it is, this will error or produce weird results.
-    // For safety, one might copy min(imageData.data.length, rgbaData.length) or ensure lengths match.
-    imageData.data.set(rgbaData.slice(0, imageData.data.length)); // Ensure we don't write past buffer, set is efficient.
-    ctx.putImageData(imageData, 0, 0);
+    
+    const imageData = context.createImageData(width, height);
+    canvas.width = width;
+    canvas.height = height;
+    
+    let targetIndex = 0;
+    for (let i = 0; i < data.length; i += 4) {
+      imageData.data[targetIndex] = data[i];
+      imageData.data[targetIndex + 1] = data[i + 1];
+      imageData.data[targetIndex + 2] = data[i + 2];
+      imageData.data[targetIndex + 3] = data[i + 3];
+      targetIndex += 4;
+    }
+    
+    context.putImageData(imageData, 0, 0);
     return canvas;
   }
 
-  static canvasFromIndexedImageData(indexedData: Uint8Array, width: number, height: number, palette: Palette): HTMLCanvasElement {
-    const canvas = document.createElement("canvas");
-    canvas.width = width;
-    canvas.height = height;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) {
+  static canvasFromIndexedImageData(data: Uint8Array, width: number, height: number, palette: Palette): HTMLCanvasElement {
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
+    
+    if (!context) {
       throw new Error("Couldn't acquire canvas 2d context");
     }
-    const imageData = ctx.createImageData(width, height);
-    let dataIdx = 0;
-    for (let i = 0; i < indexedData.length; i++) {
-      const paletteIndex = indexedData[i];
-      const color = palette.getColor(paletteIndex); // Assuming Palette has getColor({r,g,b})
-      imageData.data[dataIdx++] = color.r;
-      imageData.data[dataIdx++] = color.g;
-      imageData.data[dataIdx++] = color.b;
-      imageData.data[dataIdx++] = paletteIndex !== 0 ? 255 : 0; // Common: index 0 is transparent
-    }
-    ctx.putImageData(imageData, 0, 0);
+    
+    const imageData = context.createImageData(width, height);
+    canvas.width = width;
+    canvas.height = height;
+    
+    let targetIndex = 0;
+    data.forEach(paletteIndex => {
+      const { r, g, b } = palette.getColor(paletteIndex);
+      imageData.data[targetIndex++] = r;
+      imageData.data[targetIndex++] = g;
+      imageData.data[targetIndex++] = b;
+      imageData.data[targetIndex++] = paletteIndex ? 255 : 0; // First color is transparent
+    });
+    
+    context.putImageData(imageData, 0, 0);
     return canvas;
   }
 
-  static async canvasToBlob(canvas: HTMLCanvasElement, type: string = 'image/png', quality?: number): Promise<Blob | null> {
-    return new Promise<Blob | null>((resolve) => {
+  static async canvasToBlob(canvas: HTMLCanvasElement): Promise<Blob> {
+    let blob = await new Promise<Blob | null>((resolve) => {
       try {
-        canvas.toBlob(
-          (blob) => {
-            resolve(blob);
-          },
-          type,
-          quality
-        );
-      } catch (e) {
-        console.error("canvas.toBlob failed:", e);
-        // Fallback for browsers/contexts where direct toBlob might fail or not be supported as expected (e.g. OffscreenCanvas in some workers without polyfill)
-        console.warn("Failed to convert canvas to blob directly. Falling back to dataURL generation.");
-        try {
-            const dataUrl = canvas.toDataURL(type, quality);
-            resolve(this.dataUrlToBlob(dataUrl));
-        } catch (dataUrlError) {
-            console.error("Fallback dataURLToBlob also failed:", dataUrlError);
-            resolve(null); // If both fail, resolve with null
-        }
+        canvas.toBlob((blob) => {
+          resolve(blob);
+        });
+      } catch (error) {
+        console.error(error);
+        resolve(null);
       }
     });
+
+    if (!blob) {
+      console.warn('Failed to convert canvas to blob. Falling back to dataURL generation.');
+      try {
+        blob = this.dataUrlToBlob(canvas.toDataURL());
+      } catch (error) {
+        throw new Error(`Failed to generate image from canvas using fallback ${error}`);
+      }
+    }
+
+    return blob;
   }
 
   static dataUrlToBlob(dataUrl: string): Blob {
     const match = dataUrl.match(/^data:((.*?)(;charset=.*?)?)(;base64)?,/);
-    if (!match) throw new Error("Invalid dataURI format");
-
-    const mimeType = match[2] ? match[1] : "text/plain" + (match[3] || ";charset=utf-8");
-    const isBase64 = !!match[4];
-    const dataString = dataUrl.slice(match[0].length);
-
-    const binaryString = isBase64 ? atob(dataString) : decodeURIComponent(dataString);
-    const len = binaryString.length;
-    const bytes = new Uint8Array(len);
-    for (let i = 0; i < len; i++) {
-      bytes[i] = binaryString.charCodeAt(i);
+    if (!match) {
+      throw new Error('invalid dataURI');
     }
-    return new Blob([bytes], { type: mimeType });
+
+    const mimeType = match[2] ? match[1] : 'text/plain' + (match[3] || ';charset=utf-8');
+    const isBase64 = !!match[4];
+    const data = dataUrl.slice(match[0].length);
+
+    const bytes = (isBase64 ? atob : decodeURIComponent)(data);
+    const byteArray: number[] = [];
+    
+    for (let i = 0; i < bytes.length; i++) {
+      byteArray.push(bytes.charCodeAt(i));
+    }
+
+    return new Blob([new Uint8Array(byteArray)], { type: mimeType });
   }
 
   static drawText(

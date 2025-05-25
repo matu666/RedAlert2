@@ -24,6 +24,10 @@ html:-moz-full-screen body {
     cursor: auto !important;
 }
 
+#ra2web-root {
+    position: relative;
+}
+
 #ra2web-root, #ra2web-root input, #ra2web-root select, #ra2web-root .select, #ra2web-root button {
     font-family: 'Fira Sans Condensed', Arial, sans-serif;
     font-size: 13px;

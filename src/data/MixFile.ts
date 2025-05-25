@@ -71,17 +71,8 @@ export class MixFile {
   }
 
   private parseTdHeader(e: DataStream): number {
-    console.log('[Our] *** UPDATED parseTdHeader with duplicate hash detection ***');
-    console.log('[Our] parseTdHeader called with DataStream:');
-    console.log('[Our] parseTdHeader stream position:', e.position);
-    console.log('[Our] parseTdHeader stream byteLength:', e.byteLength);
-    console.log('[Our] parseTdHeader stream endianness:', e.endianness);
-    
     var t = e.readUint16();
-    console.log('[Our] parseTdHeader numFiles:', t);
-    
     e.readUint32();
-    console.log('[Our] parseTdHeader after readUint32, position:', e.position);
     
     let successfulEntries = 0;
     let failedEntries = 0;
@@ -129,14 +120,6 @@ export class MixFile {
         break;
       }
     }
-    
-    console.log('[Our] parseTdHeader completed, successful entries:', successfulEntries);
-    console.log('[Our] parseTdHeader completed, failed entries:', failedEntries);
-    console.log('[Our] parseTdHeader completed, duplicate hashes:', duplicateHashes);
-    console.log('[Our] parseTdHeader completed, unique hashes:', seenHashes.size);
-    console.log('[Our] parseTdHeader completed, total entries in index:', this.index.size);
-    console.log('[Our] parseTdHeader final position:', e.position);
-    console.log('[Our] parseTdHeader remaining bytes:', e.byteLength - e.position);
     
     return e.position;
   }

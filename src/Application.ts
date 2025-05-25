@@ -18,6 +18,7 @@ import { GameResConfig } from './engine/gameRes/GameResConfig'; // Import GameRe
 import { GameResSource } from './engine/gameRes/GameResSource'; // Import GameResSource enum
 import { LocalPrefs, StorageKey } from './LocalPrefs'; // Import LocalPrefs and StorageKey
 import type { Viewport } from './gui/Viewport'; // Import Viewport type
+import { Gui } from './gui/Gui'; // Import GUI system
 
 // Type for the callback function
 export type SplashScreenUpdateCallback = (props: ComponentProps<typeof SplashScreenComponent> | null) => void;
@@ -116,6 +117,7 @@ export class Application {
   private cdnResourceLoader: any;
   private gpuTier: any;
   private splashScreenUpdateCallback?: SplashScreenUpdateCallback; // Add callback property
+  private gui?: Gui; // GUI system
 
   constructor(splashScreenUpdateCallback?: SplashScreenUpdateCallback) {
     this.viewport = new BoxedVar({ x: 0, y: 0, width: window.innerWidth, height: window.innerHeight });
@@ -264,8 +266,24 @@ export class Application {
   }
   
   private updateViewportSize(isFullScreen: boolean): void {
-    const newWidth = isFullScreen ? window.screen.width : window.innerWidth;
-    const newHeight = isFullScreen ? window.screen.height : window.innerHeight;
+    let newWidth: number, newHeight: number;
+    
+    if (isFullScreen) {
+      newWidth = window.screen.width;
+      newHeight = window.screen.height;
+    } else {
+      // Match original project: use config limits if available, otherwise use window size
+      const configWidth = this.config?.viewport?.width ?? Number.POSITIVE_INFINITY;
+      const configHeight = this.config?.viewport?.height ?? Number.POSITIVE_INFINITY;
+      
+      newWidth = Math.min(window.innerWidth, configWidth);
+      newHeight = Math.min(window.innerHeight, configHeight);
+    }
+    
+    // Apply minimum size constraints like original project
+    newWidth = Math.max(800, newWidth - (newWidth % 2));
+    newHeight = Math.max(600, newHeight - (newHeight % 2));
+    
     this.viewport.value = { ...this.viewport.value, width: newWidth, height: newHeight };
     console.log(`[MVP] updateViewportSize: ${newWidth}x${newHeight}, Fullscreen: ${isFullScreen}`);
   }
@@ -283,16 +301,43 @@ export class Application {
   public async main(): Promise<void> {
     console.log('Application.main() called');
 
+    // Show initial splash screen
+    this.rootEl = document.getElementById("ra2web-root");
+    if (!this.rootEl) {
+      console.error("CRITICAL: Missing root element #ra2web-root in HTML.");
+      alert("CRITICAL: Missing root element #ra2web-root for the application.");
+      return;
+    }
+
+    // Display initial splash screen
+    if (this.splashScreenUpdateCallback) {
+      this.splashScreenUpdateCallback({
+        width: this.viewport.value.width,
+        height: this.viewport.value.height,
+        parentElement: this.rootEl,
+        loadingText: 'Initializing...'
+      });
+    }
+
     try {
       await this.loadConfig(); // Now uses real loading logic
     } catch (e) {
       console.error("CRITICAL: Application.loadConfig() failed. See previous errors.", e);
-      const root = document.getElementById("ra2web-root");
-      if (root) root.innerHTML = "<h1>Error</h1><p>Failed to load critical application configuration. Please check console.</p>";
+      if (this.rootEl) this.rootEl.innerHTML = "<h1>Error</h1><p>Failed to load critical application configuration. Please check console.</p>";
       return; // Halt execution if config fails
     }
     
     const locale = this.config.defaultLocale;
+    
+    // Update splash screen
+    if (this.splashScreenUpdateCallback) {
+      this.splashScreenUpdateCallback({
+        width: this.viewport.value.width,
+        height: this.viewport.value.height,
+        parentElement: this.rootEl,
+        loadingText: 'Loading translations...'
+      });
+    }
     
     try {
       await this.loadTranslations(); // Load real translations
@@ -309,12 +354,7 @@ export class Application {
       return;
     }
     
-    this.rootEl = document.getElementById("ra2web-root");
-    if (!this.rootEl) {
-      console.error("CRITICAL: Missing root element #ra2web-root in HTML.");
-      alert("CRITICAL: Missing root element #ra2web-root for the application.");
-      return;
-    }
+    // rootEl already set at the beginning of main()
 
     this.runtimeVars = new MockConsoleVars();
     MockDevToolsApi.registerVar("freecamera", this.runtimeVars.freeCamera);
@@ -362,12 +402,7 @@ export class Application {
         this.localPrefs,
         this.strings,
         this.rootEl,
-        { // Mock splash screen object for GameRes compatibility
-          setLoadingText: (text: string) => console.log(`[Application] GameRes Loading: ${text}`),
-          setBackgroundImage: (url: string) => console.log(`[Application] GameRes Background: ${url}`),
-          destroy: () => console.log('[Application] GameRes mock splash screen destroyed'),
-          element: { style: { display: 'none' } }
-        },
+        this.createSplashScreenInterface(), // Real splash screen interface
         this.viewportAdapter, // Pass the viewport adapter that implements Viewport interface
         this.config,
         "res/", // Application.js uses a static resPath property
@@ -417,6 +452,14 @@ export class Application {
 
     // Initialize routing for navigation
     this.initRouting();
+    
+    // Destroy splash screen after resources are loaded
+    if (this.splashScreenUpdateCallback) {
+      this.splashScreenUpdateCallback(null);
+    }
+    
+    // Initialize GUI system after splash screen is done
+    await this.initGui();
   }
 
   private loadGameResConfig(prefs: LocalPrefs): GameResConfig | undefined {
@@ -450,6 +493,61 @@ export class Application {
 
     // Initialize routing
     this.routing.init();
+  }
+
+  private async initGui(): Promise<void> {
+    console.log('[Application] Initializing GUI system');
+    
+    if (!this.rootEl) {
+      throw new Error('Root element not available for GUI initialization');
+    }
+    
+    // Create GUI system
+    this.gui = new Gui(
+      this.getVersion(),
+      this.strings,
+      this.viewport,
+      this.rootEl
+    );
+    
+    // Initialize GUI
+    await this.gui.init();
+    
+    console.log('[Application] GUI system initialized successfully');
+  }
+
+  private createSplashScreenInterface() {
+    return {
+      setLoadingText: (text: string) => {
+        console.log(`[Application] Splash Loading: ${text}`);
+        if (this.splashScreenUpdateCallback) {
+          this.splashScreenUpdateCallback({
+            width: this.viewport.value.width,
+            height: this.viewport.value.height,
+            parentElement: this.rootEl,
+            loadingText: text
+          });
+        }
+      },
+      setBackgroundImage: (url: string) => {
+        console.log(`[Application] Splash Background: ${url}`);
+        if (this.splashScreenUpdateCallback) {
+          this.splashScreenUpdateCallback({
+            width: this.viewport.value.width,
+            height: this.viewport.value.height,
+            parentElement: this.rootEl,
+            backgroundImage: url
+          });
+        }
+      },
+      destroy: () => {
+        console.log('[Application] Splash screen destroyed');
+        if (this.splashScreenUpdateCallback) {
+          this.splashScreenUpdateCallback(null);
+        }
+      },
+      element: { style: { display: 'none' } }
+    };
   }
 
   // Handler for GameRes load errors

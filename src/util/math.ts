@@ -35,10 +35,10 @@ export function floorTo(value: number, significance: number): number {
 
 /**
  * FNV-1a 32-bit hash function.
- * @param data The Uint8Array data to hash.
+ * @param data The Uint8Array or number array data to hash.
  * @returns The 32-bit hash as an unsigned integer.
  */
-export function fnv32a(data: Uint8Array): number {
+export function fnv32a(data: Uint8Array | number[]): number {
   let hash = 0x811c9dc5; // FNV_offset_basis
   for (let i = 0; i < data.length; ++i) {
     hash ^= data[i];

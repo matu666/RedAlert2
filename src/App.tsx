@@ -102,34 +102,6 @@ function App() {
       {splashScreenProps && splashScreenProps.parentElement && (
         <SplashScreenComponent {...splashScreenProps} />
       )}
-      {/* Render GameResourcesViewer only after splash screen is done AND app.main() has finished */}
-      {!splashScreenProps && appMainFinished && (
-        <>
-          <div style={{ 
-            position: 'fixed', 
-            top: '10px', 
-            right: '10px', 
-            zIndex: 1000 
-          }}>
-            <button 
-              onClick={() => {
-                window.location.href = window.location.pathname + '?test=glsl';
-              }}
-              style={{
-                background: '#007bff',
-                color: 'white',
-                border: 'none',
-                padding: '8px 16px',
-                borderRadius: '4px',
-                cursor: 'pointer'
-              }}
-            >
-              GLSL测试模式
-            </button>
-          </div>
-          <GameResourcesViewer />
-        </>
-      )}
       {/* Message if app.main() hasn't finished yet but splash is gone (should be brief) */}
       {!splashScreenProps && !appMainFinished && (
         <p style={{ textAlign: 'center', marginTop: '20px' }}>

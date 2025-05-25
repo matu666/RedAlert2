@@ -1,49 +1,43 @@
-// src/util/event.ts
+// 事件监听器函数类型
+type EventListener<T = any> = (data: T, eventType: string) => void;
 
-// Type for the event listener callback
-// T is the type of the sender, U is the type of the event arguments
-export type EventListener<T, U> = (args: U, sender: T) => void;
+// 事件接口
+interface IEvent<T = any> {
+  subscribe(listener: EventListener<T>): void;
+  subscribeOnce(listener: EventListener<T>): void;
+  unsubscribe(listener: EventListener<T>): void;
+}
 
-export class EventDispatcher<T, U> {
-  private listeners: Set<EventListener<T, U>> = new Set();
+// 事件分发器类
+export class EventDispatcher<T = any> implements IEvent<T> {
+  private listeners: Set<EventListener<T>>;
 
-  constructor() {}
+  constructor() {
+    this.listeners = new Set<EventListener<T>>();
+  }
 
-  public subscribe(listener: EventListener<T, U>): void {
+  subscribe(listener: EventListener<T>): void {
     this.listeners.add(listener);
   }
 
-  public subscribeOnce(listener: EventListener<T, U>): void {
-    const onceWrapper: EventListener<T, U> = (args, sender) => {
-      listener(args, sender);
-      this.unsubscribe(onceWrapper);
+  subscribeOnce(listener: EventListener<T>): void {
+    let onceListener: EventListener<T> | undefined = (data: T, eventType: string) => {
+      listener(data, eventType);
+      this.unsubscribe(onceListener!);
+      onceListener = undefined;
     };
-    this.subscribe(onceWrapper);
+    this.subscribe(onceListener);
   }
 
-  public unsubscribe(listener: EventListener<T, U>): void {
+  unsubscribe(listener: EventListener<T>): void {
     this.listeners.delete(listener);
   }
 
-  public dispatch(sender: T, args: U): void {
-    // Iterate over a copy of listeners in case a listener unsubscribes itself during dispatch
-    const listenersToNotify = Array.from(this.listeners);
-    listenersToNotify.forEach((listener) => listener(args, sender));
+  dispatch(eventType: string, data: T): void {
+    this.listeners.forEach((listener) => listener(data, eventType));
   }
 
-  /**
-   * Returns an interface that only exposes subscription-related methods.
-   * This can be used to prevent external code from dispatching events.
-   */
-  public asEvent(): { 
-    subscribe: (listener: EventListener<T, U>) => void;
-    subscribeOnce: (listener: EventListener<T, U>) => void;
-    unsubscribe: (listener: EventListener<T, U>) => void;
-  } {
-    return {
-      subscribe: this.subscribe.bind(this),
-      subscribeOnce: this.subscribeOnce.bind(this),
-      unsubscribe: this.unsubscribe.bind(this),
-    };
+  asEvent(): IEvent<T> {
+    return this;
   }
-} 
+}

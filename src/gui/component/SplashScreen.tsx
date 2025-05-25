@@ -33,7 +33,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({
       const div = document.createElement('div');
       elRef.current = div; // Assign to ref
 
-      // Apply initial styles and structure (similar to original render method)
+      // Apply initial styles and structure (exactly like original)
       div.style.backgroundColor = 'black';
       div.style.color = 'white';
       div.style.padding = '10px';
@@ -44,6 +44,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({
       div.style.position = 'relative'; // For absolute positioning of children
 
       const loadingDiv = document.createElement('div');
+      // Loading text positioned like original (no special styling initially)
       loadingElRef.current = loadingDiv;
       div.appendChild(loadingDiv);
 
