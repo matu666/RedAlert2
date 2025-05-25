@@ -12,13 +12,14 @@ import { HtmlView } from '../../../jsx/HtmlView';
 import { SidebarTitle } from './SidebarTitle';
 import { Engine } from '../../../../engine/Engine';
 import { BoxedVar } from '../../../../util/BoxedVar';
+import { ShpFile } from '../../../../data/ShpFile';
 
 interface SidebarPreviewProps {
   closed: boolean;
   preview?: any;
   title?: string;
   sdtpImg: string;
-  sdtpAnimImg: string;
+  sdtpAnimImg: ShpFile;
 }
 
 export class SidebarPreview extends UiComponent {
