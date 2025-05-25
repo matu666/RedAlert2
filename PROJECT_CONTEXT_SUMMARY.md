@@ -6,6 +6,49 @@ This document summarizes the current state of the RA2Web React decompile project
 
 The primary objective is to reverse-engineer an existing JavaScript project (presumably related to Red Alert 2 Web, based on filenames and dependencies) into a modern React application using Vite and TypeScript. The new React project is being developed in the `ra2web-react` directory.
 
+## 🎯 CORE MIGRATION PRINCIPLES
+
+**⚠️ CRITICAL: These principles must guide ALL development decisions in this migration project.**
+
+### 1. **Strict Original Project Fidelity**
+- **NEVER add functionality that doesn't exist in the original project**
+- **NEVER add error handling, validation, or "improvements" that the original lacks**
+- **NEVER implement "safety measures" or edge case handling beyond original scope**
+- The original project is the single source of truth for behavior and logic
+
+### 2. **Failure Attribution Philosophy**
+- **If we don't achieve expected results → THE MIGRATION HAS A PROBLEM**
+- **The original project is functional and complete → our job is accurate recreation**
+- **Never assume the original project "should have done X" → migrate what IS, not what "should be"**
+
+### 3. **Project Maturity Respect**
+- **The original project is large and mature → it works in production**
+- **Edge cases and boundary conditions: migrate the original handling exactly**
+- **Don't be "smarter" than the original → this leads to subtle behavioral differences**
+- **Don't anticipate problems the original developers didn't anticipate**
+
+### 4. **Development Progression Discipline**
+- **PRIMARY GOAL: Get the project running, not making it "better"**
+- **Don't add modern best practices if they change behavior**
+- **TypeScript types: add only for compilation, never change runtime behavior**
+- **Error handling: match original exactly, even if it seems "incomplete"**
+
+### 5. **When In Doubt**
+- **Copy the original logic exactly, even if it seems wrong**
+- **Preserve original method signatures and return types**
+- **Keep original error conditions and exception handling**
+- **Document WHY something seems unusual, but implement it as-is**
+
+### 6. **Migration Success Criteria**
+- ✅ **Original behavior preserved exactly**
+- ✅ **Same inputs produce same outputs**
+- ✅ **Same error conditions produce same errors**
+- ❌ **"Improved" error handling**
+- ❌ **Added validation or safety checks**
+- ❌ **Modern patterns that change behavior**
+
+**Remember: Being "too smart" or "overly cautious" can break subtle dependencies and assumptions in the original codebase. When the migration works exactly like the original, THEN we can consider improvements in a separate phase.**
+
 ## Source Project for Migration
 
 The original JavaScript project files, which are the target for reverse engineering, are located in the `extracted_modules_simple/` directory within the `ra2web-react` workspace.
