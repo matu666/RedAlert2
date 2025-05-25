@@ -173,7 +173,33 @@ export class Gui {
     console.log('[Gui] Video file name:', videoFileName);
     
     try {
-      // Check if we have VFS access
+      // First check RFS (Real File System) - this is where imported videos are stored
+      if (Engine.rfs) {
+        console.log('[Gui] Checking RFS for video file...');
+        try {
+          const rfsContainsVideo = await Engine.rfs.containsEntry(videoFileName);
+          console.log(`[Gui] RFS contains ${videoFileName}:`, rfsContainsVideo);
+          
+          if (rfsContainsVideo) {
+            console.log('[Gui] Found video file in RFS:', videoFileName);
+            const fileData = await Engine.rfs.getRawFile(videoFileName);
+            const videoFile = new File([fileData], videoFileName, { type: "video/webm" });
+            console.log('[Gui] Created video File object from RFS:', videoFile.name, videoFile.size, 'bytes');
+            
+            if (videoFile.size === 0) {
+              console.warn('[Gui] Video file from RFS is empty!');
+            } else {
+              return videoFile;
+            }
+          }
+        } catch (error) {
+          console.warn('[Gui] Error checking RFS for video file:', error);
+        }
+      } else {
+        console.warn('[Gui] Engine.rfs not available');
+      }
+      
+      // Then check VFS (Virtual File System) - for original game files
       if (!Engine.vfs) {
         console.warn('[Gui] Engine.vfs not available - cannot load video');
         return undefined;
@@ -203,12 +229,20 @@ export class Gui {
       } else {
         console.warn('[Gui] Video file not found in VFS:', videoFileName);
         
-        // Try alternative video file names
-        const alternativeNames = ['ra2ts_l.bik', 'ra2ts_l.mp4', 'menu.webm', 'menu.mp4', 'ra2ts_l.avi', 'ra2ts_l.webm'];
+        // Try alternative video file names - but don't create File objects for .bik files
+        const alternativeNames = ['ra2ts_l.bik', 'ra2ts_l.mp4', 'menu.webm', 'menu.mp4', 'ra2ts_l.avi'];
         for (const altName of alternativeNames) {
           console.log(`[Gui] Checking alternative video file: ${altName}`);
           if (Engine.vfs.fileExists(altName)) {
             console.log('[Gui] Found alternative video file:', altName);
+            
+            // Only process .webm and .mp4 files, skip .bik files as they need conversion
+            if (altName.endsWith('.bik')) {
+              console.warn(`[Gui] Found .bik file but cannot play directly: ${altName}`);
+              console.warn('[Gui] .bik files need to be converted to .webm during import process');
+              continue;
+            }
+            
             const fileData = Engine.vfs.openFile(altName).asFile();
             const videoFile = new File([fileData], altName, { 
               type: altName.endsWith('.mp4') ? "video/mp4" : "video/webm" 
@@ -218,7 +252,7 @@ export class Gui {
           }
         }
         
-        console.warn('[Gui] No video file found, will proceed without video');
+        console.warn('[Gui] No playable video file found, will proceed without video');
         
         return undefined;
       }
