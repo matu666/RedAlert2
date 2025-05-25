@@ -15,21 +15,14 @@ interface ExplorerEntry {
   thumb?: string;
 }
 
-interface VFSArchiveInfo {
-  name: string;
-  fileCount: number;
-  handle?: any;
-}
-
 const GameResourcesViewer: React.FC = () => {
   const [explorerLoaded, setExplorerLoaded] = useState(false);
   const [fsalibLoaded, setFsalibLoaded] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
-  const [currentMode, setCurrentMode] = useState<'vfs' | 'rfs' | null>(null);
-  const [vfsArchives, setVfsArchives] = useState<VFSArchiveInfo[]>([]);
-  const [idbRootHandle, setIdbRootHandle] = useState<FileSystemDirectoryHandle | null>(null);
+  const [storageDirHandle, setStorageDirHandle] = useState<FileSystemDirectoryHandle | null>(null);
+  const [fileSystemChanged, setFileSystemChanged] = useState(false);
 
   const fileExplorerContainerRef = useRef<HTMLDivElement>(null);
   const fileExplorerInstanceRef = useRef<any>(null);
@@ -71,8 +64,8 @@ const GameResourcesViewer: React.FC = () => {
     };
     document.body.appendChild(script);
 
-    // Check VFS status on mount
-    loadVFSInfo();
+    // Initialize storage directory handle
+    initializeStorageHandle();
 
     return () => {
       document.head.removeChild(cssLink);
@@ -84,63 +77,53 @@ const GameResourcesViewer: React.FC = () => {
     };
   }, []);
 
-  const loadVFSInfo = () => {
-    if (Engine.vfs) {
-      const archives = Engine.vfs.listArchives();
-      const archiveInfos: VFSArchiveInfo[] = archives.map(archiveName => ({
-        name: archiveName,
-        fileCount: 0, // VFS doesn't directly expose file count
-      }));
-      setVfsArchives(archiveInfos);
-      AppLogger.info('[GameResourcesViewer] VFS archives loaded:', archiveInfos);
-    } else {
-      AppLogger.warn('[GameResourcesViewer] VFS not available');
-      setVfsArchives([]);
-    }
-  };
-
-  const getVFSEntriesForArchive = async (archiveName: string): Promise<ExplorerEntry[]> => {
-    const entries: ExplorerEntry[] = [];
-    
-    if (!Engine.vfs) {
-      AppLogger.error('[GameResourcesViewer] VFS not available for archive browsing');
-      return entries;
-    }
-
+  const initializeStorageHandle = () => {
     try {
-      // This is a simplified approach - in a real implementation, we'd need
-      // to enhance VFS to provide directory listing capabilities
-      AppLogger.info(`[GameResourcesViewer] Attempting to browse VFS archive: ${archiveName}`);
-      
-      // For now, we'll create a placeholder entry indicating this is a VFS archive
-      entries.push({
-        id: `${archiveName}_info`,
-        name: `${archiveName} (VFS Archive)`,
-        type: 'file',
-        hash: `vfs_${archiveName}`,
-        attrs: { canmodify: false },
-        tooltip: `Virtual File System Archive: ${archiveName}`,
-      });
-
-      // TODO: Implement proper VFS directory browsing
-      // This would require extending the VFS interface to expose file listings
-      
+      if (Engine.rfs) {
+        const rootDirHandle = Engine.rfs.getRootDirectoryHandle();
+        if (rootDirHandle) {
+          setStorageDirHandle(rootDirHandle);
+          AppLogger.info('[GameResourcesViewer] Storage directory handle obtained from Engine.rfs');
+        } else {
+          AppLogger.warn('[GameResourcesViewer] Engine.rfs.getRootDirectoryHandle() returned null');
+          setError('No storage directory handle available');
+        }
+      } else {
+        AppLogger.warn('[GameResourcesViewer] Engine.rfs not available');
+        setError('Real File System (RFS) not initialized');
+      }
     } catch (e: any) {
-      AppLogger.error(`[GameResourcesViewer] Error browsing VFS archive ${archiveName}:`, e);
+      AppLogger.error('[GameResourcesViewer] Error getting storage directory handle:', e);
+      setError(`Failed to get storage handle: ${e.message}`);
     }
-
-    return entries;
   };
 
-  const getIDBEntries = async (dirHandle: FileSystemDirectoryHandle): Promise<ExplorerEntry[]> => {
+  // System file patterns that should not be modified (from original StorageExplorer)
+  const isSystemFile = (path: string): boolean => {
+    const systemPatterns: (string | RegExp)[] = [
+      // Common system patterns - these are likely from the original StorageExplorer logic
+      /^\/[^\/]*\.mix$/i,  // Mix files in root
+      /^\/[^\/]*\.bag$/i,  // Bag files in root  
+      /^\/[^\/]*\.idx$/i,  // Index files in root
+      /^\/[^\/]*\.ini$/i,  // INI files in root
+      /^\/[^\/]*\.csf$/i,  // CSF files in root
+    ];
+    
+    return systemPatterns.some(pattern => 
+      typeof pattern === 'string' ? 
+        path.toLowerCase() === pattern.toLowerCase() : 
+        pattern.test(path)
+    );
+  };
+
+  const getEntriesFromDirHandle = async (dirHandle: FileSystemDirectoryHandle, currentPath: string = '/'): Promise<ExplorerEntry[]> => {
     const entries: ExplorerEntry[] = [];
     
     try {
-      AppLogger.debug(`[GameResourcesViewer] Reading IDB entries from: ${dirHandle.name}`);
+      AppLogger.debug(`[GameResourcesViewer] Reading entries from: ${dirHandle.name}, path: ${currentPath}`);
       
       for await (const [name, handle] of dirHandle.entries()) {
-        AppLogger.debug(`[GameResourcesViewer] IDB entry found - Name: ${name}, Kind: ${handle.kind}`);
-        
+        const entryPath = currentPath === '/' ? `/${name}` : `${currentPath}/${name}`;
         const fileHandle = handle as FileSystemFileHandle;
         const itemFile = handle.kind === 'file' ? await fileHandle.getFile() : null;
         
@@ -148,15 +131,19 @@ const GameResourcesViewer: React.FC = () => {
           id: name,
           name: name,
           type: handle.kind === 'directory' ? 'folder' : 'file',
-          hash: name + (itemFile ? itemFile.lastModified : 'folder') + (itemFile ? itemFile.size : ''),
-          size: itemFile?.size,
-          attrs: { canmodify: true },
-          tooltip: handle.kind === 'file' ? `File: ${name} (${formatFileSize(itemFile?.size || 0)})` : `Folder: ${name}`,
+          hash: name,
+          attrs: handle.kind === 'directory' && !isSystemFile(entryPath) ? 
+            undefined : 
+            { canmodify: false }, // Mark system files as non-modifiable
+          ...(handle.kind === 'file' ? { size: itemFile?.size } : {}),
+          tooltip: handle.kind === 'file' ? 
+            `File: ${name} (${formatFileSize(itemFile?.size || 0)})` : 
+            `Folder: ${name}`,
         };
         entries.push(entry);
       }
     } catch (e: any) {
-      AppLogger.error(`[GameResourcesViewer] Error reading IDB entries:`, e);
+      AppLogger.error(`[GameResourcesViewer] Error reading entries:`, e);
       setError(`Error reading directory: ${e.message}`);
     }
 
@@ -166,80 +153,17 @@ const GameResourcesViewer: React.FC = () => {
     });
   };
 
-  const initializeVFSExplorer = async () => {
-    if (!explorerLoaded) {
-      setError('File explorer not loaded yet');
-      return;
+  const navigateToPath = async (pathSegments: string[], rootHandle: FileSystemDirectoryHandle): Promise<FileSystemDirectoryHandle> => {
+    let currentHandle = rootHandle;
+    for (const segment of pathSegments.slice(1)) { // Skip the first empty segment
+      currentHandle = await currentHandle.getDirectoryHandle(segment);
     }
-
-    setError(null);
-    setMessage(null);
-    setIsLoading(true);
-
-    try {
-      if (fileExplorerInstanceRef.current) {
-        fileExplorerInstanceRef.current.Destroy();
-        fileExplorerInstanceRef.current = null;
-      }
-
-      setCurrentMode('vfs');
-      setMessage('VFS Resource Explorer Initialized');
-
-      if (window.FileExplorer && fileExplorerContainerRef.current) {
-        const explorerOptions = {
-          initpath: [['__vfs_root__', 'Virtual File System', { canmodify: false }]],
-          onrefresh: async (feFolder: any, isFirstLoad: boolean) => {
-            AppLogger.info('[GameResourcesViewer] VFS onrefresh', feFolder.GetPath());
-            feFolder.SetBusyRef(1);
-            
-            try {
-              const path = feFolder.GetPath();
-              let entries: ExplorerEntry[] = [];
-
-              if (path.length === 1 && path[0][0] === '__vfs_root__') {
-                // Root level - show VFS archives
-                entries = vfsArchives.map(archive => ({
-                  id: archive.name,
-                  name: archive.name,
-                  type: 'folder' as const,
-                  hash: `vfs_archive_${archive.name}`,
-                  attrs: { canmodify: false },
-                  tooltip: `VFS Archive: ${archive.name}`,
-                }));
-              } else if (path.length === 2) {
-                // Archive level - show archive contents
-                const archiveName = path[1][1];
-                entries = await getVFSEntriesForArchive(archiveName);
-              }
-
-              feFolder.SetEntries(entries);
-            } catch (e: any) {
-              AppLogger.error('[GameResourcesViewer] VFS onrefresh error:', e);
-              feFolder.SetEntries([]);
-            } finally {
-              feFolder.SetBusyRef(-1);
-            }
-          },
-          onopenfile: (feFolder: any, entry: ExplorerEntry) => {
-            AppLogger.info('[GameResourcesViewer] VFS file open:', entry);
-            setMessage(`VFS File: ${entry.name} (${entry.tooltip || 'No details available'})`);
-          }
-        };
-
-        fileExplorerInstanceRef.current = new window.FileExplorer(fileExplorerContainerRef.current, explorerOptions);
-        AppLogger.info('[GameResourcesViewer] VFS FileExplorer created');
-      }
-    } catch (err: any) {
-      AppLogger.error('[GameResourcesViewer] Error initializing VFS explorer:', err);
-      setError(`VFS Explorer Error: ${err.message}`);
-    } finally {
-      setIsLoading(false);
-    }
+    return currentHandle;
   };
 
-  const initializeIDBExplorer = async () => {
-    if (!explorerLoaded || !fsalibLoaded) {
-      setError('File explorer or fsalib not loaded');
+  const initializeStorageExplorer = async () => {
+    if (!explorerLoaded || !fsalibLoaded || !storageDirHandle) {
+      setError('File explorer, fsalib, or storage handle not ready');
       return;
     }
 
@@ -248,67 +172,55 @@ const GameResourcesViewer: React.FC = () => {
     setIsLoading(true);
 
     try {
-      AppLogger.info('[GameResourcesViewer] Initializing IndexedDB explorer...');
-      const dbName = "ra2webUserFileSystem";
-      const rootHandle = await window.FileSystemAccess.adapters.indexeddb({ name: dbName, rootName: "Game Resources" });
-      
-      if (!rootHandle || typeof rootHandle.getDirectoryHandle !== 'function') {
-        throw new Error('Failed to get valid IndexedDB root handle');
-      }
-
-      setIdbRootHandle(rootHandle);
-      setCurrentMode('rfs');
-      setMessage('IndexedDB Resource Explorer Initialized');
-
       if (fileExplorerInstanceRef.current) {
         fileExplorerInstanceRef.current.Destroy();
         fileExplorerInstanceRef.current = null;
       }
 
+      setMessage('游戏资源存储浏览器已初始化');
+
       if (window.FileExplorer && fileExplorerContainerRef.current) {
         const explorerOptions = {
-          initpath: [['__idb_root__', 'Game Resources', { canmodify: true }]],
+          initpath: [['', 'Game Storage', { canmodify: isSystemFile('/') }]], // Following original pattern
           onrefresh: async (feFolder: any, isFirstLoad: boolean) => {
-            AppLogger.info('[GameResourcesViewer] IDB onrefresh', feFolder.GetPath());
+            AppLogger.info('[GameResourcesViewer] Storage onrefresh', feFolder.GetPath());
             feFolder.SetBusyRef(1);
             
             try {
-              let currentDirHandle = rootHandle;
               const path = feFolder.GetPath();
+              const pathSegments = path.map((p: any) => p[1]).filter((s: string) => s !== 'Game Storage');
+              const currentPath = '/' + pathSegments.join('/');
               
-              // Navigate to current path
-              for (let i = 1; i < path.length; i++) {
-                const segmentName = path[i][1];
-                currentDirHandle = await currentDirHandle.getDirectoryHandle(segmentName);
-              }
+              AppLogger.info(`[GameResourcesViewer] Navigating to path: ${currentPath}`);
+              const currentDirHandle = await navigateToPath(['', ...pathSegments], storageDirHandle);
+              const entries = await getEntriesFromDirHandle(currentDirHandle, currentPath);
               
-              const entries = await getIDBEntries(currentDirHandle);
+              AppLogger.info(`[GameResourcesViewer] Found ${entries.length} entries`);
               feFolder.SetEntries(entries);
             } catch (e: any) {
-              AppLogger.error('[GameResourcesViewer] IDB onrefresh error:', e);
+              AppLogger.error('[GameResourcesViewer] Storage onrefresh error:', e);
               feFolder.SetEntries([]);
             } finally {
               feFolder.SetBusyRef(-1);
             }
           },
           onopenfile: (feFolder: any, entry: ExplorerEntry) => {
-            AppLogger.info('[GameResourcesViewer] IDB file open:', entry);
-            setMessage(`File: ${entry.name} (${formatFileSize(entry.size || 0)})`);
+            AppLogger.info('[GameResourcesViewer] Storage file open:', entry);
+            const path = feFolder.GetPath().map((p: any) => p[1]).join('/');
+            setMessage(`打开文件: ${entry.name} (路径: ${path}/${entry.name})`);
           },
           onnewfolder: async (callback: (result: any) => void, feFolder: any) => {
-            const folderName = prompt('Enter new folder name:');
+            const folderName = prompt('输入新文件夹名称:');
             if (folderName) {
               try {
-                let currentDirHandle = rootHandle;
                 const path = feFolder.GetPath();
-                
-                for (let i = 1; i < path.length; i++) {
-                  const segmentName = path[i][1];
-                  currentDirHandle = await currentDirHandle.getDirectoryHandle(segmentName);
-                }
+                const pathSegments = path.map((p: any) => p[1]).filter((s: string) => s !== 'Game Storage');
+                const currentDirHandle = await navigateToPath(['', ...pathSegments], storageDirHandle);
                 
                 await currentDirHandle.getDirectoryHandle(folderName, { create: true });
+                AppLogger.info(`[GameResourcesViewer] Created folder: ${folderName}`);
                 callback({ id: folderName, name: folderName, type: 'folder', hash: folderName });
+                setFileSystemChanged(true);
               } catch (e: any) {
                 AppLogger.error('[GameResourcesViewer] Error creating folder:', e);
                 callback(false);
@@ -318,68 +230,87 @@ const GameResourcesViewer: React.FC = () => {
             }
           },
           ondelete: async (callback: (errorMsg: string | false) => void, feFolder: any, itemIds: string[]) => {
-            if (confirm(`Delete ${itemIds.join(', ')}?`)) {
+            // Check for system files
+            const path = feFolder.GetPath();
+            const pathSegments = path.map((p: any) => p[1]).filter((s: string) => s !== 'Game Storage');
+            const currentPath = '/' + pathSegments.join('/');
+            
+            const systemFiles = itemIds.filter(itemId => {
+              const itemPath = currentPath === '/' ? `/${itemId}` : `${currentPath}/${itemId}`;
+              return isSystemFile(itemPath);
+            });
+            
+            let filesToDelete = [...itemIds];
+            
+            if (systemFiles.length > 0) {
+              const confirmSystemDelete = confirm(
+                `文件 "${systemFiles.join(', ')}" 是系统文件。删除它们可能导致游戏无法正常工作。\n\n您确定要继续吗？`
+              );
+              if (!confirmSystemDelete) {
+                callback('取消删除系统文件');
+                return;
+              }
+            }
+            
+            if (confirm(`您确定要永久删除这 ${filesToDelete.length} 个项目吗？`)) {
               try {
-                let currentDirHandle = rootHandle;
-                const path = feFolder.GetPath();
+                const currentDirHandle = await navigateToPath(['', ...pathSegments], storageDirHandle);
                 
-                for (let i = 1; i < path.length; i++) {
-                  const segmentName = path[i][1];
-                  currentDirHandle = await currentDirHandle.getDirectoryHandle(segmentName);
-                }
-                
-                for (const itemId of itemIds) {
+                for (const itemId of filesToDelete) {
                   await currentDirHandle.removeEntry(itemId, { recursive: true });
+                  AppLogger.info(`[GameResourcesViewer] Deleted: ${itemId}`);
                 }
                 callback(false);
+                setFileSystemChanged(true);
               } catch (e: any) {
                 AppLogger.error('[GameResourcesViewer] Error deleting items:', e);
                 callback(e.message);
               }
             } else {
-              callback('Deletion cancelled');
+              callback('用户取消删除操作');
             }
           }
         };
 
         fileExplorerInstanceRef.current = new window.FileExplorer(fileExplorerContainerRef.current, explorerOptions);
-        AppLogger.info('[GameResourcesViewer] IDB FileExplorer created');
+        AppLogger.info('[GameResourcesViewer] Storage FileExplorer created');
       }
     } catch (err: any) {
-      AppLogger.error('[GameResourcesViewer] Error initializing IDB explorer:', err);
-      setError(`IDB Explorer Error: ${err.message}`);
+      AppLogger.error('[GameResourcesViewer] Error initializing storage explorer:', err);
+      setError(`存储浏览器错误: ${err.message}`);
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleFileUpload = async () => {
-    if (!fileInputRef.current?.files?.length || !idbRootHandle) {
-      setMessage('Please select a file and initialize IndexedDB explorer first');
+    if (!fileInputRef.current?.files?.length || !storageDirHandle) {
+      setMessage('请先选择文件');
       return;
     }
 
     const file = fileInputRef.current.files[0];
     setIsLoading(true);
-    setMessage(`Uploading ${file.name}...`);
+    setMessage(`正在上传 ${file.name}...`);
 
     try {
-      const fileHandle = await idbRootHandle.getFileHandle(file.name, { create: true });
+      const fileHandle = await storageDirHandle.getFileHandle(file.name, { create: true });
       const writable = await fileHandle.createWritable({ keepExistingData: false });
       await writable.write(file);
       await writable.close();
       
-      setMessage(`File ${file.name} uploaded successfully!`);
+      setMessage(`文件 ${file.name} 上传成功!`);
+      setFileSystemChanged(true);
       
-      // Refresh the current view
-      if (fileExplorerInstanceRef.current?.Refresh) {
-        fileExplorerInstanceRef.current.Refresh();
+      // Refresh the explorer
+      if (fileExplorerInstanceRef.current?.RefreshFolders) {
+        fileExplorerInstanceRef.current.RefreshFolders(true);
       }
       
       if (fileInputRef.current) fileInputRef.current.value = '';
     } catch (err: any) {
       AppLogger.error('[GameResourcesViewer] Upload error:', err);
-      setError(`Upload failed: ${err.message}`);
+      setError(`上传失败: ${err.message}`);
     } finally {
       setIsLoading(false);
     }
@@ -389,11 +320,12 @@ const GameResourcesViewer: React.FC = () => {
     const vfsStatus = Engine.vfs ? '✅ 已初始化' : '❌ 未初始化';
     const rfsStatus = Engine.rfs ? '✅ 已初始化' : '❌ 未初始化';
     const vfsArchiveCount = Engine.vfs ? Engine.vfs.listArchives().length : 0;
+    const storageReady = !!storageDirHandle;
     
-    return { vfsStatus, rfsStatus, vfsArchiveCount };
+    return { vfsStatus, rfsStatus, vfsArchiveCount, storageReady };
   };
 
-  const { vfsStatus, rfsStatus, vfsArchiveCount } = getSystemStatus();
+  const { vfsStatus, rfsStatus, vfsArchiveCount, storageReady } = getSystemStatus();
 
   return (
     <div style={{ 
@@ -403,7 +335,7 @@ const GameResourcesViewer: React.FC = () => {
       fontFamily: 'Arial, sans-serif',
       boxSizing: 'border-box'
     }}>
-      <h1>RA2 Web - 游戏资源文件浏览器</h1>
+      <h1>RA2 Web - 游戏资源存储浏览器</h1>
       
       {/* System Status */}
       <div style={{ marginBottom: '20px' }}>
@@ -418,6 +350,7 @@ const GameResourcesViewer: React.FC = () => {
           <div style={{ padding: '10px', border: '1px solid #ccc', borderRadius: '5px' }}>
             <strong>真实文件系统 (RFS)</strong>
             <div>状态: {rfsStatus}</div>
+            <div>存储句柄: {storageReady ? '✅ 就绪' : '❌ 未就绪'}</div>
           </div>
 
           <div style={{ padding: '10px', border: '1px solid #ccc', borderRadius: '5px' }}>
@@ -430,41 +363,41 @@ const GameResourcesViewer: React.FC = () => {
 
       {/* Controls */}
       <div style={{ marginBottom: '20px' }}>
-        <h2>文件浏览器控制</h2>
+        <h2>存储浏览器控制</h2>
         <div style={{ marginBottom: '10px' }}>
           <button 
-            onClick={initializeVFSExplorer} 
-            disabled={!explorerLoaded || isLoading}
+            onClick={initializeStorageExplorer} 
+            disabled={!explorerLoaded || !fsalibLoaded || !storageReady || isLoading}
             style={{ 
               marginRight: '10px',
               padding: '10px 20px',
-              backgroundColor: currentMode === 'vfs' ? '#007cba' : '#f0f0f0',
-              color: currentMode === 'vfs' ? 'white' : 'black',
+              backgroundColor: storageReady ? '#007cba' : '#ccc',
+              color: 'white',
               border: '1px solid #ccc',
               borderRadius: '5px',
-              cursor: 'pointer'
+              cursor: storageReady ? 'pointer' : 'not-allowed'
             }}
           >
-            浏览VFS资源
+            {isLoading ? '初始化中...' : '初始化存储浏览器'}
           </button>
           
           <button 
-            onClick={initializeIDBExplorer} 
-            disabled={!explorerLoaded || !fsalibLoaded || isLoading}
+            onClick={() => location.reload()} 
+            disabled={!fileSystemChanged}
             style={{ 
               padding: '10px 20px',
-              backgroundColor: currentMode === 'rfs' ? '#007cba' : '#f0f0f0',
-              color: currentMode === 'rfs' ? 'white' : 'black',
+              backgroundColor: fileSystemChanged ? '#dc3545' : '#ccc',
+              color: 'white',
               border: '1px solid #ccc',
               borderRadius: '5px',
-              cursor: 'pointer'
+              cursor: fileSystemChanged ? 'pointer' : 'not-allowed'
             }}
           >
-            浏览IndexedDB资源
+            {fileSystemChanged ? '退出并重新加载' : '重新加载（未修改）'}
           </button>
         </div>
 
-        {currentMode === 'rfs' && idbRootHandle && (
+        {storageReady && (
           <div style={{ marginTop: '10px', padding: '10px', backgroundColor: '#f0f0f0', borderRadius: '5px' }}>
             <input type="file" ref={fileInputRef} style={{ marginRight: '10px' }} />
             <button 
@@ -479,7 +412,7 @@ const GameResourcesViewer: React.FC = () => {
                 cursor: 'pointer'
               }}
             >
-              {isLoading ? '上传中...' : '上传文件到当前目录'}
+              {isLoading ? '上传中...' : '上传文件到根目录'}
             </button>
           </div>
         )}
@@ -512,9 +445,23 @@ const GameResourcesViewer: React.FC = () => {
         </div>
       )}
 
+      {fileSystemChanged && (
+        <div style={{ 
+          padding: '10px', 
+          backgroundColor: '#fff3cd', 
+          color: '#856404', 
+          borderRadius: '5px', 
+          marginBottom: '10px',
+          border: '1px solid #ffeaa7'
+        }}>
+          ⚠️ 文件系统已修改。建议重新加载应用以确保更改生效。
+        </div>
+      )}
+
       {/* File Explorer Container */}
       <div 
         ref={fileExplorerContainerRef} 
+        className="storage-explorer"
         style={{ 
           marginTop: '20px', 
           border: '2px solid #ccc', 
@@ -528,13 +475,16 @@ const GameResourcesViewer: React.FC = () => {
             <p>正在加载文件浏览器组件...</p>
           </div>
         )}
-        {explorerLoaded && !currentMode && (
+        {explorerLoaded && !storageReady && (
           <div style={{ padding: '20px', textAlign: 'center' }}>
-            <p>请选择要浏览的资源类型：</p>
-            <ul style={{ textAlign: 'left', display: 'inline-block' }}>
-              <li><strong>VFS资源</strong>: 浏览已加载的游戏归档文件 (.mix文件等)</li>
-              <li><strong>IndexedDB资源</strong>: 浏览浏览器存储中的游戏文件</li>
-            </ul>
+            <p>等待存储系统就绪...</p>
+            <p>请确保游戏资源已导入且RFS系统正常初始化。</p>
+          </div>
+        )}
+        {explorerLoaded && storageReady && !fileExplorerInstanceRef.current && (
+          <div style={{ padding: '20px', textAlign: 'center' }}>
+            <p>点击"初始化存储浏览器"开始浏览游戏资源文件。</p>
+            <p>这里显示的是IndexedDB中存储的游戏文件，包括导入的.mix文件等。</p>
           </div>
         )}
       </div>
@@ -543,10 +493,11 @@ const GameResourcesViewer: React.FC = () => {
       <div style={{ marginTop: '20px', padding: '15px', backgroundColor: '#f0f0f0', borderRadius: '5px' }}>
         <h3>使用说明</h3>
         <ul>
-          <li><strong>VFS资源浏览</strong>: 查看已加载到虚拟文件系统的游戏归档文件</li>
-          <li><strong>IndexedDB资源浏览</strong>: 管理浏览器存储中的游戏文件，支持上传、删除等操作</li>
-          <li><strong>文件操作</strong>: 在IndexedDB模式下可以创建文件夹、上传文件、删除文件</li>
-          <li><strong>调试工具</strong>: 此组件主要用于调试和资源管理，不是最终游戏界面</li>
+          <li><strong>存储浏览器</strong>: 浏览IndexedDB中存储的游戏资源文件</li>
+          <li><strong>系统文件</strong>: .mix、.bag、.ini等核心游戏文件受保护，删除前会警告</li>
+          <li><strong>文件操作</strong>: 支持上传、删除、新建文件夹等操作</li>
+          <li><strong>调试工具</strong>: 此组件用于调试mix文件读取问题和资源管理</li>
+          <li><strong>原项目一致</strong>: 与原项目【选项】→【存储】功能完全一致</li>
         </ul>
       </div>
     </div>
