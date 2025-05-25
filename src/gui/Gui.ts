@@ -11,6 +11,14 @@ import { BoxedVar } from '../util/BoxedVar';
 import { Engine } from '../engine/Engine';
 import { Renderer } from '../engine/gfx/Renderer';
 import { UiAnimationLoop } from '../engine/UiAnimationLoop';
+import { AudioSystem } from '../engine/sound/AudioSystem';
+import { Mixer } from '../engine/sound/Mixer';
+import { Sound } from '../engine/sound/Sound';
+import { Music, MusicType } from '../engine/sound/Music';
+import { MusicSpecs } from '../engine/sound/MusicSpecs';
+import { SoundSpecs } from '../engine/sound/SoundSpecs';
+import { ChannelType } from '../engine/sound/ChannelType';
+import { LocalPrefs, StorageKey } from '../LocalPrefs';
 
 export class Gui {
   private appVersion: string;
@@ -26,6 +34,13 @@ export class Gui {
   
   // Controllers
   private rootController?: RootController;
+  
+  // 音频系统
+  private mixer?: Mixer;
+  private audioSystem?: AudioSystem;
+  private sound?: Sound;
+  private music?: Music;
+  private localPrefs: LocalPrefs;
   
   // Resources
   private images: Map<string, ShpFile> = new Map();
@@ -45,6 +60,7 @@ export class Gui {
     this.strings = strings;
     this.viewport = viewport;
     this.rootEl = rootEl;
+    this.localPrefs = new LocalPrefs(localStorage);
   }
 
   async init(): Promise<void> {
@@ -59,6 +75,9 @@ export class Gui {
     // Load game resources
     await this.loadGameResources();
     
+    // Initialize audio system
+    await this.initAudioSystem();
+    
     // Initialize JSX renderer
     this.initJsxRenderer();
     
@@ -70,6 +89,9 @@ export class Gui {
     
     // Navigate to main menu
     await this.navigateToMainMenu();
+    
+    // Start playing menu music
+    await this.startMenuMusic();
   }
 
   private initRenderer(): void {
@@ -318,6 +340,29 @@ export class Gui {
   async destroy(): Promise<void> {
     console.log('[Gui] Destroying GUI system');
     
+    // Stop music and dispose audio system
+    if (this.music) {
+      this.music.stopPlaying();
+      this.music.dispose();
+    }
+    
+    if (this.sound) {
+      this.sound.dispose();
+    }
+    
+    if (this.audioSystem) {
+      this.audioSystem.dispose();
+    }
+    
+    // Save audio settings to local storage
+    if (this.mixer) {
+      this.localPrefs.setItem(StorageKey.Mixer, this.mixer.serialize());
+    }
+    
+    if (this.music) {
+      this.localPrefs.setItem(StorageKey.MusicOpts, this.music.serializeOptions());
+    }
+    
     // Stop UiAnimationLoop
     if (this.uiAnimationLoop) {
       this.uiAnimationLoop.destroy();
@@ -341,6 +386,317 @@ export class Gui {
     if (this.renderer) {
       this.rootEl.removeChild(this.renderer.getCanvas());
       this.renderer.dispose();
+    }
+  }
+
+  private async initAudioSystem(): Promise<void> {
+    console.log('[Gui] Initializing audio system');
+    
+    try {
+      // 初始化Mixer
+      let mixer: Mixer;
+      const mixerData = this.localPrefs.getItem(StorageKey.Mixer);
+      if (mixerData) {
+        try {
+          mixer = new Mixer().unserialize(mixerData);
+          console.log('[Gui] Loaded mixer settings from local storage');
+        } catch (error) {
+          console.warn('Failed to read mixer values from local storage', error);
+          mixer = this.createDefaultMixer();
+        }
+      } else {
+        mixer = this.createDefaultMixer();
+      }
+      this.mixer = mixer;
+
+      // 创建Mixer适配器用于AudioSystem
+      const mixerAdapter = {
+        onVolumeChange: {
+          subscribe: (handler: (mixer: any, channel: ChannelType) => void) => {
+            mixer.onVolumeChange.subscribe((data: [any, number]) => {
+              handler(data[0], data[1]);
+            });
+          },
+          unsubscribe: (handler: (mixer: any, channel: ChannelType) => void) => {
+            // 这里需要保存原始的handler映射，暂时简化处理
+            console.warn('[Gui] Mixer adapter unsubscribe not fully implemented');
+          }
+        },
+        getVolume: (channel: ChannelType) => mixer.getVolume(channel),
+        isMuted: (channel: ChannelType) => mixer.isMuted(channel),
+        setMuted: (channel: ChannelType, muted: boolean) => mixer.setMuted(channel, muted)
+      };
+
+      // 初始化AudioSystem
+      this.audioSystem = new AudioSystem(mixerAdapter);
+      
+      // 初始化Sound系统
+      if (Engine.vfs) {
+        const soundIni = Engine.getIni('sound.ini');
+        const soundSpecs = new SoundSpecs(soundIni);
+        
+        // 创建一个简单的audioVisual规则对象
+        const audioVisualRules = {
+          ini: {
+            getString: (key: string) => {
+              // 这里可以从Engine的规则中获取音频视觉设置
+              // 暂时返回undefined，让Sound系统使用默认值
+              return undefined;
+            }
+          }
+        };
+        
+        // 创建AudioSystem适配器用于Sound类
+        const soundAudioSystemAdapter = {
+          initialize: () => this.audioSystem!.initialize(),
+          dispose: () => this.audioSystem!.dispose(),
+          playWavFile: (file: any, channel: ChannelType, volume?: number, pan?: number, delay?: number, rate?: number, loop?: boolean) => {
+            return this.audioSystem!.playWavFile(file, channel, volume, pan, delay, rate, loop);
+          },
+          playWavSequence: (files: any[], channel: ChannelType, volume?: number, pan?: number, delay?: number, rate?: number) => {
+            return this.audioSystem!.playWavSequence(files, channel, volume, pan, delay, rate);
+          },
+          playWavLoop: (files: any[], channel: ChannelType, volume?: number, pan?: number, delay?: number, rate?: number, attack?: boolean, decay?: boolean, loops?: number) => {
+            // 适配delay参数的差异
+            const delayMs = delay ? { min: delay, max: delay } : undefined;
+            return this.audioSystem!.playWavLoop(files, channel, volume, pan, delayMs, rate, attack, decay, loops);
+          }
+        };
+        
+        this.sound = new Sound(
+          soundAudioSystemAdapter,
+          Engine.getSounds(),
+          soundSpecs,
+          audioVisualRules,
+          document
+        );
+        
+        this.sound.initialize();
+        console.log('[Gui] Sound system initialized');
+      }
+
+      // 初始化Music系统
+      await this.initMusicSystem();
+      
+      console.log('[Gui] Audio system initialization completed');
+      
+    } catch (error) {
+      console.error('[Gui] Failed to initialize audio system:', error);
+      // 音频系统初始化失败不应该阻止应用程序启动
+    }
+  }
+
+  private createDefaultMixer(): Mixer {
+    const mixer = new Mixer();
+    // 设置默认音量（匹配原始项目）
+    mixer.setVolume(ChannelType.Master, 0.4);
+    mixer.setVolume(ChannelType.CreditTicks, 0.2);
+    mixer.setVolume(ChannelType.Music, 0.3);
+    mixer.setVolume(ChannelType.Ambient, 0.3);
+    mixer.setVolume(ChannelType.Effect, 0.5);
+    mixer.setVolume(ChannelType.Voice, 0.7);
+    mixer.setVolume(ChannelType.Ui, 0.5);
+    console.log('[Gui] Created default mixer settings');
+    return mixer;
+  }
+
+  private async initMusicSystem(): Promise<void> {
+    if (!this.audioSystem || !Engine.vfs) {
+      console.warn('[Gui] Cannot initialize music system - missing dependencies');
+      return;
+    }
+
+    try {
+      // 检查是否有音乐目录
+      let hasMusicDir = false;
+      try {
+        hasMusicDir = !!(await Engine.rfs?.containsEntry(Engine.rfsSettings.musicDir));
+      } catch (error) {
+        console.warn('Could not check music directory:', error);
+        hasMusicDir = false;
+      }
+
+      if (hasMusicDir) {
+        // 加载音乐配置
+        const themeIniFileName = Engine.getFileNameVariant('theme.ini');
+        const themeIni = Engine.getIni(themeIniFileName);
+        const musicSpecs = new MusicSpecs(themeIni);
+        
+        // 创建AudioSystem适配器用于Music类
+        const musicAudioSystemAdapter = {
+          playMusicFile: async (file: any, repeat: boolean, onEnded?: () => void): Promise<boolean> => {
+            try {
+              await this.audioSystem!.playMusicFile(file, repeat, onEnded);
+              return true;
+            } catch (error) {
+              console.error('Failed to play music file:', error);
+              return false;
+            }
+          },
+          stopMusic: () => this.audioSystem!.stopMusic()
+        };
+        
+        // 创建Music实例
+        this.music = new Music(
+          musicAudioSystemAdapter,
+          Engine.getThemes(),
+          musicSpecs
+        );
+
+        // 加载音乐选项
+        const musicOptions = this.localPrefs.getItem(StorageKey.MusicOpts);
+        if (musicOptions) {
+          try {
+            this.music.unserializeOptions(musicOptions);
+            console.log('[Gui] Loaded music options from local storage');
+          } catch (error) {
+            console.warn('Failed to read music options from local storage', error);
+          }
+        }
+
+        console.log('[Gui] Music system initialized');
+      } else {
+        console.warn('[Gui] No music directory found - music system disabled');
+      }
+    } catch (error) {
+      console.error('[Gui] Failed to initialize music system:', error);
+    }
+  }
+
+  private async startMenuMusic(): Promise<void> {
+    if (!this.music) {
+      console.warn('[Gui] Music system not available - skipping menu music');
+      return;
+    }
+
+    // 检查AudioContext是否处于suspended状态（匹配原项目逻辑）
+    if (this.audioSystem && this.audioSystem.isSuspended()) {
+      console.log('[Gui] AudioContext is suspended, requesting user permission');
+      
+      // 显示弹窗请求音频权限（匹配原项目）
+      await new Promise<void>((resolve) => {
+        // 创建简单的弹窗（后续可以替换为更好的UI组件）
+        const modal = document.createElement('div');
+        modal.style.cssText = `
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background: rgba(0, 0, 0, 0.8);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 10000;
+          font-family: Arial, sans-serif;
+        `;
+        
+        const dialog = document.createElement('div');
+        dialog.style.cssText = `
+          background: #2a2a2a;
+          border: 2px solid #666;
+          padding: 20px;
+          border-radius: 8px;
+          text-align: center;
+          color: white;
+          max-width: 400px;
+        `;
+        
+        const message = document.createElement('p');
+        message.textContent = this.strings.get('GUI:RequestAudioPermission') || 
+                             'Click OK to enable audio for the game.';
+        message.style.marginBottom = '20px';
+        
+        const button = document.createElement('button');
+        button.textContent = this.strings.get('GUI:OK') || 'OK';
+        button.style.cssText = `
+          background: #4a4a4a;
+          border: 1px solid #666;
+          color: white;
+          padding: 8px 20px;
+          border-radius: 4px;
+          cursor: pointer;
+        `;
+        
+        button.onclick = async () => {
+          try {
+            // 激活AudioContext（匹配原项目的initMusicLoop调用）
+            await this.audioSystem!.initMusicLoop();
+            console.log('[Gui] AudioContext activated successfully');
+          } catch (error) {
+            console.error('[Gui] Failed to activate AudioContext:', error);
+          }
+          
+          document.body.removeChild(modal);
+          resolve();
+        };
+        
+        dialog.appendChild(message);
+        dialog.appendChild(button);
+        modal.appendChild(dialog);
+        document.body.appendChild(modal);
+      });
+    }
+
+    // 先播放一个测试音调来验证音频系统
+    await this.playTestAudio();
+
+    // 暂时注释掉音乐播放，直到音乐文件导入完成
+    /*
+    try {
+      console.log('[Gui] Starting menu music');
+      await this.music.play(MusicType.Normal);
+      console.log('[Gui] Menu music started successfully');
+    } catch (error) {
+      console.error('[Gui] Failed to start menu music:', error);
+    }
+    */
+    console.log('[Gui] Music playback temporarily disabled - import music files to enable');
+  }
+
+  private async playTestAudio(): Promise<void> {
+    if (!this.audioSystem) {
+      console.warn('[Gui] AudioSystem not available for test audio');
+      return;
+    }
+
+    try {
+      console.log('[Gui] Playing test audio tone...');
+      
+      // 创建一个简单的测试音调
+      const audioContext = (this.audioSystem as any).audioContext;
+      if (!audioContext) {
+        console.warn('[Gui] AudioContext not available for test audio');
+        return;
+      }
+
+      // 创建一个440Hz的正弦波（A音符）
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      // 设置音调参数
+      oscillator.frequency.setValueAtTime(440, audioContext.currentTime); // A4音符
+      oscillator.type = 'sine';
+      
+      // 设置音量（较小的音量）
+      gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+      gainNode.gain.linearRampToValueAtTime(0.1, audioContext.currentTime + 0.1);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+      
+      // 播放0.5秒
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + 0.5);
+      
+      console.log('[Gui] Test audio tone played successfully');
+      
+      // 等待音调播放完成
+      await new Promise(resolve => setTimeout(resolve, 600));
+      
+    } catch (error) {
+      console.error('[Gui] Failed to play test audio:', error);
     }
   }
 } 

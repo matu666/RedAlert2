@@ -1,7 +1,7 @@
 export class InternalPlaybackHandle {
   private playing: boolean = true;
   private isLoop: boolean = false;
-  private stopRequested: boolean = false;
+  public stopRequested: boolean = false;
   private sourceNode?: AudioBufferSourceNode;
   private gainNode?: GainNode;
   private panNode?: StereoPannerNode;

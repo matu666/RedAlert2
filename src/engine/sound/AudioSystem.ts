@@ -337,6 +337,16 @@ export class AudioSystem {
       );
     }
     
+    if (this.audioContext && this.audioContext.state === 'suspended') {
+      try {
+        await this.audioContext.resume();
+        console.log('[AudioSystem] AudioContext resumed successfully');
+      } catch (error) {
+        console.error('[AudioSystem] Failed to resume AudioContext:', error);
+        throw error;
+      }
+    }
+    
     if (!this.musicState) {
       this.initMusicNode();
     }
