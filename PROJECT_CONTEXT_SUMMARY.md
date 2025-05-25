@@ -795,3 +795,36 @@ Options = 16, OptionsSound = 17, OptionsKeyboard = 18
 ---
 
 **This represents the next major milestone: transitioning from a working asset pipeline to a functional game interface that users can actually interact with.**
+
+## 🎉 LATEST MILESTONE: Main Menu UI Rendering and Positioning Fixes
+
+**Date: October 26, 2023**
+
+### Critical UI Rendering Issues Resolved:
+- **HTML Element Positioning**:
+    - **Problem**: Text elements and other HTML-based UI components were misaligned, appearing offset from their intended positions and not scaling/moving correctly with window resizing.
+    - **Root Cause Analysis**: The root HTML container for `UiScene` was being appended directly to the application's root DOM element (`#ra2web-root`) without `position: relative` on `#ra2web-root`. This caused absolutely positioned child HTML elements to be positioned relative to the browser window instead of the main game canvas/container.
+    - **Solution Applied**: Added `position: relative;` to the `#ra2web-root` CSS rule in `public/css/main-legacy.css`. This ensures that all absolutely positioned child HTML elements (including those within `UiScene` and `MainMenu`) are now correctly positioned relative to the main application container.
+    - **Verification**: Text and UI elements now render in their correct positions within the main menu, and respond correctly to browser window resizing, consistent with the original project's behavior. The `MainMenu` component now correctly utilizes the `menuViewport` (800x600 centered region) for its layout.
+- **Animation System**:
+    - **Problem**: UI animations (e.g., button highlights, transitions) were not playing.
+    - **Root Cause Analysis**: The `UiAnimationLoop` was not being properly initialized and started within the `Gui` system. The main animation loop in `Gui.ts` was a direct `requestAnimationFrame` loop, bypassing the `UiAnimationLoop` which is responsible for driving UI-specific animations and updates, including those in `MainMenu`.
+    - **Solution Applied**: Modified `Gui.ts` to correctly instantiate and start `UiAnimationLoop` during the `initRenderer` phase. The existing `startAnimationLoop` method in `Gui.ts` was updated to acknowledge that the primary animation driver is now `UiAnimationLoop`.
+    - **Verification**: UI animations in the main menu are now playing correctly.
+
+### Color Channel Adjustment for Three.js Compatibility (Noted Deviation):
+- **Issue**: During earlier renderer migration, color channels for certain textures/materials had to be sourced differently (e.g., from alpha channel) compared to the original project.
+- **Reason**: This was a necessary workaround due to differences in texture handling or shader behavior between the Three.js version used in the original project and the version used in our React migration.
+- **Impact**: While this ensures visual fidelity, it represents a deviation from the original project's direct logic, documented here for transparency.
+
+### Current Status:
+- ✅ **Main Menu Renders**: The main menu background, buttons, and text elements are now displayed.
+- ✅ **Correct Positioning**: UI elements are positioned correctly within the 800x600 `menuViewport` and scale/move correctly with browser window resizing.
+- ✅ **Animations Working**: Basic UI animations are functional.
+- ⏳ **Video Playback**: Main menu background video is still not playing. Further investigation needed.
+- ⏳ **Audio System**: Audio system is not yet implemented.
+
+### Next Priority Items:
+1.  **Resolve Video Playback**: Investigate and fix the main menu background video (`ra2ts_l.webm` or alternatives).
+2.  **Implement Audio System**: Migrate and integrate the sound and music systems from the original project.
+3.  **Review Outstanding Degradations**: Continue to review and address any remaining workarounds or mock components.
