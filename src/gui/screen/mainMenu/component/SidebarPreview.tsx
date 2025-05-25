@@ -150,10 +150,18 @@ export class SidebarPreview extends UiComponent {
   }
 
   setTitle(title: string): void {
+    console.log('[SidebarPreview] setTitle called with:', title);
+    console.log('[SidebarPreview] titleView exists:', !!this.titleView);
     this.title = title;
     if (this.titleView) {
-      this.titleView.applyOptions((options: any) => options.title = title);
+      console.log('[SidebarPreview] Applying title to titleView');
+      this.titleView.applyOptions((options: any) => {
+        console.log('[SidebarPreview] Setting options.title to:', title);
+        options.title = title;
+      });
       this.updateTitleSize();
+    } else {
+      console.warn('[SidebarPreview] titleView is null, cannot set title');
     }
   }
 

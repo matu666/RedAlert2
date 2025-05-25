@@ -1,6 +1,7 @@
 import { EventDispatcher } from '../../util/event';
 
 export interface Screen {
+  title?: string;
   onEnter(params?: any): void | Promise<void>;
   onLeave(): void | Promise<void>;
   onStack?(): void | Promise<void>;
@@ -26,23 +27,17 @@ export abstract class Controller {
   async goToScreenBlocking(screenType: number, params?: any): Promise<void> {
     console.log(`[Controller] Going to screen: ${screenType}`);
     
-    // Leave current screen
-    if (this.currentScreen) {
-      await this.currentScreen.onLeave();
+    // Clear screen stack by leaving all current screens (like original)
+    while (this.screenStack.length) {
+      await this.leaveCurrentScreen();
     }
+    
+    // Push the new screen (like original)
+    await this.pushScreen(screenType, params);
+  }
 
-    // Clear screen stack
-    this.screenStack = [];
-
-    // Enter new screen
-    const screen = this.screens.get(screenType);
-    if (!screen) {
-      throw new Error(`Screen ${screenType} not found`);
-    }
-
-    this.currentScreen = screen;
-    await screen.onEnter(params);
-    this._onScreenChange.dispatch(this, screenType);
+  async leaveCurrentScreen(): Promise<void> {
+    await this.popScreen();
   }
 
   goToScreen(screenType: number, params?: any): void {
@@ -110,13 +105,6 @@ export abstract class Controller {
       }
     }
     return undefined;
-  }
-
-  async leaveCurrentScreen(): Promise<void> {
-    if (this.currentScreen) {
-      await this.currentScreen.onLeave();
-      this.currentScreen = undefined;
-    }
   }
 
   update(deltaTime: number): void {

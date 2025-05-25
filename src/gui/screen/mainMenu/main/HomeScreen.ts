@@ -10,6 +10,7 @@ export class HomeScreen implements Screen {
   private storageEnabled: boolean;
   private quickMatchEnabled: boolean;
   private controller?: MainMenuController;
+  public title: string;
 
   constructor(
     strings: Strings,
@@ -21,6 +22,7 @@ export class HomeScreen implements Screen {
     this.appVersion = appVersion;
     this.storageEnabled = storageEnabled;
     this.quickMatchEnabled = quickMatchEnabled;
+    this.title = this.strings.get("GUI:MainMenu") || "Main Menu";
   }
 
   setController(controller: MainMenuController): void {

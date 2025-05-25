@@ -26,7 +26,31 @@ export class MainMenuController extends Controller {
   }
 
   async pushScreen(screenType: MainMenuScreenType, params?: any): Promise<void> {
-    return super.pushScreen(screenType, params);
+    // Clear main component and sidebar title before pushing
+    this.setMainComponent();
+    this.setSidebarTitle("");
+    
+    await super.pushScreen(screenType, params);
+    
+    // Set sidebar title from the new screen if it has one (like original)
+    const screen = this.screens.get(screenType);
+    if (screen?.title) {
+      this.setSidebarTitle(screen.title);
+    }
+  }
+
+  async popScreen(): Promise<void> {
+    // Clear main component and sidebar title before popping
+    this.setMainComponent();
+    this.setSidebarTitle("");
+    
+    await super.popScreen();
+    
+    // Set sidebar title from the restored screen if it has one
+    const currentScreen = this.getCurrentScreen();
+    if (currentScreen?.title) {
+      this.setSidebarTitle(currentScreen.title);
+    }
   }
 
   // Main menu specific methods
@@ -80,6 +104,12 @@ export class MainMenuController extends Controller {
     console.log(`[MainMenuController] Setting sidebar title: ${title}`);
     if (this.mainMenu && this.mainMenu.setSidebarTitle) {
       this.mainMenu.setSidebarTitle(title);
+    }
+  }
+
+  setMainComponent(component?: any): void {
+    if (this.mainMenu && this.mainMenu.setContentComponent) {
+      this.mainMenu.setContentComponent(component);
     }
   }
 
