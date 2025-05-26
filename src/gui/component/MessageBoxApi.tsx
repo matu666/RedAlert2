@@ -41,7 +41,7 @@ export class MessageBoxApi {
         props: {
           children: typeof message === 'string' ? this.splitNewLines(message) : message,
           className: options?.className,
-          viewport: this.viewport,
+          viewport: this.viewport.value || this.viewport,
           zIndex: 101,
           buttons: typeof buttons === 'string' 
             ? [{ 
@@ -121,7 +121,7 @@ export class MessageBoxApi {
               resolve(undefined);
               element.destroy();
             },
-            viewport: this.uiScene.viewport
+            viewport: this.viewport.value || this.viewport
           }
         })
       );
@@ -137,7 +137,7 @@ export class MessageBoxApi {
 
   updateViewport(viewport: any): void {
     this.viewport = viewport;
-    this.component?.applyOptions((props: any) => (props.viewport = viewport));
+    this.component?.applyOptions((props: any) => (props.viewport = viewport.value || viewport));
   }
 
   updateText(text: string | React.ReactNode): void {

@@ -9,7 +9,6 @@ function App() {
   const appRef = useRef<Application | null>(null);
   const appInitialized = useRef<boolean>(false); // Prevent double initialization in StrictMode
   const [splashScreenProps, setSplashScreenProps] = useState<ComponentProps<typeof SplashScreenComponent> | null>(null);
-  const [appMainFinished, setAppMainFinished] = useState(false); // New state to track if app.main() has run
   const [showTestMode, setShowTestMode] = useState(false); // New state for test mode
 
   useEffect(() => {
@@ -34,7 +33,6 @@ function App() {
         try {
           await app.main();
           console.log('App.tsx: app.main() completed.');
-          setAppMainFinished(true); // Signal that app.main() is done
         } catch (error) {
           console.error("Error running Application.main():", error);
           // Optionally set an error state here to display in UI
@@ -101,12 +99,6 @@ function App() {
     <div className="App">
       {splashScreenProps && splashScreenProps.parentElement && (
         <SplashScreenComponent {...splashScreenProps} />
-      )}
-      {/* Message if app.main() hasn't finished yet but splash is gone (should be brief) */}
-      {!splashScreenProps && !appMainFinished && (
-        <p style={{ textAlign: 'center', marginTop: '20px' }}>
-          Application main logic running...
-        </p>
       )}
     </div>
   );

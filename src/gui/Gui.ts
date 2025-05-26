@@ -20,6 +20,7 @@ import { MusicSpecs } from '../engine/sound/MusicSpecs';
 import { SoundSpecs } from '../engine/sound/SoundSpecs';
 import { ChannelType } from '../engine/sound/ChannelType';
 import { LocalPrefs, StorageKey } from '../LocalPrefs';
+import { MessageBoxApi } from './component/MessageBoxApi';
 
 export class Gui {
   private appVersion: string;
@@ -35,6 +36,7 @@ export class Gui {
   
   // Controllers
   private rootController?: RootController;
+  private messageBoxApi?: MessageBoxApi;
   
   // 音频系统
   private mixer?: Mixer;
@@ -88,8 +90,8 @@ export class Gui {
     // Start animation loop (already started by UiAnimationLoop)
     this.startAnimationLoop();
     
-    // Navigate to main menu (music will be handled by MainMenuController)
-    await this.navigateToMainMenu();
+    // Route to initial screen (includes audio permission check)
+    await this.routeToInitialScreen();
   }
 
   private initRenderer(): void {
@@ -147,6 +149,13 @@ export class Gui {
       Engine.images,
       Engine.palettes,
       this.uiScene.getCamera()
+    );
+    
+    // Initialize MessageBoxApi
+    this.messageBoxApi = new MessageBoxApi(
+      this.viewport,
+      this.uiScene,
+      this.jsxRenderer
     );
   }
 
@@ -282,10 +291,10 @@ export class Gui {
     }
   }
 
-  private async navigateToMainMenu(): Promise<void> {
-    console.log('[Gui] Navigating to main menu');
+  private async routeToInitialScreen(): Promise<void> {
+    console.log('[Gui] Routing to initial screen');
     
-    if (!this.rootController || !this.uiScene || !this.jsxRenderer || !this.renderer) {
+    if (!this.rootController || !this.uiScene || !this.jsxRenderer || !this.renderer || !this.messageBoxApi) {
       throw new Error('GUI components not properly initialized');
     }
 
@@ -295,6 +304,42 @@ export class Gui {
     // Add UiScene's HTML container to DOM (critical for HTML elements to be visible)
     this.rootEl.appendChild(this.uiScene.getHtmlContainer().getElement()!);
     console.log('[Gui] Added UiScene HTML container to DOM');
+
+    let hasShownDialog = false;
+
+    // Check for audio permission (match original project logic)
+    if (this.music && !hasShownDialog && this.audioSystem?.isSuspended()) {
+      console.log('[Gui] Audio system is suspended, requesting permission');
+      
+      await new Promise<void>((resolve) => {
+        this.messageBoxApi!.show(
+          this.strings.get("GUI:RequestAudioPermission"),
+          this.strings.get("GUI:OK"),
+          async () => {
+            try {
+              await this.audioSystem!.initMusicLoop();
+              console.log('[Gui] Audio permission granted and music loop initialized');
+            } catch (error) {
+              console.error('[Gui] Failed to initialize music loop:', error);
+            }
+            resolve();
+          }
+        );
+      });
+      
+      hasShownDialog = true;
+    }
+
+    // Navigate to main menu
+    await this.navigateToMainMenu();
+  }
+
+  private async navigateToMainMenu(): Promise<void> {
+    console.log('[Gui] Navigating to main menu');
+    
+    if (!this.rootController || !this.uiScene || !this.jsxRenderer || !this.renderer) {
+      throw new Error('GUI components not properly initialized');
+    }
 
     // Get video URL
     const videoSrc = await this.getMainMenuVideoUrl();
@@ -340,6 +385,11 @@ export class Gui {
 
   async destroy(): Promise<void> {
     console.log('[Gui] Destroying GUI system');
+    
+    // Destroy MessageBoxApi
+    if (this.messageBoxApi) {
+      this.messageBoxApi.destroy();
+    }
     
     // Stop music and dispose audio system
     if (this.music) {
