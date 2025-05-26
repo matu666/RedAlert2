@@ -3,6 +3,7 @@ import { JsxRenderer } from './jsx/JsxRenderer';
 import { RootController } from './screen/RootController';
 import { MainMenuRootScreen } from './screen/mainMenu/MainMenuRootScreen';
 import { HomeScreen } from './screen/mainMenu/main/HomeScreen';
+import { StorageScreen } from './screen/options/StorageScreen';
 import { MainMenuScreenType, ScreenType } from './screen/ScreenType';
 import { Strings } from '../data/Strings';
 import { ShpFile } from '../data/ShpFile';
@@ -305,6 +306,7 @@ export class Gui {
     // Create sub-screens map
     const subScreens = new Map<MainMenuScreenType, any>();
     subScreens.set(MainMenuScreenType.Home, HomeScreen);
+    subScreens.set(MainMenuScreenType.OptionsStorage, StorageScreen);
     
     // Create main menu root screen - use Engine's collections directly
     const mainMenuRootScreen = new MainMenuRootScreen(

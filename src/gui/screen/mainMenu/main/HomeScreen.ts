@@ -98,6 +98,17 @@ export class HomeScreen implements Screen {
           alert('Options - 功能开发中\n\n需要设置界面');
         }
       },
+      // 临时管理存储，项目未完全贯通前，调试存储系统使用
+      {
+        label: '临时管理存储',
+        tooltip: '管理游戏资源存储和文件系统',
+        onClick: () => {
+          console.log('[HomeScreen] Storage Management clicked');
+          if (this.controller) {
+            this.controller.goToScreen(MainMenuScreenType.OptionsStorage);
+          }
+        }
+      },
       {
         label: this.strings.get('GUI:Fullscreen') || 'Fullscreen',
         tooltip: this.strings.get('STT:Fullscreen') || 'Toggle full screen mode',
