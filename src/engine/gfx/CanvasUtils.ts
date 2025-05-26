@@ -103,7 +103,7 @@ export class CanvasUtils {
     return canvas;
   }
 
-  static async canvasToBlob(canvas: HTMLCanvasElement): Promise<Blob> {
+  static async canvasToBlob(canvas: HTMLCanvasElement, mimeType: string = "image/png"): Promise<Blob> {
     let blob = await new Promise<Blob | null>((resolve) => {
       try {
         canvas.toBlob((blob) => {

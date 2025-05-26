@@ -90,7 +90,7 @@ export class Music {
   private getMusicSpec(name: string): MusicSpec | undefined {
     const spec = this.musicSpecs.getSpec(name);
     if (spec) return spec;
-    console.warn(`Music "${name}" is not defined`);
+    console.warn(`[Music] Music "${name}" is not defined`);
   }
 
   async play(type: MusicType): Promise<void> {
@@ -163,16 +163,17 @@ export class Music {
 
   private async getMp3File(name: string): Promise<any> {
     const filename = name.toLowerCase() + ".mp3";
+    
     let file;
     try {
       file = await this.audioFiles.get(filename);
     } catch (error) {
-      console.error("Failed to fetch audio file", error);
+      console.error(`[Music] Failed to fetch audio file "${filename}":`, error);
       return;
     }
     
     if (file) return file;
-    console.warn(`Audio file "${filename}" not found.`);
+    console.warn(`[Music] Audio file "${filename}" not found.`);
   }
 
   private buildPlaylist(shuffle: boolean): MusicSpec[] {
@@ -217,4 +218,5 @@ export class Music {
     }
   }
 }
+  
   

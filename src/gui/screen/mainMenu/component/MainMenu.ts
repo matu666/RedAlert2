@@ -14,14 +14,14 @@ import { VersionString } from "./VersionString";
 import * as THREE from 'three';
 
 // 类型定义
-interface Viewport {
+export interface Viewport {
   x: number;
   y: number;
   width: number;
   height: number;
 }
 
-interface ButtonConfig {
+export interface ButtonConfig {
   label: string;
   tooltip?: string;
   disabled?: boolean;
@@ -29,17 +29,17 @@ interface ButtonConfig {
   onClick?: () => void;
 }
 
-interface SidebarMpContent {
+export interface SidebarMpContent {
   text: string;
   icon?: string;
   tooltip?: string;
 }
 
-interface ImageMap {
+export interface ImageMap {
   get(name: string): any;
 }
 
-interface JsxRenderer {
+export interface JsxRenderer {
   render(jsx: any): UiObject[];
 }
 

@@ -88,11 +88,8 @@ export class Gui {
     // Start animation loop (already started by UiAnimationLoop)
     this.startAnimationLoop();
     
-    // Navigate to main menu
+    // Navigate to main menu (music will be handled by MainMenuController)
     await this.navigateToMainMenu();
-    
-    // Start playing menu music
-    await this.startMenuMusic();
   }
 
   private initRenderer(): void {
@@ -316,7 +313,9 @@ export class Gui {
       Engine.images,  // Use Engine's LazyResourceCollection directly
       this.jsxRenderer,
       this.appVersion,
-      videoSrc  // Pass video source
+      videoSrc,  // Pass video source
+      this.sound,  // Pass sound system
+      this.music   // Pass music system
     );
     
     // Add screen to root controller
@@ -565,140 +564,5 @@ export class Gui {
     }
   }
 
-  private async startMenuMusic(): Promise<void> {
-    if (!this.music) {
-      console.warn('[Gui] Music system not available - skipping menu music');
-      return;
-    }
 
-    // 检查AudioContext是否处于suspended状态（匹配原项目逻辑）
-    if (this.audioSystem && this.audioSystem.isSuspended()) {
-      console.log('[Gui] AudioContext is suspended, requesting user permission');
-      
-      // 显示弹窗请求音频权限（匹配原项目）
-      await new Promise<void>((resolve) => {
-        // 创建简单的弹窗（后续可以替换为更好的UI组件）
-        const modal = document.createElement('div');
-        modal.style.cssText = `
-          position: fixed;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          background: rgba(0, 0, 0, 0.8);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          z-index: 10000;
-          font-family: Arial, sans-serif;
-        `;
-        
-        const dialog = document.createElement('div');
-        dialog.style.cssText = `
-          background: #2a2a2a;
-          border: 2px solid #666;
-          padding: 20px;
-          border-radius: 8px;
-          text-align: center;
-          color: white;
-          max-width: 400px;
-        `;
-        
-        const message = document.createElement('p');
-        message.textContent = this.strings.get('GUI:RequestAudioPermission') || 
-                             'Click OK to enable audio for the game.';
-        message.style.marginBottom = '20px';
-        
-        const button = document.createElement('button');
-        button.textContent = this.strings.get('GUI:OK') || 'OK';
-        button.style.cssText = `
-          background: #4a4a4a;
-          border: 1px solid #666;
-          color: white;
-          padding: 8px 20px;
-          border-radius: 4px;
-          cursor: pointer;
-        `;
-        
-        button.onclick = async () => {
-          try {
-            // 激活AudioContext（匹配原项目的initMusicLoop调用）
-            await this.audioSystem!.initMusicLoop();
-            console.log('[Gui] AudioContext activated successfully');
-          } catch (error) {
-            console.error('[Gui] Failed to activate AudioContext:', error);
-          }
-          
-          document.body.removeChild(modal);
-          resolve();
-        };
-        
-        dialog.appendChild(message);
-        dialog.appendChild(button);
-        modal.appendChild(dialog);
-        document.body.appendChild(modal);
-      });
-    }
-
-    // 先播放一个测试音调来验证音频系统
-    await this.playTestAudio();
-
-    // 暂时注释掉音乐播放，直到音乐文件导入完成
-    /*
-    try {
-      console.log('[Gui] Starting menu music');
-      await this.music.play(MusicType.Normal);
-      console.log('[Gui] Menu music started successfully');
-    } catch (error) {
-      console.error('[Gui] Failed to start menu music:', error);
-    }
-    */
-    console.log('[Gui] Music playback temporarily disabled - import music files to enable');
-  }
-
-  private async playTestAudio(): Promise<void> {
-    if (!this.audioSystem) {
-      console.warn('[Gui] AudioSystem not available for test audio');
-      return;
-    }
-
-    try {
-      console.log('[Gui] Playing test audio tone...');
-      
-      // 创建一个简单的测试音调
-      const audioContext = (this.audioSystem as any).audioContext;
-      if (!audioContext) {
-        console.warn('[Gui] AudioContext not available for test audio');
-        return;
-      }
-
-      // 创建一个440Hz的正弦波（A音符）
-      const oscillator = audioContext.createOscillator();
-      const gainNode = audioContext.createGain();
-      
-      oscillator.connect(gainNode);
-      gainNode.connect(audioContext.destination);
-      
-      // 设置音调参数
-      oscillator.frequency.setValueAtTime(440, audioContext.currentTime); // A4音符
-      oscillator.type = 'sine';
-      
-      // 设置音量（较小的音量）
-      gainNode.gain.setValueAtTime(0, audioContext.currentTime);
-      gainNode.gain.linearRampToValueAtTime(0.1, audioContext.currentTime + 0.1);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
-      
-      // 播放0.5秒
-      oscillator.start(audioContext.currentTime);
-      oscillator.stop(audioContext.currentTime + 0.5);
-      
-      console.log('[Gui] Test audio tone played successfully');
-      
-      // 等待音调播放完成
-      await new Promise(resolve => setTimeout(resolve, 600));
-      
-    } catch (error) {
-      console.error('[Gui] Failed to play test audio:', error);
-    }
-  }
 } 

@@ -16,7 +16,7 @@ export class Mp3File {
     }
   }
 
-  async asFile(): Promise<File> {
+  asFile(): File {
     let blob: Blob;
     if (this.sourceData instanceof Blob) { // Handles File as well, since File extends Blob
       blob = this.sourceData;
@@ -39,12 +39,12 @@ export class Mp3File {
   }
 
   // Helper to get the underlying blob if needed, e.g., for creating an Object URL
-  async getBlob(): Promise<Blob> {
+  getBlob(): Blob {
     if (this.sourceData instanceof Blob) {
         return this.sourceData;
     }
     // Convert other types to Blob
-    const file = await this.asFile();
+    const file = this.asFile();
     return file;
   }
 }

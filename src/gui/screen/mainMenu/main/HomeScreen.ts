@@ -1,8 +1,8 @@
 import { Screen } from '../../Controller';
 import { MainMenuScreenType } from '../../ScreenType';
 import { MainMenuController } from '../MainMenuController';
-import { SidebarButton } from '../component/MainMenu';
 import { Strings } from '../../../../data/Strings';
+import { MusicType } from '../../../../engine/sound/Music';
 
 export class HomeScreen implements Screen {
   private strings: Strings;
@@ -11,6 +11,7 @@ export class HomeScreen implements Screen {
   private quickMatchEnabled: boolean;
   private controller?: MainMenuController;
   public title: string;
+  public musicType: MusicType;
 
   constructor(
     strings: Strings,
@@ -23,6 +24,7 @@ export class HomeScreen implements Screen {
     this.storageEnabled = storageEnabled;
     this.quickMatchEnabled = quickMatchEnabled;
     this.title = this.strings.get("GUI:MainMenu") || "Main Menu";
+    this.musicType = MusicType.Intro; // 主菜单播放INTRO音乐（如果不存在会有调试信息）
   }
 
   setController(controller: MainMenuController): void {

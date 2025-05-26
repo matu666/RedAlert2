@@ -2,6 +2,7 @@ import { EventDispatcher } from '../../util/event';
 
 export interface Screen {
   title?: string;
+  musicType?: any; // MusicType from Music.ts - using any to avoid circular imports
   onEnter(params?: any): void | Promise<void>;
   onLeave(): void | Promise<void>;
   onStack?(): void | Promise<void>;

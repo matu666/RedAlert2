@@ -37,6 +37,16 @@ export class MainMenuController extends Controller {
     if (screen?.title) {
       this.setSidebarTitle(screen.title);
     }
+    
+    // Play music based on screen's musicType (match original project logic)
+    if (screen && 'musicType' in screen && screen.musicType !== undefined && this.music) {
+      console.log(`[MainMenuController] Playing music for screen ${screenType}: ${screen.musicType}`);
+      try {
+        await this.music.play(screen.musicType);
+      } catch (error) {
+        console.error(`[MainMenuController] Failed to play music for screen ${screenType}:`, error);
+      }
+    }
   }
 
   async popScreen(): Promise<void> {
