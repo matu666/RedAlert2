@@ -1,43 +1,43 @@
 // 事件监听器函数类型
-type EventListener<T = any> = (data: T, eventType: string) => void;
+type EventListener<TSource = any, TData = any> = (data: TData, source: TSource) => void;
 
 // 事件接口
-interface IEvent<T = any> {
-  subscribe(listener: EventListener<T>): void;
-  subscribeOnce(listener: EventListener<T>): void;
-  unsubscribe(listener: EventListener<T>): void;
+interface IEvent<TSource = any, TData = any> {
+  subscribe(listener: EventListener<TSource, TData>): void;
+  subscribeOnce(listener: EventListener<TSource, TData>): void;
+  unsubscribe(listener: EventListener<TSource, TData>): void;
 }
 
 // 事件分发器类
-export class EventDispatcher<T = any> implements IEvent<T> {
-  private listeners: Set<EventListener<T>>;
+export class EventDispatcher<TSource = any, TData = any> implements IEvent<TSource, TData> {
+  private listeners: Set<EventListener<TSource, TData>>;
 
   constructor() {
-    this.listeners = new Set<EventListener<T>>();
+    this.listeners = new Set<EventListener<TSource, TData>>();
   }
 
-  subscribe(listener: EventListener<T>): void {
+  subscribe(listener: EventListener<TSource, TData>): void {
     this.listeners.add(listener);
   }
 
-  subscribeOnce(listener: EventListener<T>): void {
-    let onceListener: EventListener<T> | undefined = (data: T, eventType: string) => {
-      listener(data, eventType);
+  subscribeOnce(listener: EventListener<TSource, TData>): void {
+    let onceListener: EventListener<TSource, TData> | undefined = (data: TData, source: TSource) => {
+      listener(data, source);
       this.unsubscribe(onceListener!);
       onceListener = undefined;
     };
     this.subscribe(onceListener);
   }
 
-  unsubscribe(listener: EventListener<T>): void {
+  unsubscribe(listener: EventListener<TSource, TData>): void {
     this.listeners.delete(listener);
   }
 
-  dispatch(eventType: string, data: T): void {
-    this.listeners.forEach((listener) => listener(data, eventType));
+  dispatch(source: TSource, data: TData): void {
+    this.listeners.forEach((listener) => listener(data, source));
   }
 
-  asEvent(): IEvent<T> {
+  asEvent(): IEvent<TSource, TData> {
     return this;
   }
 }

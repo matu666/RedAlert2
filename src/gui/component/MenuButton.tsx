@@ -1,8 +1,29 @@
 import React from "react";
 
-export class MenuButton extends React.Component {
+interface ButtonConfig {
+  label: string;
+  disabled?: boolean;
+  tooltip?: string;
+}
+
+interface Box {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+interface MenuButtonProps {
+  buttonConfig: ButtonConfig;
+  box: Box;
+  onMouseDown?: (event: React.MouseEvent) => void;
+  onMouseUp?: (event: React.MouseEvent) => void;
+  onClick?: (event: React.MouseEvent) => void;
+}
+
+export class MenuButton extends React.Component<MenuButtonProps> {
   render() {
-    const buttonConfig = this.props.buttonConfig;
+    const { buttonConfig } = this.props;
     
     if (!buttonConfig) {
       return null;
@@ -22,7 +43,7 @@ export class MenuButton extends React.Component {
     );
   }
 
-  getClassName(buttonConfig) {
+  getClassName(buttonConfig: ButtonConfig): string {
     let classes = ["menu-button"];
     if (buttonConfig.disabled) {
       classes.push("disabled");
@@ -30,8 +51,8 @@ export class MenuButton extends React.Component {
     return classes.join(" ");
   }
 
-  getStyle() {
-    const box = this.props.box;
+  getStyle(): React.CSSProperties {
+    const { box } = this.props;
     return {
       position: "absolute",
       left: box.x,
@@ -42,21 +63,21 @@ export class MenuButton extends React.Component {
     };
   }
 
-  onMouseDown(event) {
+  onMouseDown(event: React.MouseEvent): void {
     if (!this.props.buttonConfig.disabled && this.props.onMouseDown) {
       this.props.onMouseDown(event);
     }
   }
 
-  onMouseUp(event) {
+  onMouseUp(event: React.MouseEvent): void {
     if (!this.props.buttonConfig.disabled && this.props.onMouseUp) {
       this.props.onMouseUp(event);
     }
   }
 
-  onClick(event) {
+  onClick(event: React.MouseEvent): void {
     if (!this.props.buttonConfig.disabled && this.props.onClick) {
       this.props.onClick(event);
     }
   }
-} 
+}

@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, MutableRefObject } from 'react';
 
-interface SplashScreenProps {
+export interface SplashScreenProps {
   width: number;
   height: number;
   parentElement: HTMLElement | null; // Changed to allow null for initial render

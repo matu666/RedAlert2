@@ -13,22 +13,82 @@ import { MenuTooltip } from "./MenuTooltip";
 import { VersionString } from "./VersionString";
 import * as THREE from 'three';
 
+// 类型定义
+interface Viewport {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+interface ButtonConfig {
+  label: string;
+  tooltip?: string;
+  disabled?: boolean;
+  isBottom?: boolean;
+  onClick?: () => void;
+}
+
+interface SidebarMpContent {
+  text: string;
+  icon?: string;
+  tooltip?: string;
+}
+
+interface ImageMap {
+  get(name: string): any;
+}
+
+interface JsxRenderer {
+  render(jsx: any): UiObject[];
+}
+
 export class MainMenu extends UiObject {
-  constructor(viewport, images, jsxRenderer, videoSrc) {
+  // 基础属性
+  private viewport: Viewport;
+  private images: ImageMap;
+  private jsxRenderer: JsxRenderer;
+  private videoSrc: string;
+  
+  // UI对象数组
+  private rootObjects: UiObject[] = [];
+  private sidebarObjects: UiObject[] = [];
+  private sidebarSlots: any[] = [];
+  private sidebarButtons: any[] = [];
+  
+  // 配置和状态
+  private sidebarButtonConfigs: ButtonConfig[] = [];
+  private sidebarButtonsRawConfigs?: ButtonConfig[];
+  private sidebarMpSlotEnabled: boolean = false;
+  private sidebarCollapsed: boolean = true;
+  private sidebarNeedsRefresh?: boolean;
+  
+  // 内容相关
+  private sidebarMpSlotContent?: SidebarMpContent;
+  private contentComponent?: UiObject;
+  private sidebarPreviewInner?: UiObject;
+  
+  // 事件分发器
+  private _onSidebarToggle = new EventDispatcher<MainMenu, boolean>();
+  
+  // UI组件引用
+  private mainContainer!: UiObject;
+  private statusBar!: UiObject;
+  private sidebarContainer!: UiObject;
+  private sidebarMpSlotContainer!: UiObject;
+  private sidebarMpSlot!: any;
+  private sidebarMpSlotContentEl!: any;
+  private sidebarPreview!: SidebarPreview;
+  private menuVideo!: HtmlView;
+  private version!: HtmlView;
+
+  constructor(viewport: Viewport, images: ImageMap, jsxRenderer: JsxRenderer, videoSrc: string) {
     super(new THREE.Object3D(), new HtmlContainer());
     
     this.viewport = viewport;
     this.images = images;
     this.jsxRenderer = jsxRenderer;
     this.videoSrc = videoSrc;
-    this.rootObjects = [];
-    this.sidebarObjects = [];
-    this.sidebarSlots = [];
-    this.sidebarMpSlotEnabled = false;
-    this.sidebarButtons = [];
-    this.sidebarButtonConfigs = [];
-    this.sidebarCollapsed = true;
-    this._onSidebarToggle = new EventDispatcher();
     
     this.create3DObject();
   }
@@ -37,7 +97,7 @@ export class MainMenu extends UiObject {
     return this._onSidebarToggle;
   }
 
-  setViewport(viewport) {
+  setViewport(viewport: Viewport): void {
     this.viewport = viewport;
     this.setPosition(this.viewport.x, this.viewport.y);
     
@@ -58,7 +118,7 @@ export class MainMenu extends UiObject {
     }
   }
 
-  setContentComponent(component) {
+  setContentComponent(component?: UiObject): void {
     let container = this.mainContainer;
     if (this.contentComponent) {
       container.remove(this.contentComponent);
@@ -71,7 +131,7 @@ export class MainMenu extends UiObject {
     }
   }
 
-  setSlots(slotCount, hasBottomSlot, mpSlotEnabled = false) {
+  setSlots(slotCount: number, hasBottomSlot: boolean, mpSlotEnabled: boolean = false): void {
     let totalSlots = this.sidebarSlots.length;
     if (!totalSlots) {
       throw new Error("Cannot call setButtons prior to render");
@@ -83,25 +143,25 @@ export class MainMenu extends UiObject {
     this.sidebarSlots.forEach((slot, index) => {
       let animRunner = slot.getAnimationRunner();
       if (index < slotCount + (mpSlotEnabled ? 1 : 0)) {
-        animRunner.buttonState = MenuButtonState.Unlit;
+        (animRunner as any).buttonState = MenuButtonState.Unlit;
       } else if (index === totalSlots - 1) {
-        animRunner.buttonState = hasBottomSlot 
+        (animRunner as any).buttonState = hasBottomSlot 
           ? MenuButtonState.Unlit 
           : MenuButtonState.Hidden;
       } else {
-        animRunner.buttonState = MenuButtonState.Hidden;
+        (animRunner as any).buttonState = MenuButtonState.Hidden;
       }
     });
   }
 
-  setButtons(buttons, mpSlotEnabled = false) {
+  setButtons(buttons: ButtonConfig[], mpSlotEnabled: boolean = false): void {
     console.log('[MainMenu] setButtons called, sidebarButtons.length:', this.sidebarButtons.length);
     this.sidebarButtonsRawConfigs = buttons;
     this.sidebarMpSlotEnabled = mpSlotEnabled;
     this.updateButtons(buttons);
   }
 
-  updateButtons(buttons) {
+  updateButtons(buttons: ButtonConfig[]): void {
     console.log('[MainMenu] updateButtons called, sidebarButtons.length:', this.sidebarButtons.length);
     let mpSlotEnabled = this.sidebarMpSlotEnabled;
     const hasBottomButton = !!buttons.find((btn) => !!btn.isBottom);
@@ -110,7 +170,7 @@ export class MainMenu extends UiObject {
     this.updateSidebarMpContent();
     
     this.sidebarButtons.forEach((btn) =>
-      btn.applyOptions((options) => (options.buttonConfig = undefined))
+      btn.applyOptions((options: any) => (options.buttonConfig = undefined))
     );
     
     buttons.forEach((buttonConfig, index) => {
@@ -125,7 +185,7 @@ export class MainMenu extends UiObject {
       
       if (this.sidebarButtons[slotIndex]) {
         this.sidebarButtons[slotIndex].applyOptions(
-          (options) => (options.buttonConfig = {
+          (options: any) => (options.buttonConfig = {
             label: buttonConfig.label,
             tooltip: buttonConfig.tooltip,
             disabled: !!buttonConfig.disabled,
@@ -139,11 +199,11 @@ export class MainMenu extends UiObject {
     this.sidebarNeedsRefresh = true;
   }
 
-  isSidebarCollapsed() {
+  isSidebarCollapsed(): boolean {
     return this.sidebarCollapsed;
   }
 
-  showButtons() {
+  showButtons(): void {
     this.sidebarCollapsed = false;
     this.sidebarNeedsRefresh = true;
     this.sidebarMpSlot.getAnimationRunner().slideIn();
@@ -153,7 +213,7 @@ export class MainMenu extends UiObject {
     });
   }
 
-  hideButtons() {
+  hideButtons(): void {
     this.sidebarCollapsed = true;
     this.updateSidebarButtons();
     this.sidebarNeedsRefresh = true;
@@ -164,15 +224,15 @@ export class MainMenu extends UiObject {
     });
   }
 
-  setSidebarTitle(title) {
+  setSidebarTitle(title: string): void {
     this.sidebarPreview.setTitle(title);
   }
 
-  toggleSidebarPreview(visible) {
+  toggleSidebarPreview(visible: boolean): void {
     this.sidebarPreview.toggleSidebarPreview(visible);
   }
 
-  setSidebarPreview(preview) {
+  setSidebarPreview(preview: UiObject): void {
     if (this.sidebarPreviewInner) {
       this.sidebarPreviewInner.destroy();
     }
@@ -180,11 +240,11 @@ export class MainMenu extends UiObject {
     this.sidebarPreviewInner = preview;
   }
 
-  getSidebarPreviewSize() {
+  getSidebarPreviewSize(): { width: number; height: number } {
     return this.sidebarPreview.getPreviewSize();
   }
 
-  toggleVideo(visible) {
+  toggleVideo(visible: boolean): void {
     console.log('[MainMenu] toggleVideo called, visible:', visible, 'menuVideo exists:', !!this.menuVideo);
     if (!this.menuVideo) {
       throw new Error("Cannot call toggleVideo prior to render");
@@ -193,24 +253,24 @@ export class MainMenu extends UiObject {
     console.log('[MainMenu] Video visibility set to:', visible);
   }
 
-  showVersion(version) {
+  showVersion(version: string): void {
     console.log('[MainMenu] showVersion called, version:', version, 'version element exists:', !!this.version);
     this.version.getUiObject().setVisible(true);
-    this.version.getElement().applyOptions((options) => (options.value = version));
+    this.version.getElement().applyOptions((options: any) => (options.value = version));
     console.log('[MainMenu] Version shown:', version);
   }
 
-  hideVersion() {
+  hideVersion(): void {
     this.version.getUiObject().setVisible(false);
   }
 
-  setSidebarMpContent(content) {
+  setSidebarMpContent(content: SidebarMpContent): void {
     this.sidebarMpSlotContent = content;
     this.updateSidebarMpContent();
   }
 
-  updateSidebarMpContent() {
-    this.sidebarMpSlotContentEl.applyOptions((options) => {
+  updateSidebarMpContent(): void {
+    this.sidebarMpSlotContentEl.applyOptions((options: any) => {
       if (this.sidebarMpSlotContent) {
         options.text = this.sidebarMpSlotContent.text;
         options.icon = this.sidebarMpSlotContent.icon;
@@ -219,7 +279,7 @@ export class MainMenu extends UiObject {
     });
   }
 
-  getImage(name) {
+  getImage(name: string): any {
     const image = this.images.get(name);
     if (!image) {
       throw new Error(`Missing image "${name}"`);
@@ -227,7 +287,7 @@ export class MainMenu extends UiObject {
     return image;
   }
 
-  create3DObject() {
+  create3DObject(): void {
     console.log('[MainMenu] Creating 3D object');
     super.create3DObject();
     
@@ -263,14 +323,14 @@ export class MainMenu extends UiObject {
             {
               width: mainImage.width,
               height: mainImage.height,
-              ref: (ref) => (this.mainContainer = ref),
+              ref: (ref: UiObject) => (this.mainContainer = ref),
             },
             jsx("sprite", { image: mainImage, palette: "shell.pal" }),
             jsx(HtmlView, {
               component: MenuVideo,
               props: { src: this.videoSrc },
               hidden: true,
-              ref: (ref) => (this.menuVideo = ref),
+              ref: (ref: HtmlView) => (this.menuVideo = ref),
             }),
           ),
           jsx(
@@ -278,7 +338,7 @@ export class MainMenu extends UiObject {
             {
               x: 0,
               y: statusBarY,
-              ref: (ref) => (this.statusBar = ref),
+              ref: (ref: UiObject) => (this.statusBar = ref),
             },
             jsx("sprite", { image: statusBarImage, palette: "shell.pal" }),
             jsx(HtmlView, {
@@ -293,20 +353,20 @@ export class MainMenu extends UiObject {
             {
               x: sidebarViewport.x,
               y: sidebarViewport.y,
-              ref: (ref) => (this.sidebarContainer = ref),
+              ref: (ref: UiObject) => (this.sidebarContainer = ref),
             },
             jsx(SidebarPreview, {
               sdtpImg: sidebarImage,
               sdtpAnimImg: sidebarAnimImage,
               closed: true,
-              ref: (ref) => (this.sidebarPreview = ref),
+              ref: (ref: SidebarPreview) => (this.sidebarPreview = ref),
             }),
             jsx(HtmlView, {
               component: VersionString,
               props: { value: "" },
               width: sidebarViewport.width,
               y: sidebarViewport.height - 20,
-              ref: (ref) => (this.version = ref),
+              ref: (ref: HtmlView) => (this.version = ref),
               hidden: true,
             }),
           ),
@@ -321,7 +381,7 @@ export class MainMenu extends UiObject {
     }
   }
 
-  createSidebarButtons(viewport) {
+  createSidebarButtons(viewport: { x: number; y: number; width: number; height: number }): void {
     let buttonBgImage = this.getImage("sdbtnbkgd.shp");
     let buttonAnimImage = this.getImage("sdbtnanm.shp");
     const slotCount = Math.floor(viewport.height / buttonBgImage.height);
@@ -351,14 +411,14 @@ export class MainMenu extends UiObject {
                     {
                       zIndex: 1,
                       hidden: true,
-                      ref: (ref) => (this.sidebarMpSlotContainer = ref),
+                      ref: (ref: UiObject) => (this.sidebarMpSlotContainer = ref),
                       x: 12,
                       y: -buttonBgImage.height,
                     },
                     jsx("sprite", {
                       image: "sdmpbtn.shp",
                       palette: "shell.pal",
-                      ref: (ref) => (this.sidebarMpSlot = ref),
+                      ref: (ref: any) => (this.sidebarMpSlot = ref),
                       animationRunner: new MenuMpSlotAnimRunner(),
                     }),
                     jsx(HtmlView, {
@@ -366,29 +426,29 @@ export class MainMenu extends UiObject {
                       props: { text: "" },
                       width: 146,
                       height: 2 * buttonBgImage.height,
-                      innerRef: (ref) => (this.sidebarMpSlotContentEl = ref),
+                      innerRef: (ref: any) => (this.sidebarMpSlotContentEl = ref),
                     }),
                   )
                 : [],
               jsx("sprite", {
                 image: buttonAnimImage,
                 palette: "sdbtnanm.pal",
-                ref: (ref) => this.sidebarSlots.push(ref),
+                ref: (ref: any) => this.sidebarSlots.push(ref),
                 x: 12,
                 animationRunner: animRunner,
               }),
               jsx(HtmlView, {
                 x: 12,
                 hidden: true,
-                innerRef: (ref) => this.sidebarButtons.push(ref),
+                innerRef: (ref: any) => this.sidebarButtons.push(ref),
                 component: MenuButton,
                 props: {
                   box: { x: 0, y: 0, width: 146, height: buttonAnimImage.height },
                   buttonConfig: null, // 初始化为null，后续会通过applyOptions设置
                   onMouseDown: () => {
-                    animRunner.buttonState = MenuButtonState.Active;
+                    (animRunner as any).buttonState = MenuButtonState.Active;
                     let mouseUpHandler = () => {
-                      animRunner.buttonState = MenuButtonState.Normal;
+                      (animRunner as any).buttonState = MenuButtonState.Normal;
                       document.removeEventListener("mouseup", mouseUpHandler);
                     };
                     document.addEventListener("mouseup", mouseUpHandler);
@@ -413,7 +473,7 @@ export class MainMenu extends UiObject {
     this.sidebarContainer.add(...this.sidebarObjects);
   }
 
-  computeSidebarViewport(sidebarImage) {
+  computeSidebarViewport(sidebarImage: any): { x: number; y: number; width: number; height: number } {
     return {
       x: this.viewport.width - sidebarImage.width,
       y: 0,
@@ -422,7 +482,7 @@ export class MainMenu extends UiObject {
     };
   }
 
-  computeSidebarButtonsViewport(sidebarImage) {
+  computeSidebarButtonsViewport(sidebarImage: any): { x: number; y: number; width: number; height: number } {
     return {
       x: 0,
       y: sidebarImage.height,
@@ -431,7 +491,7 @@ export class MainMenu extends UiObject {
     };
   }
 
-  update(deltaTime) {
+  update(deltaTime: number): void {
     super.update(deltaTime);
     
     if (this.sidebarNeedsRefresh) {
@@ -444,14 +504,14 @@ export class MainMenu extends UiObject {
     }
   }
 
-  updateSidebarButtons() {
+  updateSidebarButtons(): void {
     if (this.sidebarCollapsed) {
       this.sidebarButtons.forEach((btn) => btn.hide());
       this.sidebarMpSlotContentEl.hide();
       this.sidebarSlots.forEach((slot) => {
         let animRunner = slot.getAnimationRunner();
-        if (animRunner.buttonState === MenuButtonState.Normal) {
-          animRunner.buttonState = MenuButtonState.Unlit;
+        if ((animRunner as any).buttonState === MenuButtonState.Normal) {
+          (animRunner as any).buttonState = MenuButtonState.Unlit;
         }
       });
     } else {
@@ -459,22 +519,22 @@ export class MainMenu extends UiObject {
       this.sidebarMpSlotContentEl.show();
       this.sidebarSlots.forEach((slot) => {
         let animRunner = slot.getAnimationRunner();
-        if (animRunner.buttonState === MenuButtonState.Unlit) {
-          animRunner.buttonState = MenuButtonState.Normal;
+        if ((animRunner as any).buttonState === MenuButtonState.Unlit) {
+          (animRunner as any).buttonState = MenuButtonState.Normal;
         }
       });
     }
     this.sidebarNeedsRefresh = false;
   }
 
-  onSidebarButtonClick(slotIndex) {
-    const onClick = this.sidebarButtonConfigs[slotIndex].onClick;
+  onSidebarButtonClick(slotIndex: number): void {
+    const onClick = this.sidebarButtonConfigs[slotIndex]?.onClick;
     if (onClick) {
       onClick();
     }
   }
 
-  destroy() {
+  destroy(): void {
     this.sidebarButtons.length = 0;
     this.remove(...this.rootObjects);
     this.rootObjects.forEach((obj) => obj.destroy());

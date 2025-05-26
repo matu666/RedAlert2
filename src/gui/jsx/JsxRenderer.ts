@@ -5,19 +5,68 @@ import { HtmlContainer } from "../HtmlContainer";
 import { CanvasSpriteBuilder } from "../../engine/renderable/builder/CanvasSpriteBuilder";
 import { ShpSpriteBatch } from "../ShpSpriteBatch";
 import * as THREE from 'three';
+import { Camera } from 'three';
+import { PointerEvents } from '../PointerEvents';
 
-const hasImages = (props) => !!props.images;
+interface SpriteProps {
+  images?: any;
+  image?: string | any;
+  palette?: string | any;
+  alignX?: number;
+  alignY?: number;
+  x?: number;
+  y?: number;
+  frame?: number;
+  animationRunner?: any;
+  hidden?: boolean;
+  zIndex?: number;
+  opacity?: number;
+  transparent?: boolean;
+  tooltip?: string;
+  onFrame?: () => void;
+  static?: boolean;
+  [key: string]: any;
+}
+
+interface ContainerProps {
+  x?: number;
+  y?: number;
+  width?: number;
+  height?: number;
+  hidden?: boolean;
+  zIndex?: number;
+  onFrame?: () => void;
+  [key: string]: any;
+}
+
+interface MeshProps {
+  x?: number;
+  y?: number;
+  hidden?: boolean;
+  zIndex?: number;
+  children?: any;
+  [key: string]: any;
+}
+
+const hasImages = (props: SpriteProps): boolean => !!props.images;
 
 export class JsxRenderer {
-  constructor(images, palettes, camera, pointerEvents) {
+  private images: Map<string, any> | any;
+  private palettes: Map<string, any> | any;
+  private camera: Camera;
+  private jsxIntrinsicRenderers: {
+    [key: string]: (props: any) => { obj: any; children?: any[] };
+  };
+
+  constructor(images: Map<string, any> | any, palettes: Map<string, any> | any  , camera: Camera, pointerEvents?: PointerEvents) {
     this.images = images;
     this.palettes = palettes;
     this.camera = camera;
     
     this.jsxIntrinsicRenderers = {
-      sprite: (props) => {
+      sprite: (props: SpriteProps) => {
         console.log('[JsxRenderer] Creating sprite with props:', props);
-        let sprite;
+        let sprite: UiObjectSprite;
         
         if (hasImages(props)) {
           console.log('[JsxRenderer] Using CanvasSpriteBuilder');
@@ -85,16 +134,16 @@ export class JsxRenderer {
         return { obj: sprite };
       },
       
-      "sprite-batch": (props) => {
-        let children = [];
+      "sprite-batch": (props: { children?: any[] }) => {
+        let children: any[] = [];
         if (props.children) {
           children = Array.isArray(props.children) 
             ? props.children.flat() 
             : [props.children];
         }
         
-        let dynamicChildren = [];
-        let staticSprites = [];
+        let dynamicChildren: any[] = [];
+        let staticSprites: SpriteProps[] = [];
         
         for (const child of children) {
           if (child.type === "sprite" && child.props.static && !hasImages(child.props)) {
@@ -107,15 +156,15 @@ export class JsxRenderer {
         return {
           obj: new ShpSpriteBatch(
             staticSprites,
-            (name) => this.getImage(name),
-            (name) => this.getPalette(name),
+            (name: string) => this.getImage(name),
+            (name: string) => this.getPalette(name),
             this.camera,
           ),
           children: [...dynamicChildren],
         };
       },
       
-      container: (props) => {
+      container: (props: ContainerProps) => {
         let container = new UiObject(
           new THREE.Object3D(),
           new HtmlContainer(),
@@ -146,7 +195,7 @@ export class JsxRenderer {
         return { obj: container };
       },
       
-      mesh: (props) => {
+      mesh: (props: MeshProps) => {
         let mesh = new UiObject(props.children);
         
         if (pointerEvents) {
@@ -169,8 +218,8 @@ export class JsxRenderer {
     };
   }
 
-  setupListeners(object, props) {
-    const eventMap = {
+  private setupListeners(object: any, props: any): void {
+    const eventMap: { [key: string]: string } = {
       click: "onClick",
       dblclick: "onDoubleClick",
       mousedown: "onMouseDown",
@@ -191,21 +240,19 @@ export class JsxRenderer {
     });
   }
 
-  setCamera(camera) {
+  public setCamera(camera: Camera): void {
     this.camera = camera;
   }
 
-  getImage(name) {
+  private getImage(name: string): any {
     const image = this.images.get(name);
     if (!image) {
-
-      
       throw new Error(`Missing image "${name}"`);
     }
     return image;
   }
 
-  getPalette(name) {
+  private getPalette(name: string): any {
     const palette = this.palettes.get(name);
     if (!palette) {
       throw new Error(`Missing palette "${name}"`);
@@ -213,7 +260,7 @@ export class JsxRenderer {
     return palette;
   }
 
-  render(jsx) {
+  public render(jsx: any): any {
     return renderJsx(jsx, this.jsxIntrinsicRenderers);
   }
-} 
+}
