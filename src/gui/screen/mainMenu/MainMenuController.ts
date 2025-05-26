@@ -1,6 +1,8 @@
 import { Controller, Screen } from '../Controller';
 import { MainMenuScreenType } from '../ScreenType';
 import { EventDispatcher } from '../../../util/event';
+import { SoundKey } from '../../../engine/sound/SoundKey';
+import { ChannelType } from '../../../engine/sound/ChannelType';
 
 export class MainMenuController extends Controller {
   private mainMenu: any; // MainMenu component
@@ -73,20 +75,43 @@ export class MainMenuController extends Controller {
 
   showSidebarButtons(): void {
     console.log('[MainMenuController] Showing sidebar buttons');
-    if (this.mainMenu && this.mainMenu.showButtons) {
-      this.mainMenu.showButtons();
+    if (this.mainMenu && this.mainMenu.isSidebarCollapsed && this.mainMenu.isSidebarCollapsed()) {
+      // Play move in sound (match original project)
+      if (this.sound) {
+        this.sound.play(SoundKey.GUIMoveInSound, ChannelType.Ui);
+      }
+      if (this.mainMenu.showButtons) {
+        this.mainMenu.showButtons();
+      }
     }
   }
 
   async hideSidebarButtons(): Promise<void> {
     console.log('[MainMenuController] Hiding sidebar buttons');
-    if (this.mainMenu && this.mainMenu.hideButtons) {
-      this.mainMenu.hideButtons();
+    if (this.mainMenu && this.mainMenu.isSidebarCollapsed && !this.mainMenu.isSidebarCollapsed()) {
+      // Play move out sound (match original project)
+      if (this.sound) {
+        this.sound.play(SoundKey.GUIMoveOutSound, ChannelType.Ui);
+      }
+      
+      // Return a promise that resolves when animation completes (match original project)
+      return new Promise((resolve) => {
+        if (this.mainMenu && this.mainMenu.onSidebarToggle) {
+          const handler = () => {
+            this.mainMenu!.onSidebarToggle.unsubscribe(handler);
+            resolve();
+          };
+          this.mainMenu.onSidebarToggle.subscribe(handler);
+          this.mainMenu.hideButtons();
+        } else {
+          // Fallback if onSidebarToggle is not available
+          if (this.mainMenu && this.mainMenu.hideButtons) {
+            this.mainMenu.hideButtons();
+          }
+          setTimeout(resolve, 300); // Match animation time
+        }
+      });
     }
-    // Return a promise that resolves after animation time
-    return new Promise(resolve => {
-      setTimeout(resolve, 300); // Match animation time
-    });
   }
 
   toggleMainVideo(show: boolean): void {

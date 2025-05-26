@@ -486,12 +486,20 @@ export class Gui {
         const soundIni = Engine.getIni('sound.ini');
         const soundSpecs = new SoundSpecs(soundIni);
         
-        // 创建一个简单的audioVisual规则对象
+        // 创建audioVisual规则对象，从Engine的规则中获取音频视觉设置
         const audioVisualRules = {
           ini: {
             getString: (key: string) => {
-              // 这里可以从Engine的规则中获取音频视觉设置
-              // 暂时返回undefined，让Sound系统使用默认值
+              // 从Engine的规则中获取音频视觉设置
+              try {
+                const rulesIni = Engine.getIni('rules.ini');
+                const audioVisualSection = rulesIni.getSection('AudioVisual');
+                if (audioVisualSection) {
+                  return audioVisualSection.getString(key);
+                }
+              } catch (error) {
+                console.warn(`[Gui] Failed to get AudioVisual setting for key "${key}":`, error);
+              }
               return undefined;
             }
           }
