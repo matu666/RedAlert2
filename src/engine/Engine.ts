@@ -7,7 +7,6 @@ import { Theater } from './Theater'; // Assuming Theater.ts will be in the same 
 import { TheaterType } from './TheaterType'; // Assuming TheaterType.ts will be in the same directory
 import { version as appVersion } from '../version';
 import { VirtualFileSystem } from '../data/vfs/VirtualFileSystem';
-import { VirtualFile } from '../data/vfs/VirtualFile';
 import { RealFileSystem } from '../data/vfs/RealFileSystem'; // Removed FileSystemDirectoryHandleBrowser import from here
 import { LazyResourceCollection } from './LazyResourceCollection';
 import { WavFile } from '../data/WavFile';
@@ -48,20 +47,20 @@ export class Engine {
 
   public static supportedMapTypes = ["mpr", "map"];
 
-  public static images = new LazyResourceCollection((file: VirtualFile) => new ShpFile(file.stream));
-  public static voxels = new LazyResourceCollection((file: VirtualFile) => new VxlFile(file.stream));
-  public static voxelAnims = new LazyResourceCollection((file: VirtualFile) => new HvaFile(file.stream));
-  public static sounds = new LazyResourceCollection((file: VirtualFile) => new WavFile(file.stream));
+  public static images = new LazyResourceCollection((data: DataStream) => new ShpFile(data));
+  public static voxels = new LazyResourceCollection((data: DataStream) => new VxlFile(data));
+  public static voxelAnims = new LazyResourceCollection((data: DataStream) => new HvaFile(data));
+  public static sounds = new LazyResourceCollection((data: DataStream) => new WavFile(data));
   public static themes = new LazyAsyncResourceCollection(
-    (file: VirtualFile) => new Mp3File(file.stream),
+    (data: DataStream) => new Mp3File(data),
     false,
   );
   public static taunts = new LazyAsyncResourceCollection(
     async (fileHandle: any) => new WavFile(new Uint8Array(await fileHandle.arrayBuffer()) as unknown as DataStream) // Needs review for DataStream conversion
   );
-  public static iniFiles = new LazyResourceCollection((file: VirtualFile) => new IniFile(file.stream));
-  public static tileData = new LazyResourceCollection((file: VirtualFile) => new TmpFile(file.stream));
-  public static palettes = new LazyResourceCollection((file: VirtualFile) => new Palette(file.stream));
+  public static iniFiles = new LazyResourceCollection((data: DataStream) => new IniFile(data));
+  public static tileData = new LazyResourceCollection((data: DataStream) => new TmpFile(data));
+  public static palettes = new LazyResourceCollection((data: DataStream) => new Palette(data));
 
   public static theaters = new Map<TheaterType, Theater>();
 

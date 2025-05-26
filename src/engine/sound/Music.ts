@@ -88,9 +88,17 @@ export class Music {
   }
 
   private getMusicSpec(name: string): MusicSpec | undefined {
+    console.log(`[Music] Looking for music spec: "${name}"`);
     const spec = this.musicSpecs.getSpec(name);
-    if (spec) return spec;
+    if (spec) {
+      console.log(`[Music] Found music spec for "${name}":`, spec);
+      return spec;
+    }
     console.warn(`[Music] Music "${name}" is not defined`);
+    
+    // 调试：列出所有可用的音乐规格
+    const allSpecs = this.musicSpecs.getAll();
+    console.log(`[Music] Available music specs:`, allSpecs.map(s => ({ name: s.name, sound: s.sound })));
   }
 
   async play(type: MusicType): Promise<void> {
@@ -163,17 +171,31 @@ export class Music {
 
   private async getMp3File(name: string): Promise<any> {
     const filename = name.toLowerCase() + ".mp3";
+    console.log(`[Music] Looking for audio file: "${filename}"`);
     
     let file;
     try {
       file = await this.audioFiles.get(filename);
+      console.log(`[Music] audioFiles.get("${filename}") result:`, !!file);
     } catch (error) {
       console.error(`[Music] Failed to fetch audio file "${filename}":`, error);
       return;
     }
     
-    if (file) return file;
+    if (file) {
+      console.log(`[Music] Successfully got audio file: ${filename}`);
+      return file;
+    }
     console.warn(`[Music] Audio file "${filename}" not found.`);
+    
+    // 调试：检查音乐文件系统状态
+    console.log(`[Music] Debugging themes directory access...`);
+    try {
+      console.log(`[Music] audioFiles type:`, typeof this.audioFiles);
+      console.log(`[Music] audioFiles constructor:`, this.audioFiles.constructor.name);
+    } catch (error) {
+      console.error(`[Music] Error debugging audioFiles:`, error);
+    }
   }
 
   private buildPlaylist(shuffle: boolean): MusicSpec[] {
