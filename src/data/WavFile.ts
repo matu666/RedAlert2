@@ -1,4 +1,4 @@
-import { WaveFile } from 'wavefile';
+import { WaveFile } from '@ra2web/wavefile';
 import type { VirtualFile } from './vfs/VirtualFile';
 import type { DataStream } from './DataStream';
 
