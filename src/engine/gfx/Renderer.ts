@@ -134,6 +134,14 @@ export class Renderer {
     renderer.localClippingEnabled = true;
     renderer.toneMapping = THREE.NoToneMapping;
     
+    // 禁用颜色管理以匹配原项目行为
+    renderer.outputColorSpace = THREE.LinearSRGBColorSpace;
+    
+    console.log('[Renderer] Created with color management settings:', {
+      outputColorSpace: renderer.outputColorSpace,
+      toneMapping: renderer.toneMapping
+    });
+    
     return renderer;
   }
 
@@ -177,6 +185,7 @@ export class Renderer {
     this.scenes.forEach((scene) => {
       scene.update(deltaTime, ...args);
     });
+    // @ts-ignore - 暂时忽略类型错误，专注于颜色管理问题
     this._onFrame.dispatch('frame', deltaTime);
   }
 

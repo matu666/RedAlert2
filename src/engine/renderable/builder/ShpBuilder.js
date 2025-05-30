@@ -43,8 +43,8 @@ export class ShpBuilder {
   }
 
   useMaterial(texture, palette, transparent) {
-    if (texture.format !== THREE.RedFormat) {
-      throw new Error("Texture must have format THREE.RedFormat");
+    if (texture.format !== THREE.RGBAFormat) {
+      throw new Error("Texture must have format THREE.RGBAFormat");
     }
     
     this.materialCacheKey = texture.uuid + "_" + palette.uuid + "_" + Number(transparent);

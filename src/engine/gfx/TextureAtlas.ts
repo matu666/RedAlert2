@@ -172,17 +172,31 @@ export class TextureAtlas {
     
     const atlasBitmap = createAtlasBitmap(blocks, width, height, imageRects);
     
+    // 将单通道调色板索引转换为RGBA格式，调色板索引放在alpha通道中
+    const rgbaData = new Uint8Array(width * height * 4);
+    for (let i = 0; i < atlasBitmap.data.length; i++) {
+      const rgbaIndex = i * 4;
+      const paletteIndex = atlasBitmap.data[i];
+      rgbaData[rgbaIndex] = 0;     // R
+      rgbaData[rgbaIndex + 1] = 0; // G  
+      rgbaData[rgbaIndex + 2] = 0; // B
+      rgbaData[rgbaIndex + 3] = paletteIndex; // A (调色板索引)
+    }
+    
     const texture = new THREE.DataTexture(
-      atlasBitmap.data, 
+      rgbaData, 
       width, 
       height, 
-      THREE.RedFormat
+      THREE.RGBAFormat
     );
     
     texture.needsUpdate = true;
     texture.flipY = true;
     texture.minFilter = THREE.NearestFilter;
     texture.magFilter = THREE.NearestFilter;
+    
+    // 设置颜色空间为线性空间，避免颜色管理问题
+    texture.colorSpace = THREE.LinearSRGBColorSpace;
     
     // Set up onUpdate handler (like original)
     texture.onUpdate = (texture: THREE.DataTexture) => {

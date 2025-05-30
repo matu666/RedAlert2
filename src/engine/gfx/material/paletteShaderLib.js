@@ -48,7 +48,7 @@ varying vec3 vInstanceExtraLight;
   float paletteColorIndex;
 
   #ifdef USE_MAP
-  paletteColorIndex = texelColor.r;
+  paletteColorIndex = texelColor.a;
   #endif
 
   #ifdef USE_COLOR

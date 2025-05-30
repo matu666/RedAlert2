@@ -15,11 +15,8 @@ class TextureUtilsClass {
       return texture;
     }
     
-    console.log('[TextureUtils] Creating palette texture for palette:', palette);
     const bitmap = new PalDrawable(palette).draw();
-    console.log('[TextureUtils] Palette bitmap:', bitmap);
     texture = this.textureFromPalBitmap(bitmap);
-    console.log('[TextureUtils] Created palette texture:', texture);
     TextureUtilsClass.cache.set(hash, texture);
     return texture;
   }
@@ -61,6 +58,10 @@ class TextureUtilsClass {
     texture.magFilter = THREE.NearestFilter;
     texture.needsUpdate = true;
     texture.flipY = false;
+    
+    // 设置为线性颜色空间，与Atlas纹理保持一致
+    texture.colorSpace = THREE.LinearSRGBColorSpace;
+    
     return texture;
   }
 }
