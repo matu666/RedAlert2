@@ -383,6 +383,13 @@ export class Gui {
     return this.rootController;
   }
 
+  getMessageBoxApi(): MessageBoxApi {
+    if (!this.messageBoxApi) {
+      throw new Error('MessageBoxApi is not initialized');
+    }
+    return this.messageBoxApi;
+  }
+
   async destroy(): Promise<void> {
     console.log('[Gui] Destroying GUI system');
     

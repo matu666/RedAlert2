@@ -19,6 +19,7 @@ import { GameResSource } from './engine/gameRes/GameResSource'; // Import GameRe
 import { LocalPrefs, StorageKey } from './LocalPrefs'; // Import LocalPrefs and StorageKey
 import type { Viewport } from './gui/Viewport'; // Import Viewport type
 import { Gui } from './gui/Gui'; // Import GUI system
+import { BasicErrorBoxApi } from './gui/component/BasicErrorBoxApi'; // Import BasicErrorBoxApi
 
 // Type for the callback function
 export type SplashScreenUpdateCallback = (props: ComponentProps<typeof SplashScreenComponent> | null) => void;
@@ -167,27 +168,14 @@ export class Application {
       console.log('[Application] Verification: Servers URL from config:', this.config.serversUrl);
 
     } catch (error) {
-      console.error('[Application] Failed to load or parse config.ini:', error);
-      // Fallback to a minimal mock config so the app can somewhat proceed for MVP
-      console.warn('[Application] Falling back to minimal mock config due to error.');
-      this.config = new Config(); // Create a new instance
-      // Manually set some absolutely critical defaults if possible, or leave it empty
-      // For now, this will make getters use their defaults or throw if generalData is not set
-      // This is a critical failure path, so the app might not be very functional.
-      // Consider throwing the error to halt app or showing a user-friendly error message.
-      // For MVP, just logging and proceeding with a mostly empty config.
-      const mockGeneralSection = new IniSection("General");
-      mockGeneralSection.set("defaultLanguage", "en-US");
-      mockGeneralSection.set("language", "english"); // CSF file hint
-      mockGeneralSection.set("csfFile", "ra2/general.csf"); // Example path
-      mockGeneralSection.set("dev", "true");
-      mockGeneralSection.set("viewport.width", "1024");
-      mockGeneralSection.set("viewport.height", "768");
-      const mockIniFile = new IniFile();
-      mockIniFile.sections.set("General", mockGeneralSection);
-      this.config.load(mockIniFile); // Load with minimal mock
-      alert("Failed to load application configuration (config.ini). Using minimal defaults. Some features may not work.");
-      throw error; // Re-throw to make it clear loading failed, App.main will catch
+      console.error('[Application] Failed to parse config:', error);
+      console.error('[Application] Config parsing failed. Using minimal defaults.');
+      
+      // Use minimal config as fallback
+      this.config = new Config();
+      
+      // Log the error but don't block app startup with alert
+      console.error("Failed to load application configuration (config.ini). Using minimal defaults. Some features may not work.");
     }
   }
 
@@ -309,7 +297,14 @@ export class Application {
     this.rootEl = document.getElementById("ra2web-root");
     if (!this.rootEl) {
       console.error("CRITICAL: Missing root element #ra2web-root in HTML.");
-      alert("CRITICAL: Missing root element #ra2web-root for the application.");
+      // This is a critical error that prevents the app from starting, so we keep the alert
+      // but add a fallback to display error in the body
+      const errorMsg = "CRITICAL: Missing root element #ra2web-root for the application.";
+      if (document.body) {
+        document.body.innerHTML = `<h1>Error</h1><p>${errorMsg}</p>`;
+      } else {
+        alert(errorMsg);
+      }
       return;
     }
 
@@ -366,7 +361,10 @@ export class Application {
       this.checkGlobalLibs(); 
     } catch (e: any) {
       console.error("Global library check failed:", e);
-      alert(this.strings.get("TS:DownloadFailed")); 
+      // Use BasicErrorBoxApi if GUI not yet initialized
+      const errorMsg = this.strings.get("TS:DownloadFailed");
+      const errorBox = new BasicErrorBoxApi(this.viewport, this.strings, this.rootEl!);
+      await errorBox.show(errorMsg, true);
       return;
     }
     
@@ -625,8 +623,22 @@ export class Application {
       this.sentry?.captureException(wrappedError);
     }
 
-    // Display error to user - simplified for now, will be replaced with proper dialog component
-    alert(errorMessage);
+    // Display error to user using MessageBoxApi if GUI is initialized, otherwise use BasicErrorBoxApi
+    if (this.gui && this.gui.getRootController()) {
+      try {
+        const messageBoxApi = this.gui.getMessageBoxApi();
+        await messageBoxApi.alert(errorMessage, strings.get("GUI:OK"));
+      } catch (e) {
+        console.error("Failed to show error dialog:", e);
+        // Fallback to BasicErrorBoxApi
+        const errorBox = new BasicErrorBoxApi(this.viewport, strings, this.rootEl!);
+        await errorBox.show(errorMessage, fatal);
+      }
+    } else {
+      // GUI not initialized yet, use BasicErrorBoxApi
+      const errorBox = new BasicErrorBoxApi(this.viewport, strings, this.rootEl!);
+      await errorBox.show(errorMessage, fatal);
+    }
   }
 
   // Handler for GameRes import errors
@@ -682,8 +694,22 @@ export class Application {
       this.sentry?.captureException(wrappedError);
     }
 
-    // Display error to user - simplified for now, will be replaced with proper dialog component
-    alert(errorMessage);
+    // Display error to user using MessageBoxApi if GUI is initialized, otherwise use BasicErrorBoxApi
+    if (this.gui && this.gui.getRootController()) {
+      try {
+        const messageBoxApi = this.gui.getMessageBoxApi();
+        await messageBoxApi.alert(errorMessage, strings.get("GUI:OK"));
+      } catch (e) {
+        console.error("Failed to show error dialog:", e);
+        // Fallback to BasicErrorBoxApi
+        const errorBox = new BasicErrorBoxApi(this.viewport, strings, this.rootEl!);
+        await errorBox.show(errorMessage, false);
+      }
+    } else {
+      // GUI not initialized yet, use BasicErrorBoxApi
+      const errorBox = new BasicErrorBoxApi(this.viewport, strings, this.rootEl!);
+      await errorBox.show(errorMessage, false);
+    }
   }
 }
 

@@ -1,13 +1,13 @@
 import { LazyHtmlElement } from "./LazyHtmlElement";
 
 export class HtmlContainer extends LazyHtmlElement {
-  public visible: boolean = true;
-  public left: number = 0;
-  public top: number = 0;
-  public width: number | string = 0; // Width can be number (px) or string (e.g., "100%")
-  public height: number | string = 0; // Height can also be a string
-  public relativeMode: boolean = false;
-  public translateMode: boolean = false;
+  protected visible: boolean = true;
+  protected left: number = 0;
+  protected top: number = 0;
+  protected width: number | string = 0; // Width can be number (px) or string (e.g., "100%")
+  protected height: number | string = 0; // Height can also be a string
+  protected relativeMode: boolean = false;
+  protected translateMode: boolean = false;
 
   constructor() {
     super(); // Call LazyHtmlElement constructor
@@ -15,10 +15,10 @@ export class HtmlContainer extends LazyHtmlElement {
 
   render(): void {
     if (!this.isRendered()) {
-      let el = this.getElement();
-      if (!el) {
-        el = document.createElement("div");
-        this.setElement(el);
+      let element = this.getElement();
+      if (!element) {
+        element = document.createElement("div");
+        this.setElement(element);
       }
       this.updateMode();
       this.updatePosition();
@@ -28,16 +28,16 @@ export class HtmlContainer extends LazyHtmlElement {
     super.render(); // Handles setting isRendered = true and rendering children
   }
 
-  setRelativeMode(isRelative: boolean): void {
-    if (this.relativeMode !== isRelative) {
-      this.relativeMode = isRelative;
+  setRelativeMode(relative: boolean): void {
+    if (this.relativeMode !== relative) {
+      this.relativeMode = relative;
       this.updateMode();
     }
   }
 
-  setTranslateMode(useTranslate: boolean): void {
-    if (this.translateMode !== useTranslate) {
-      this.translateMode = useTranslate;
+  setTranslateMode(translate: boolean): void {
+    if (this.translateMode !== translate) {
+      this.translateMode = translate;
       this.updatePosition();
     }
   }
@@ -58,45 +58,45 @@ export class HtmlContainer extends LazyHtmlElement {
     return { width: this.width, height: this.height };
   }
 
-  setVisible(isVisible: boolean): void {
-    if (this.visible !== isVisible) {
-      this.visible = isVisible;
+  setVisible(visible: boolean): void {
+    if (this.visible !== visible) {
+      this.visible = visible;
       this.updateVisibility();
     }
   }
 
   protected updateMode(): void {
-    const el = this.getElement();
-    if (el) {
+    const element = this.getElement();
+    if (element) {
       if (this.relativeMode) {
-        el.style.position = "relative";
+        element.style.position = "relative";
       } else {
-        el.style.overflow = "visible"; // Original behavior
-        el.style.position = "absolute";
+        element.style.overflow = "visible"; // Original behavior
+        element.style.position = "absolute";
       }
     }
   }
 
   protected updatePosition(): void {
-    const el = this.getElement();
-    if (el) {
+    const element = this.getElement();
+    if (element) {
       if (this.translateMode) {
-        el.style.top = "0"; // Reset direct positioning if using translate
-        el.style.left = "0";
-        el.style.transform = `translate(${this.left}px, ${this.top}px)`;
+        element.style.top = "0"; // Reset direct positioning if using translate
+        element.style.left = "0";
+        element.style.transform = `translate(${this.left}px, ${this.top}px)`;
       } else {
-        el.style.left = typeof this.left === 'number' ? `${this.left}px` : this.left;
-        el.style.top = typeof this.top === 'number' ? `${this.top}px` : this.top;
-        el.style.transform = ""; // Clear transform if not in translateMode
+        element.style.left = this.left + 'px';
+        element.style.top = this.top + 'px';
+        element.style.transform = ""; // Clear transform if not in translateMode
       }
     }
   }
 
   protected updateSize(): void {
-    const el = this.getElement();
-    if (el) {
-      el.style.width = typeof this.width === 'number' ? `${this.width}px` : this.width;
-      el.style.height = typeof this.height === 'number' ? `${this.height}px` : this.height;
+    const element = this.getElement();
+    if (element) {
+      element.style.width = typeof this.width === 'number' ? this.width + 'px' : this.width;
+      element.style.height = typeof this.height === 'number' ? this.height + 'px' : this.height;
     }
   }
 
@@ -109,9 +109,9 @@ export class HtmlContainer extends LazyHtmlElement {
   }
 
   protected updateVisibility(): void {
-    const el = this.getElement();
-    if (el) {
-      el.style.display = this.visible ? "block" : "none"; // Or consider previous display type
+    const element = this.getElement();
+    if (element) {
+      element.style.display = this.visible ? "block" : "none"; // Or consider previous display type
     }
   }
 } 

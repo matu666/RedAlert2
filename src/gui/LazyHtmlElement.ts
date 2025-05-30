@@ -1,11 +1,9 @@
 export class LazyHtmlElement {
   protected element?: HTMLElement;
-  protected children: Set<LazyHtmlElement>; // Children are also LazyHtmlElements
-  protected rendered: boolean;
+  protected children: Set<LazyHtmlElement> = new Set();
+  protected rendered: boolean = false;
 
   constructor(element?: HTMLElement) {
-    this.children = new Set();
-    this.rendered = false;
     if (element) {
       this.setElement(element);
     }
@@ -27,23 +25,23 @@ export class LazyHtmlElement {
     return this.rendered;
   }
 
-  add(...elements: LazyHtmlElement[]): void {
-    for (const el of elements) {
-      if (!this.children.has(el)) {
-        this.children.add(el);
+  add(...children: LazyHtmlElement[]): void {
+    for (const child of children) {
+      if (!this.children.has(child)) {
+        this.children.add(child);
         if (this.rendered) {
-          this.renderChild(el);
+          this.renderChild(child);
         }
       }
     }
   }
 
-  remove(...elements: LazyHtmlElement[]): void {
-    for (const el of elements) {
-      if (this.children.has(el)) {
-        this.children.delete(el);
+  remove(...children: LazyHtmlElement[]): void {
+    for (const child of children) {
+      if (this.children.has(child)) {
+        this.children.delete(child);
         if (this.rendered) {
-          this.unrenderChild(el);
+          this.unrenderChild(child);
         }
       }
     }
@@ -55,46 +53,34 @@ export class LazyHtmlElement {
 
   render(): void {
     if (!this.element) {
-      throw new Error(
-        "An HTML element must be set using setElement before rendering."
-      );
+      throw new Error('An HTML element must be passed in the constructor or using the setter.');
     }
-    if (this.rendered) return; // Already rendered
-
-    this.children.forEach((child) => this.renderChild(child));
+    this.children.forEach(child => this.renderChild(child));
     this.rendered = true;
   }
 
   protected renderChild(child: LazyHtmlElement): void {
-    child.render(); // Ensure child is rendered
+    child.render();
     const childElement = child.getElement();
-    if (childElement && this.element) { // Ensure both parent and child elements exist
-        if (childElement.parentElement !== this.element) { // Avoid re-appending if already a direct child
-            this.element.appendChild(childElement);
-        }
-    } else if (!this.element) {
-        console.warn("LazyHtmlElement: Parent element not available for renderChild");
+    if (childElement) {
+      this.getElement()!.appendChild(childElement);
     }
   }
 
   protected unrenderChild(child: LazyHtmlElement): void {
     const childElement = child.getElement();
-    child.unrender(); // Unrender the child first (this will detach its own children)
-    if (childElement && this.element && childElement.parentElement === this.element) {
-      this.element.removeChild(childElement);
+    if (childElement) {
+      child.unrender();
+      if (childElement.parentElement === this.getElement()) {
+        this.getElement()!.removeChild(childElement);
+      }
     }
   }
 
   unrender(): void {
-    if (!this.isRendered()) {
-      return;
+    if (this.isRendered()) {
+      this.children.forEach(child => this.unrenderChild(child));
+      this.rendered = false;
     }
-    // Unrender children before modifying this.rendered state, so they correctly detach
-    this.children.forEach((child) => this.unrenderChild(child));
-    // Note: The original implementation unrendered child, then if childElement.parentElement was this.element, removed it.
-    // My unrenderChild now handles both unrender and remove if parent matches.
-    this.rendered = false;
-    // The element itself (this.element) is not removed from its parent here, only its children are detached.
-    // If this LazyHtmlElement is a child of another, its parent is responsible for detaching this.element.
   }
 } 

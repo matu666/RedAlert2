@@ -1,4 +1,4 @@
-import React, { Component, CSSProperties, ReactNode } from 'react';
+import React from 'react';
 
 // Define the Viewport type/interface if not already globally available or imported
 // This is a placeholder based on usage in getWrapperStyle
@@ -9,66 +9,70 @@ interface DialogViewport {
     height: number | string;
 }
 
-export interface DialogButton {
+export interface ButtonConfig {
     label: string;
-    onClick: () => void;
-    // Add other properties if buttons can have them (e.g., className, disabled)
+    onClick?: () => void;
 }
 
 export interface DialogProps {
-    hidden?: boolean;
+    children?: React.ReactNode;
     className?: string;
-    children?: ReactNode;
-    buttons: DialogButton[];
-    viewport: DialogViewport; // This prop is used by getWrapperStyle
+    hidden?: boolean;
+    buttons: ButtonConfig[];
+    viewport: { x: number; y: number; width: number; height: number };
     zIndex?: number;
-    // any other props Dialog might accept
 }
 
-export class Dialog extends Component<DialogProps> {
-    render() {
-        console.log('[Dialog] render called with props:', this.props);
+export class Dialog extends React.Component<DialogProps> {
+    render(): React.ReactNode {
         if (this.props.hidden) {
-            console.log('[Dialog] Dialog is hidden, returning null');
             return null;
         }
 
-        console.log('[Dialog] Rendering dialog with className:', this.props.className);
-        return (
-            <div style={this.getWrapperStyle()}>
-                <div className={`message-box ${this.props.className || ''}`}>
-                    <div className="message-box-content">
-                        {this.props.children}
-                    </div>
-                    <div className="message-box-footer">
-                        {this.props.buttons.map((button, index) => this.renderButton(button, index))}
-                    </div>
-                </div>
-            </div>
+        return React.createElement(
+            'div',
+            { style: this.getWrapperStyle() },
+            React.createElement(
+                'div',
+                {
+                    className: 'message-box ' + (this.props.className || '')
+                },
+                React.createElement(
+                    'div',
+                    { className: 'message-box-content' },
+                    this.props.children
+                ),
+                React.createElement(
+                    'div',
+                    { className: 'message-box-footer' },
+                    this.props.buttons.map((button, index) => this.renderButton(button, index))
+                )
+            )
         );
     }
 
-    renderButton(button: DialogButton, index: number) {
-        return (
-            <button key={index} className="dialog-button" onClick={button.onClick}>
-                {button.label}
-            </button>
+    private renderButton(button: ButtonConfig, index: number): React.ReactElement {
+        return React.createElement(
+            'button',
+            { 
+                key: index, 
+                className: 'dialog-button', 
+                onClick: button.onClick 
+            },
+            button.label
         );
     }
 
-    getWrapperStyle(): CSSProperties {
-        const { viewport, zIndex } = this.props;
-        console.log('[Dialog] getWrapperStyle called with viewport:', viewport, 'zIndex:', zIndex);
-        const style: CSSProperties = {
+    private getWrapperStyle(): React.CSSProperties {
+        const viewport = this.props.viewport;
+        return {
             position: 'absolute',
-            top: viewport.x,
-            left: viewport.y,
+            top: viewport.y,
+            left: viewport.x,
             width: viewport.width,
             height: viewport.height,
-            zIndex: zIndex,
+            zIndex: this.props.zIndex
         };
-        console.log('[Dialog] Computed wrapper style:', style);
-        return style;
     }
 }
 
