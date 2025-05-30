@@ -113,13 +113,25 @@ export class MainMenuRootScreen extends RootScreen {
     
     // Add all sub-screens to the controller
     for (const [screenType, screenClass] of this.subScreens) {
-      const screen = new screenClass(
-        this.strings,
-        this.messageBoxApi,
-        this.appVersion,
-        false, // storageEnabled - TODO: get from config
-        false  // quickMatchEnabled - TODO: get from config
-      );
+      let screen: any;
+      
+      // Create screen instances with appropriate parameters based on screen type
+      if (screenType === MainMenuScreenType.InfoAndCredits) {
+        // InfoAndCreditsScreen使用简化的构造函数
+        screen = new screenClass(this.strings, this.messageBoxApi);
+      } else if (screenType === MainMenuScreenType.Credits) {
+        // CreditsScreen需要JsxRenderer参数
+        screen = new screenClass(this.strings, this.jsxRenderer);
+      } else {
+        // 其他屏幕使用标准参数
+        screen = new screenClass(
+          this.strings,
+          this.messageBoxApi,
+          this.appVersion,
+          false, // storageEnabled - TODO: get from config
+          false  // quickMatchEnabled - TODO: get from config
+        );
+      }
       
       // Set the controller for the screen if it has a setController method
       if (screen.setController) {

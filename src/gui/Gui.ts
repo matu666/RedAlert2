@@ -1,26 +1,28 @@
+import { Renderer } from '../engine/gfx/Renderer';
 import { UiScene } from './UiScene';
 import { JsxRenderer } from './jsx/JsxRenderer';
+import { BoxedVar } from '../util/BoxedVar';
 import { RootController } from './screen/RootController';
+import { ScreenType, MainMenuScreenType } from './screen/ScreenType';
 import { MainMenuRootScreen } from './screen/mainMenu/MainMenuRootScreen';
 import { HomeScreen } from './screen/mainMenu/main/HomeScreen';
 import { StorageScreen } from './screen/options/StorageScreen';
-import { MainMenuScreenType, ScreenType } from './screen/ScreenType';
+import { Config } from '../Config';
 import { Strings } from '../data/Strings';
+import { Engine } from '../engine/Engine';
+import { MusicType } from '../engine/sound/Music';
+import { MessageBoxApi } from './component/MessageBoxApi';
 import { ShpFile } from '../data/ShpFile';
 import { Palette } from '../data/Palette';
-import { BoxedVar } from '../util/BoxedVar';
-import { Engine } from '../engine/Engine';
-import { Renderer } from '../engine/gfx/Renderer';
 import { UiAnimationLoop } from '../engine/UiAnimationLoop';
-import { AudioSystem } from '../engine/sound/AudioSystem';
 import { Mixer } from '../engine/sound/Mixer';
-import { Sound } from '../engine/sound/Sound';
-import { Music, MusicType } from '../engine/sound/Music';
-import { MusicSpecs } from '../engine/sound/MusicSpecs';
-import { SoundSpecs } from '../engine/sound/SoundSpecs';
 import { ChannelType } from '../engine/sound/ChannelType';
+import { AudioSystem } from '../engine/sound/AudioSystem';
+import { Sound } from '../engine/sound/Sound';
+import { SoundSpecs } from '../engine/sound/SoundSpecs';
+import { Music } from '../engine/sound/Music';
+import { MusicSpecs } from '../engine/sound/MusicSpecs';
 import { LocalPrefs, StorageKey } from '../LocalPrefs';
-import { MessageBoxApi } from './component/MessageBoxApi';
 
 export class Gui {
   private appVersion: string;
@@ -349,6 +351,12 @@ export class Gui {
     const subScreens = new Map<MainMenuScreenType, any>();
     subScreens.set(MainMenuScreenType.Home, HomeScreen);
     subScreens.set(MainMenuScreenType.OptionsStorage, StorageScreen);
+    
+    // 添加信息与制作人员相关屏幕
+    const { InfoAndCreditsScreen } = await import('./screen/mainMenu/infoAndCredits/InfoAndCreditsScreen');
+    const { CreditsScreen } = await import('./screen/mainMenu/credits/CreditsScreen');
+    subScreens.set(MainMenuScreenType.InfoAndCredits, InfoAndCreditsScreen);
+    subScreens.set(MainMenuScreenType.Credits, CreditsScreen);
     
     // Create main menu root screen - use Engine's collections directly
     const mainMenuRootScreen = new MainMenuRootScreen(

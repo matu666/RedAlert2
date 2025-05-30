@@ -99,9 +99,11 @@ export class HomeScreen implements Screen {
       {
         label: this.strings.get('TS:InfoAndCredits') || 'Info & Credits',
         tooltip: this.strings.get('STT:InfoAndCredits') || 'Information and credits',
-        onClick: async () => {
+        onClick: () => {
           console.log('[HomeScreen] Info & Credits clicked');
-          await this.messageBoxApi.alert('Info & Credits - 功能开发中\n\n需要信息展示页面', this.strings.get('GUI:OK') || 'OK');
+          if (this.controller) {
+            this.controller.pushScreen(MainMenuScreenType.InfoAndCredits);
+          }
         }
       },
       {
