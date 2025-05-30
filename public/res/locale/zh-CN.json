@@ -40,7 +40,7 @@
     "ts:storage_io_error": "无法从浏览器存储中读取文件。请关闭此选项卡，然后在新选项卡中重新打开游戏。如果问题仍然存在，请清除所有网站数据并重试。",
     "ts:storage_migrating_file": "正在将\"%s\"移动到新的存储系统中...",
     "ts:replay_storage_migrating": "正在迁移回放存储...（%d%%）",
-    "ts:warning": "井告",
+    "ts:warning": "警告",
     "ts:preloading": "预加载资源中...",
     "ts:reportbug": "报告错误",
     "ts:reportbugtt": "请微信关注公众号 思牛逼 报告BUG或者获取解决方案！",
