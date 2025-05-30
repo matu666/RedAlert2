@@ -208,6 +208,7 @@ export class GameRes {
       }
 
       try {
+        this.splashScreen.setLoadingText(this.strings.get("GUI:LoadingEx"));
         cdnResourceLoader = await this.loadResources(rfs, currentConfig, updateSplashScreen);
         resourcesLoadedSuccessfully = true;
       } catch (e: any) {

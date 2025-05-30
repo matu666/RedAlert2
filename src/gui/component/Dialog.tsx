@@ -61,16 +61,11 @@ export class Dialog extends Component<DialogProps> {
         console.log('[Dialog] getWrapperStyle called with viewport:', viewport, 'zIndex:', zIndex);
         const style: CSSProperties = {
             position: 'absolute',
-            top: viewport.y,
-            left: viewport.x,
+            top: viewport.x,
+            left: viewport.y,
             width: viewport.width,
             height: viewport.height,
-            zIndex: zIndex || 10001, // Higher than MockSplashScreen's 10000
-            // Add debug styles to make dialog visible
-            backgroundColor: 'rgba(0, 0, 0, 0.5)', // Semi-transparent background
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
+            zIndex: zIndex,
         };
         console.log('[Dialog] Computed wrapper style:', style);
         return style;

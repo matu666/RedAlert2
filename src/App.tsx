@@ -21,7 +21,14 @@ function App() {
 
     const handleSplashScreenUpdate: SplashScreenUpdateCallback = (props) => {
       console.log('App.tsx: SplashScreen update callback received', props);
-      setSplashScreenProps(props);
+      if (props === null) {
+        setSplashScreenProps(null);
+      } else {
+        setSplashScreenProps(prevProps => ({
+          ...prevProps,
+          ...props
+        }));
+      }
     };
 
     const app = new Application(handleSplashScreenUpdate);

@@ -91,8 +91,8 @@ export class GameResBoxApi {
                         handleResolve(undefined); // User closed the dialog
                     },
                 } as GameResFormProps),
-                viewport: (this.viewport as any).value || { x:0, y:0, width: '100%', height: '100%' }, // Placeholder for viewport prop
-                // zIndex might be needed as well
+                viewport: this.viewport.value, // 修正：直接使用原项目的逻辑
+                zIndex: 101, // 添加：确保Dialog显示在splash screen之上，与原项目MessageBoxApi保持一致
             };
 
             console.log('[GameResBoxApi] Creating dialog element with props:', dialogProps);
@@ -122,7 +122,7 @@ export class GameResBoxApi {
             if (dialogElement) {
                 console.log('[GameResBoxApi] Rendering dialog element');
                 // Set explicit size to make dialog visible
-                const viewportValue = (this.viewport as any).value || { width: window.innerWidth, height: window.innerHeight };
+                const viewportValue = this.viewport.value; // 修正：直接使用原项目的逻辑
                 dialogElement.setSize(viewportValue.width, viewportValue.height);
                 dialogElement.render();
                 const elementToAppend = dialogElement.getElement();

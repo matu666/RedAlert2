@@ -74,6 +74,10 @@ const mockSentry = {
 class ViewportAdapter implements Viewport {
   constructor(private boxedVar: BoxedVar<{ x: number; y: number; width: number; height: number }>) {}
   
+  get value(): { x: number; y: number; width: number; height: number } {
+    return this.boxedVar.value;
+  }
+  
   getValue(): { x: number; y: number; width: number; height: number } {
     return this.boxedVar.value;
   }
@@ -346,6 +350,18 @@ export class Application {
       return;
     }
 
+    // Set copyright and disclaimer text on splash screen (after translations are loaded)
+    if (this.splashScreenUpdateCallback) {
+      this.splashScreenUpdateCallback({
+        width: this.viewport.value.width,
+        height: this.viewport.value.height,
+        parentElement: this.rootEl,
+        loadingText: this.strings.get("gui:loadingex"),
+        copyrightText: this.strings.get("txt_copyright") + "\n" + this.strings.get("gui:wwbrand"),
+        disclaimerText: this.strings.get("ts:disclaimer")
+      });
+    }
+
     try {
       this.checkGlobalLibs(); 
     } catch (e: any) {
@@ -519,7 +535,7 @@ export class Application {
   private createSplashScreenInterface() {
     return {
       setLoadingText: (text: string) => {
-        console.log(`[Application] Splash Loading: ${text}`);
+        console.log(`[Application] Splash Loading: "${text}"`);
         if (this.splashScreenUpdateCallback) {
           this.splashScreenUpdateCallback({
             width: this.viewport.value.width,
@@ -537,6 +553,28 @@ export class Application {
             height: this.viewport.value.height,
             parentElement: this.rootEl,
             backgroundImage: url
+          });
+        }
+      },
+      setCopyrightText: (text: string) => {
+        console.log(`[Application] Splash Copyright: ${text}`);
+        if (this.splashScreenUpdateCallback) {
+          this.splashScreenUpdateCallback({
+            width: this.viewport.value.width,
+            height: this.viewport.value.height,
+            parentElement: this.rootEl,
+            copyrightText: text
+          });
+        }
+      },
+      setDisclaimerText: (text: string) => {
+        console.log(`[Application] Splash Disclaimer: ${text}`);
+        if (this.splashScreenUpdateCallback) {
+          this.splashScreenUpdateCallback({
+            width: this.viewport.value.width,
+            height: this.viewport.value.height,
+            parentElement: this.rootEl,
+            disclaimerText: text
           });
         }
       },

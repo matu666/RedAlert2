@@ -81,14 +81,20 @@ const SplashScreen: React.FC<SplashScreenProps> = ({
 
   // Update background image
   useEffect(() => {
-    if (elRef.current && backgroundImage) {
-      elRef.current.style.backgroundImage = `url(${backgroundImage})`;
+    if (elRef.current) {
+      if (backgroundImage === "") {
+        // 当背景图片设置为空字符串时，清除背景图片但保持黑色背景
+        elRef.current.style.backgroundImage = 'none';
+      } else if (backgroundImage) {
+        elRef.current.style.backgroundImage = `url(${backgroundImage})`;
+      }
     }
   }, [backgroundImage]);
 
   // Update loading text
   useEffect(() => {
     if (loadingElRef.current && loadingText !== undefined) {
+      console.log('[SplashScreen] Setting loadingText to:', loadingText);
       loadingElRef.current.innerHTML = loadingText;
     }
   }, [loadingText]);

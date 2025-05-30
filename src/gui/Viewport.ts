@@ -15,6 +15,9 @@ export interface Viewport {
   // screenToWorldCoordinates(screenX: number, screenY: number): { worldX: number, worldY: number };
   // worldToScreenCoordinates(worldX: number, worldY: number): { screenX: number, screenY: number };
 
+  // Essential property from original project - viewport coordinates and dimensions
+  value: { x: number; y: number; width: number; height: number };
+
   // Temporary property to satisfy GameResBoxApi usage if it expects one.
   rootElement?: HTMLElement; 
 } 
