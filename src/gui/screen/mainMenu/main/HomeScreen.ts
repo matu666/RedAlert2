@@ -3,9 +3,19 @@ import { MainMenuScreenType } from '../../ScreenType';
 import { MainMenuController } from '../MainMenuController';
 import { Strings } from '../../../../data/Strings';
 import { MusicType } from '../../../../engine/sound/Music';
+import { MessageBoxApi } from '../../../component/MessageBoxApi';
+
+interface SidebarButton {
+  label: string;
+  tooltip?: string;
+  disabled?: boolean;
+  isBottom?: boolean;
+  onClick: () => void | Promise<void>;
+}
 
 export class HomeScreen implements Screen {
   private strings: Strings;
+  private messageBoxApi: MessageBoxApi;
   private appVersion: string;
   private storageEnabled: boolean;
   private quickMatchEnabled: boolean;
@@ -15,11 +25,13 @@ export class HomeScreen implements Screen {
 
   constructor(
     strings: Strings,
+    messageBoxApi: MessageBoxApi,
     appVersion: string,
     storageEnabled: boolean = false,
     quickMatchEnabled: boolean = false
   ) {
     this.strings = strings;
+    this.messageBoxApi = messageBoxApi;
     this.appVersion = appVersion;
     this.storageEnabled = storageEnabled;
     this.quickMatchEnabled = quickMatchEnabled;
@@ -39,33 +51,33 @@ export class HomeScreen implements Screen {
         label: this.strings.get('GUI:QuickMatch') || 'Quick Match',
         tooltip: this.strings.get('STT:WOLWelcomeQuickMatch') || 'Quick multiplayer match',
         disabled: !this.quickMatchEnabled,
-        onClick: () => {
+        onClick: async () => {
           console.log('[HomeScreen] Quick Match clicked');
-          alert('Quick Match - 功能开发中\n\n需要登录系统和服务器连接');
+          await this.messageBoxApi.alert('Quick Match - 功能开发中\n\n需要登录系统和服务器连接', this.strings.get('GUI:OK') || 'OK');
         }
       },
       {
         label: this.strings.get('GUI:CustomMatch') || 'Custom Match',
         tooltip: this.strings.get('STT:WOLWelcomeCustomMatch') || 'Custom multiplayer match',
-        onClick: () => {
+        onClick: async () => {
           console.log('[HomeScreen] Custom Match clicked');
-          alert('Custom Match - 功能开发中\n\n需要登录系统和游戏大厅');
+          await this.messageBoxApi.alert('Custom Match - 功能开发中\n\n需要登录系统和游戏大厅', this.strings.get('GUI:OK') || 'OK');
         }
       },
       {
         label: this.strings.get('GUI:Demo') || 'Demo Mode',
         tooltip: this.strings.get('STT:Demo') || 'Play a singleplayer match against a training dummy',
-        onClick: () => {
+        onClick: async () => {
           console.log('[HomeScreen] Demo Mode clicked');
-          alert('Demo Mode - 功能开发中\n\n需要遭遇战系统和AI');
+          await this.messageBoxApi.alert('Demo Mode - 功能开发中\n\n需要遭遇战系统和AI', this.strings.get('GUI:OK') || 'OK');
         }
       },
       {
         label: this.strings.get('GUI:Replays') || 'Replays',
         tooltip: this.strings.get('STT:Replays') || 'Play back a recording of a previously played game',
-        onClick: () => {
+        onClick: async () => {
           console.log('[HomeScreen] Replays clicked');
-          alert('Replays - 功能开发中\n\n需要回放系统');
+          await this.messageBoxApi.alert('Replays - 功能开发中\n\n需要回放系统', this.strings.get('GUI:OK') || 'OK');
         }
       }
     ];
@@ -75,9 +87,9 @@ export class HomeScreen implements Screen {
       buttons.push({
         label: this.strings.get('GUI:Mods') || 'Mods',
         tooltip: this.strings.get('STT:Mods') || 'Manage and play modified versions of the base game',
-        onClick: () => {
+        onClick: async () => {
           console.log('[HomeScreen] Mods clicked');
-          alert('Mods - 功能开发中\n\n需要模组管理系统');
+          await this.messageBoxApi.alert('Mods - 功能开发中\n\n需要模组管理系统', this.strings.get('GUI:OK') || 'OK');
         }
       });
     }
@@ -87,17 +99,17 @@ export class HomeScreen implements Screen {
       {
         label: this.strings.get('TS:InfoAndCredits') || 'Info & Credits',
         tooltip: this.strings.get('STT:InfoAndCredits') || 'Information and credits',
-        onClick: () => {
+        onClick: async () => {
           console.log('[HomeScreen] Info & Credits clicked');
-          alert('Info & Credits - 功能开发中\n\n需要信息展示页面');
+          await this.messageBoxApi.alert('Info & Credits - 功能开发中\n\n需要信息展示页面', this.strings.get('GUI:OK') || 'OK');
         }
       },
       {
         label: this.strings.get('GUI:Options') || 'Options',
         tooltip: this.strings.get('STT:MainButtonOptions') || 'Game options and settings',
-        onClick: () => {
+        onClick: async () => {
           console.log('[HomeScreen] Options clicked');
-          alert('Options - 功能开发中\n\n需要设置界面');
+          await this.messageBoxApi.alert('Options - 功能开发中\n\n需要设置界面', this.strings.get('GUI:OK') || 'OK');
         }
       },
       // 临时管理存储，项目未完全贯通前，调试存储系统使用
@@ -156,17 +168,21 @@ export class HomeScreen implements Screen {
     // Cleanup if needed
   }
 
-  private toggleFullscreen(): void {
-    if (document.fullscreenElement) {
-      document.exitFullscreen().catch(err => {
-        console.error('Error exiting fullscreen:', err);
-        alert('无法退出全屏模式');
-      });
-    } else {
-      document.documentElement.requestFullscreen().catch(err => {
-        console.error('Error entering fullscreen:', err);
-        alert('无法进入全屏模式\n\n请检查浏览器权限设置');
-      });
+  private async toggleFullscreen(): Promise<void> {
+    try {
+      if (document.fullscreenElement) {
+        await document.exitFullscreen();
+      } else {
+        await document.documentElement.requestFullscreen();
+      }
+    } catch (err) {
+      console.error('Error toggling fullscreen:', err);
+      await this.messageBoxApi.alert(
+        document.fullscreenElement 
+          ? '无法退出全屏模式' 
+          : '无法进入全屏模式\n\n请检查浏览器权限设置',
+        this.strings.get('GUI:OK') || 'OK'
+      );
     }
   }
 } 

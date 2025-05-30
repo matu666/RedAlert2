@@ -9,6 +9,7 @@ import { Engine } from '../../../engine/Engine';
 
 export class StorageScreen extends MainMenuScreen {
   private strings: Strings;
+  private messageBoxApi: MessageBoxApi;
   private appVersion: string;
   private storageEnabled: boolean;
   private quickMatchEnabled: boolean;
@@ -16,12 +17,14 @@ export class StorageScreen extends MainMenuScreen {
 
   constructor(
     strings: Strings,
+    messageBoxApi: MessageBoxApi,
     appVersion: string,
     storageEnabled: boolean = false,
     quickMatchEnabled: boolean = false
   ) {
     super();
     this.strings = strings;
+    this.messageBoxApi = messageBoxApi;
     this.appVersion = appVersion;
     this.storageEnabled = storageEnabled;
     this.quickMatchEnabled = quickMatchEnabled;
@@ -80,18 +83,8 @@ export class StorageScreen extends MainMenuScreen {
         return;
       }
 
-      // Create a simple message box API
-      const messageBoxApi = {
-        show: (message: string, title?: string) => {
-          alert((title ? title + '\n\n' : '') + message);
-        },
-        confirm: (message: string, okText?: string, cancelText?: string): Promise<boolean> => {
-          return Promise.resolve(confirm(message));
-        },
-        prompt: (message: string, okText?: string, cancelText?: string): Promise<string | null> => {
-          return Promise.resolve(prompt(message));
-        }
-      };
+      // Use the MessageBoxApi passed through constructor (from GUI system)
+      const messageBoxApi = this.messageBoxApi;
 
       // Render the storage explorer
       const [element] = jsxRenderer.render(

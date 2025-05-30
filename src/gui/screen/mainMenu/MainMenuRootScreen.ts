@@ -7,6 +7,7 @@ import { Strings } from '../../../data/Strings';
 import { ShpFile } from '../../../data/ShpFile';
 import { JsxRenderer } from '../../jsx/JsxRenderer';
 import { LazyResourceCollection } from '../../../engine/LazyResourceCollection';
+import { MessageBoxApi } from '../../component/MessageBoxApi';
 
 export interface UiScene {
   menuViewport: { x: number; y: number; width: number; height: number };
@@ -21,6 +22,7 @@ export class MainMenuRootScreen extends RootScreen {
   private strings: Strings;
   private images: LazyResourceCollection<ShpFile>;
   private jsxRenderer: JsxRenderer;
+  private messageBoxApi: MessageBoxApi;
   private videoSrc?: string | File;
   private sound?: any;
   private music?: any;
@@ -36,6 +38,7 @@ export class MainMenuRootScreen extends RootScreen {
     strings: Strings,
     images: LazyResourceCollection<ShpFile>,
     jsxRenderer: JsxRenderer,
+    messageBoxApi: MessageBoxApi,
     appVersion: string,
     videoSrc?: string | File,
     sound?: any,
@@ -47,6 +50,7 @@ export class MainMenuRootScreen extends RootScreen {
     this.strings = strings;
     this.images = images;
     this.jsxRenderer = jsxRenderer;
+    this.messageBoxApi = messageBoxApi;
     this.appVersion = appVersion;
     this.videoSrc = videoSrc;
     this.sound = sound;
@@ -111,6 +115,7 @@ export class MainMenuRootScreen extends RootScreen {
     for (const [screenType, screenClass] of this.subScreens) {
       const screen = new screenClass(
         this.strings,
+        this.messageBoxApi,
         this.appVersion,
         false, // storageEnabled - TODO: get from config
         false  // quickMatchEnabled - TODO: get from config

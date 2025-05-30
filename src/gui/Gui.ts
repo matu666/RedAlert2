@@ -337,7 +337,7 @@ export class Gui {
   private async navigateToMainMenu(): Promise<void> {
     console.log('[Gui] Navigating to main menu');
     
-    if (!this.rootController || !this.uiScene || !this.jsxRenderer || !this.renderer) {
+    if (!this.rootController || !this.uiScene || !this.jsxRenderer || !this.renderer || !this.messageBoxApi) {
       throw new Error('GUI components not properly initialized');
     }
 
@@ -357,6 +357,7 @@ export class Gui {
       this.strings,
       Engine.images,  // Use Engine's LazyResourceCollection directly
       this.jsxRenderer,
+      this.messageBoxApi,  // Pass MessageBoxApi to MainMenuRootScreen
       this.appVersion,
       videoSrc,  // Pass video source
       this.sound,  // Pass sound system
