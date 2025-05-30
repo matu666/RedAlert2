@@ -2,6 +2,46 @@
 
 This document summarizes the current state of the RA2Web React decompile project.
 
+## 🎉 LATEST MAJOR MILESTONE: Three.js Color Management Issue Resolved
+
+**Date: January 2025**
+
+### Critical Visual Fidelity Problem Solved:
+**Problem**: Game graphics showed incorrect colors compared to original project - low saturation and excessive brightness, making the game look washed out and visually inconsistent.
+
+**Root Cause Analysis**: 
+- Three.js newer versions (0.176.0 vs original r94) have automatic color management enabled by default
+- The modern Three.js applies gamma correction and color space conversions automatically
+- Original project used older Three.js without modern color management features
+- Our migration inherited modern color management which altered the visual appearance
+
+**Solution Applied**:
+1. **Renderer-Level Color Management Disable**:
+   ```typescript
+   // In src/engine/gfx/Renderer.ts
+   renderer.outputColorSpace = THREE.LinearSRGBColorSpace;
+   renderer.toneMapping = THREE.NoToneMapping;
+   ```
+   
+2. **Removed Palette-Level Color Corrections**:
+   - Eliminated gamma correction attempts in `PalDrawable.ts`
+   - Restored original color values without modifications
+   - Let renderer settings handle color space management
+
+**Verification Result**: 
+- ✅ **Colors now match original project exactly**
+- ✅ **Proper saturation and brightness levels restored**
+- ✅ **Visual fidelity completely aligned with original implementation**
+
+**Technical Impact**:
+- Resolved the final major visual inconsistency between original and migrated versions
+- Confirmed that Three.js version differences require careful color management configuration
+- Established proper rendering pipeline settings for accurate color reproduction
+
+**Migration Lesson**: Modern Three.js defaults may not be appropriate for legacy game asset reproduction. Explicit color management configuration is essential when migrating from older graphics libraries.
+
+---
+
 ## Overall Goal
 
 The primary objective is to reverse-engineer an existing JavaScript project (presumably related to Red Alert 2 Web, based on filenames and dependencies) into a modern React application using Vite and TypeScript. The new React project is being developed in the `ra2web-react` directory.

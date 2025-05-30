@@ -137,11 +137,6 @@ export class Renderer {
     // 禁用颜色管理以匹配原项目行为
     renderer.outputColorSpace = THREE.LinearSRGBColorSpace;
     
-    console.log('[Renderer] Created with color management settings:', {
-      outputColorSpace: renderer.outputColorSpace,
-      toneMapping: renderer.toneMapping
-    });
-    
     return renderer;
   }
 
