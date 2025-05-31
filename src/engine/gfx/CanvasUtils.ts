@@ -28,78 +28,105 @@ interface TextRect {
 }
 
 export class CanvasUtils {
-  static canvasFromRgbImageData(data: Uint8Array, width: number, height: number): HTMLCanvasElement {
-    const canvas = document.createElement('canvas');
-    const context = canvas.getContext('2d');
-    
-    if (!context) {
-      throw new Error("Couldn't acquire canvas 2d context");
-    }
-    
-    const imageData = context.createImageData(width, height);
-    canvas.width = width;
-    canvas.height = height;
-    
-    let targetIndex = 0;
-    for (let i = 0; i < data.length; i += 3) {
-      imageData.data[targetIndex] = data[i];
-      imageData.data[targetIndex + 1] = data[i + 1];
-      imageData.data[targetIndex + 2] = data[i + 2];
-      imageData.data[targetIndex + 3] = 255;
-      targetIndex += 4;
-    }
-    
-    context.putImageData(imageData, 0, 0);
-    return canvas;
-  }
-
+  /**
+   * 从RGBA图像数据创建Canvas
+   */
   static canvasFromRgbaImageData(data: Uint8Array, width: number, height: number): HTMLCanvasElement {
     const canvas = document.createElement('canvas');
-    const context = canvas.getContext('2d');
+    const ctx = canvas.getContext('2d');
     
-    if (!context) {
+    if (!ctx) {
       throw new Error("Couldn't acquire canvas 2d context");
     }
     
-    const imageData = context.createImageData(width, height);
     canvas.width = width;
     canvas.height = height;
     
-    let targetIndex = 0;
+    const imageData = ctx.createImageData(width, height);
+    
+    // 复制数据
+    let dataIndex = 0;
     for (let i = 0; i < data.length; i += 4) {
-      imageData.data[targetIndex] = data[i];
-      imageData.data[targetIndex + 1] = data[i + 1];
-      imageData.data[targetIndex + 2] = data[i + 2];
-      imageData.data[targetIndex + 3] = data[i + 3];
-      targetIndex += 4;
+      imageData.data[dataIndex] = data[i];       // R
+      imageData.data[dataIndex + 1] = data[i + 1]; // G
+      imageData.data[dataIndex + 2] = data[i + 2]; // B
+      imageData.data[dataIndex + 3] = data[i + 3]; // A
+      dataIndex += 4;
     }
     
-    context.putImageData(imageData, 0, 0);
+    ctx.putImageData(imageData, 0, 0);
+    
     return canvas;
   }
 
-  static canvasFromIndexedImageData(data: Uint8Array, width: number, height: number, palette: Palette): HTMLCanvasElement {
+  /**
+   * 从RGB图像数据创建Canvas（Alpha通道设为255）
+   */
+  static canvasFromRgbImageData(data: Uint8Array, width: number, height: number): HTMLCanvasElement {
     const canvas = document.createElement('canvas');
-    const context = canvas.getContext('2d');
+    const ctx = canvas.getContext('2d');
     
-    if (!context) {
+    if (!ctx) {
       throw new Error("Couldn't acquire canvas 2d context");
     }
     
-    const imageData = context.createImageData(width, height);
     canvas.width = width;
     canvas.height = height;
     
-    let targetIndex = 0;
-    data.forEach(paletteIndex => {
-      const { r, g, b } = palette.getColor(paletteIndex);
-      imageData.data[targetIndex++] = r;
-      imageData.data[targetIndex++] = g;
-      imageData.data[targetIndex++] = b;
-      imageData.data[targetIndex++] = paletteIndex ? 255 : 0; // First color is transparent
-    });
+    const imageData = ctx.createImageData(width, height);
     
-    context.putImageData(imageData, 0, 0);
+    // 复制数据，Alpha通道设为255
+    let dataIndex = 0;
+    for (let i = 0; i < data.length; i += 3) {
+      imageData.data[dataIndex] = data[i];       // R
+      imageData.data[dataIndex + 1] = data[i + 1]; // G
+      imageData.data[dataIndex + 2] = data[i + 2]; // B
+      imageData.data[dataIndex + 3] = 255;        // A
+      dataIndex += 4;
+    }
+    
+    ctx.putImageData(imageData, 0, 0);
+    
+    return canvas;
+  }
+
+  /**
+   * 从索引图像数据和调色板创建Canvas
+   */
+  static canvasFromIndexedImageData(
+    data: Uint8Array, 
+    width: number, 
+    height: number, 
+    palette: any
+  ): HTMLCanvasElement {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    
+    if (!ctx) {
+      throw new Error("Couldn't acquire canvas 2d context");
+    }
+    
+    canvas.width = width;
+    canvas.height = height;
+    
+    const imageData = ctx.createImageData(width, height);
+    const colors = palette.colors;
+    
+    // 使用调色板将索引转换为颜色
+    let dataIndex = 0;
+    for (let i = 0; i < data.length; i++) {
+      const colorIndex = data[i];
+      const color = colors[colorIndex] || { r: 0, g: 0, b: 0 };
+      
+      imageData.data[dataIndex] = color.r;
+      imageData.data[dataIndex + 1] = color.g;
+      imageData.data[dataIndex + 2] = color.b;
+      imageData.data[dataIndex + 3] = colorIndex ? 255 : 0; // 索引0透明
+      dataIndex += 4;
+    }
+    
+    ctx.putImageData(imageData, 0, 0);
+    
     return canvas;
   }
 

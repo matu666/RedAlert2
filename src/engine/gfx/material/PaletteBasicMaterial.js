@@ -46,10 +46,6 @@ const PaletteBasicShader = {
     ),
 };
 
-// 添加调试输出
-console.log('[PaletteBasicMaterial] Generated fragment shader:');
-console.log(PaletteBasicShader.fragmentShader);
-
 export class PaletteBasicMaterial extends THREE.MeshBasicMaterial {
   get palette() {
     return this.uniforms.palette.value;

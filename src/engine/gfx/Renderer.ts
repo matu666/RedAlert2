@@ -199,7 +199,7 @@ export class Renderer {
         scene.viewport.width,
         scene.viewport.height
       );
-      this.renderer.render(scene.getScene(), scene.getCamera());
+      this.renderer.render(scene.scene, scene.camera);
     });
   }
 

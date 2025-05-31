@@ -36,6 +36,9 @@ export class BufferGeometryUtils {
     // Precision factor for hashing
     const decimalShift = Math.log10(1 / tolerance);
     const decimalFactor = Math.pow(10, decimalShift);
+    
+    // 使用更高的精度，避免Z向毛刺
+    const hashPrecision = Math.max(10000, decimalFactor); // 至少使用10000的精度
 
     for (let i = 0; i < vertexCount; i++) {
       const index = indices ? indices.getX(i) : i;
@@ -48,7 +51,7 @@ export class BufferGeometryUtils {
         const itemSize = attribute.itemSize;
 
         for (let j = 0; j < itemSize; j++) {
-          hash += ~~(getters[j](attribute, index) * decimalFactor) + ",";
+          hash += ~~(getters[j](attribute, index) * hashPrecision) + ",";
         }
       }
 

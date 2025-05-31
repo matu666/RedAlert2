@@ -20,6 +20,7 @@ import { LocalPrefs, StorageKey } from './LocalPrefs'; // Import LocalPrefs and 
 import type { Viewport } from './gui/Viewport'; // Import Viewport type
 import { Gui } from './gui/Gui'; // Import GUI system
 import { BasicErrorBoxApi } from './gui/component/BasicErrorBoxApi'; // Import BasicErrorBoxApi
+import { Engine } from './engine/Engine'; // Import Engine
 
 // Type for the callback function
 export type SplashScreenUpdateCallback = (props: ComponentProps<typeof SplashScreenComponent> | null) => void;
@@ -472,8 +473,8 @@ export class Application {
       this.splashScreenUpdateCallback(null);
     }
     
-    // Initialize GUI system after splash screen is done
-    await this.initGui();
+    // Don't automatically initialize GUI - let routing handle it
+    // await this.initGui();
   }
 
   private loadGameResConfig(prefs: LocalPrefs): GameResConfig | undefined {
@@ -496,38 +497,60 @@ export class Application {
   }
 
   private initRouting(): void {
+    let currentHandler: any = null; // 追踪当前活动的处理器
+
+    // 通配符路由 - 只负责销毁当前handler
     this.routing.addRoute("*", async () => {
-      // Handle any cleanup for all routes
+      if (currentHandler && currentHandler.destroy) {
+        console.log('[Application] Destroying current handler');
+        await currentHandler.destroy();
+        currentHandler = null;
+      }
     });
 
+    // 主页面路由 - 在这里初始化GUI
     this.routing.addRoute("/", async () => {
-      // Initialize main game UI
-      console.log("Main game UI would be initialized here.");
+      console.log('[Application] Initializing main page');
+      
+      // 按照原始项目的方式，在这里初始化GUI
+      this.gui = new Gui(
+        this.getVersion(),
+        this.strings,
+        this.viewport,
+        this.rootEl!
+      );
+      
+      await this.gui.init();
+      currentHandler = this; // 设置当前handler为Application本身
+    });
+
+    // VXL测试路由 - 严格按照原始项目逻辑
+    this.routing.addRoute("/vxltest", async () => {
+      if (!Engine.vfs) {
+        throw new Error("Original game files must be provided.");
+      }
+      console.log('[Application] Initializing VxlTester');
+      
+      // 按照原始项目，VxlTester直接使用document.body
+      const { VxlTester } = await import('./tools/VxlTester');
+      await VxlTester.main(Engine.vfs, this.runtimeVars);
+      currentHandler = VxlTester; // 设置当前处理器
     });
 
     // Initialize routing
     this.routing.init();
   }
 
-  private async initGui(): Promise<void> {
-    console.log('[Application] Initializing GUI system');
-    
-    if (!this.rootEl) {
-      throw new Error('Root element not available for GUI initialization');
+  // 添加destroy方法，供通配符路由调用
+  async destroy(): Promise<void> {
+    console.log('[Application] Destroying Application');
+    if (this.gui) {
+      // GUI应该有自己的destroy方法来清理DOM
+      if (this.gui.destroy) {
+        await this.gui.destroy();
+      }
+      this.gui = undefined;
     }
-    
-    // Create GUI system
-    this.gui = new Gui(
-      this.getVersion(),
-      this.strings,
-      this.viewport,
-      this.rootEl
-    );
-    
-    // Initialize GUI
-    await this.gui.init();
-    
-    console.log('[Application] GUI system initialized successfully');
   }
 
   private createSplashScreenInterface() {
