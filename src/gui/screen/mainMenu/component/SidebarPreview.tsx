@@ -32,7 +32,6 @@ export class SidebarPreview extends UiComponent {
   private sidebarTopPreviewAnim?: any;
   private sidebarTopClosedAnim?: any;
   private previewContainer?: any;
-  private props: SidebarPreviewProps;
 
   constructor(props: SidebarPreviewProps) {
     super(props);
