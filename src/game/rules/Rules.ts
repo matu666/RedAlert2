@@ -500,7 +500,7 @@ export class Rules {
     if (!section) {
       throw new Error("Missing [Powerups] section");
     }
-    this.powerups.readIni(section);
+    this.powerups.readIni(section.entries);
   }
 
   private readTiberiums(): void {
