@@ -12,7 +12,7 @@ export class DMislRules extends MissileRules {
   private eliteDamage: number = 0;
   private bodyLength: number = 0;
   private lazyCurve: boolean = false;
-  private type: string = '';
+  public type: string = '';
 
   readIni(ini: any): DMislRules {
     this.pauseFrames = ini.getNumber("DMislPauseFrames");

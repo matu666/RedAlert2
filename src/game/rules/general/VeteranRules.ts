@@ -1,12 +1,12 @@
 export class VeteranRules {
-  private veteranRatio: number = 3;
+  public veteranRatio: number = 3;
   private veteranCombat: number = 1;
   private veteranSpeed: number = 1;
   private veteranSight: number = 1;
   private veteranArmor: number = 1;
   private veteranROF: number = 1;
   private veteranCap: number = 2;
-  private initialVeteran: boolean = false;
+  public initialVeteran: boolean = false;
 
   readIni(ini: any): VeteranRules {
     this.veteranRatio = ini.getNumber("VeteranRatio", 3);

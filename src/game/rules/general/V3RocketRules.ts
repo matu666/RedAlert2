@@ -12,7 +12,7 @@ export class V3RocketRules extends MissileRules {
   private eliteDamage: number = 0;
   private bodyLength: number = 0;
   private lazyCurve: boolean = false;
-  private type: string = '';
+  public type: string = '';
 
   readIni(ini: any): V3RocketRules {
     this.pauseFrames = ini.getNumber("V3RocketPauseFrames");
