@@ -1,5 +1,5 @@
 import { EventDispatcher } from '../../util/event';
-import { GameSpeed } from '../../game/GameSpeed';
+import { GameSpeed } from '../GameSpeed';
 import { TerrainType } from '../../engine/type/TerrainType';
 import { clamp } from '../../util/math';
 
