@@ -401,7 +401,26 @@ export class Gui {
 
   async destroy(): Promise<void> {
     console.log('[Gui] Destroying GUI system');
-    
+
+    // Clear static caches to avoid stale GPU resources across GUI instances
+    try {
+      // Clear SHP builder caches (textures, geometries, materials)
+      const { ShpBuilder } = await import('../engine/renderable/builder/ShpBuilder');
+      if (ShpBuilder?.clearCaches) {
+        ShpBuilder.clearCaches();
+        console.log('[Gui] Cleared ShpBuilder caches');
+      }
+      // Clear palette texture caches
+      const TexUtils = await import('../engine/gfx/TextureUtils.js');
+      if (TexUtils?.TextureUtils?.cache) {
+        TexUtils.TextureUtils.cache.forEach((tex: any) => tex.dispose?.());
+        TexUtils.TextureUtils.cache.clear();
+        console.log('[Gui] Cleared TextureUtils caches');
+      }
+    } catch (e) {
+      console.warn('[Gui] Failed to clear caches during destroy:', e);
+    }
+
     // Destroy MessageBoxApi
     if (this.messageBoxApi) {
       this.messageBoxApi.destroy();

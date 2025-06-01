@@ -2,7 +2,6 @@ import { RootScreen } from '../RootScreen';
 import { MainMenu } from './component/MainMenu';
 import { MainMenuController } from './MainMenuController';
 import { MainMenuScreenType } from '../ScreenType';
-import { HomeScreen } from './main/HomeScreen';
 import { Strings } from '../../../data/Strings';
 import { ShpFile } from '../../../data/ShpFile';
 import { JsxRenderer } from '../../jsx/JsxRenderer';
@@ -66,7 +65,7 @@ export class MainMenuRootScreen extends RootScreen {
       this.uiScene.menuViewport,
       this.images,
       this.jsxRenderer,
-      this.videoSrc
+      this.videoSrc as string
     );
   }
 

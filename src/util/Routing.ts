@@ -12,8 +12,8 @@ export class Routing {
   constructor() {}
 
   public addRoute(path: string, controller: RouteController): void {
-    // Ensure path starts with '/' for consistency, or adjust as needed based on original usage
-    const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+    // Preserve wildcard route key "*" exactly as it is so that it can be matched later
+    const normalizedPath = path === "*" ? "*" : (path.startsWith('/') ? path : `/${path}`);
     this.routes[normalizedPath] = { controller };
   }
 
