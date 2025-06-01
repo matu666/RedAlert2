@@ -444,6 +444,13 @@ export class Application {
       this.gameResConfig = gameResConfig;
       this.cdnResourceLoader = cdnResLoader;
       
+      // NEW: Load core rules/ini definitions now that resources & VFS are ready
+      try {
+        Engine.loadRules();
+      } catch (err) {
+        console.error('[Application] Engine.loadRules() failed:', err);
+      }
+
       // Send analytics event if enabled
       if (typeof window.gtag === 'function') {
         window.gtag('event', 'app_init', {
@@ -456,7 +463,11 @@ export class Application {
       this.sentry?.configureScope((scope: any) => {
         scope.setTag('mod', modName || '<none>');
         scope.setExtra('mod', modName || '<none>');
-        scope.setExtra('modHash', 'unknown'); // Engine.getModHash not implemented yet
+        let modHash: string | number = 'unknown';
+        try {
+          modHash = Engine.getModHash();
+        } catch { /* ignore */ }
+        scope.setExtra('modHash', modHash);
       });
 
     } catch (e) {
