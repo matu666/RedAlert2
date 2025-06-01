@@ -7,7 +7,7 @@ import { pad } from "../../util/string";
 import { FileNotFoundError } from "./FileNotFoundError";
 import { MemArchive } from "./MemArchive";
 import type { VirtualFile } from "./VirtualFile";
-import AppLogger from "../../util/logger"; // Import the default export
+import AppLogger from "../../util/Logger"; // Import the default export
 import type { RealFileSystem } from "./RealFileSystem"; // Assuming RFS interface/type
 
 // Define a generic interface for archive types for better type safety

@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import * as arrayUtils from '../../../util/array';
+import * as arrayUtils from '../../../util/Array';
 import { PaletteBasicMaterial } from '../material/PaletteBasicMaterial';
 
 // 临时向量，用于位置计算

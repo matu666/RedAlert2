@@ -20,7 +20,7 @@ import * as stringUtils from '../util/string';
 import { MapList } from './MapList';
 import { HvaFile } from '../data/HvaFile';
 import { MixinRulesType } from '../game/ini/MixinRulesType';
-import type { AppLogger as AppLoggerType } from '../util/logger'; // Changed to lowercase, aliased for clarity
+import type { AppLogger as AppLoggerType } from '../util/Logger'; // Changed to lowercase, aliased for clarity
 import type { DataStream } from '../data/DataStream'; // For VFS openFile result stream
 
 export enum EngineType {

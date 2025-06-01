@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Engine } from '../../../../engine/Engine';
-import AppLogger from '../../../../util/logger';
+import AppLogger from '../../../../util/Logger';
 import { Strings } from '../../../../data/Strings';
 import { MessageBoxApi } from '../../../component/MessageBoxApi';
 

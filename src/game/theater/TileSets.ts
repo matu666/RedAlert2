@@ -81,7 +81,7 @@ export class TileSets {
     return totalTileCount;
   }
 
-  private getGeneralValue(key: string): number {
+  public getGeneralValue(key: string): number {
     const generalSection = this.theaterIni.getSection('General');
     if (!generalSection) {
       throw new Error('Missing [General] section in theater ini');
