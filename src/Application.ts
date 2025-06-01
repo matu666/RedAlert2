@@ -444,6 +444,13 @@ export class Application {
       this.gameResConfig = gameResConfig;
       this.cdnResourceLoader = cdnResLoader;
       
+      // NEW: Load core rules/ini definitions now that resources & VFS are ready
+      try {
+        Engine.loadRules();
+      } catch (err) {
+        console.error('[Application] Engine.loadRules() failed:', err);
+      }
+
       // Send analytics event if enabled
       if (typeof window.gtag === 'function') {
         window.gtag('event', 'app_init', {
@@ -456,7 +463,11 @@ export class Application {
       this.sentry?.configureScope((scope: any) => {
         scope.setTag('mod', modName || '<none>');
         scope.setExtra('mod', modName || '<none>');
-        scope.setExtra('modHash', 'unknown'); // Engine.getModHash not implemented yet
+        let modHash: string | number = 'unknown';
+        try {
+          modHash = Engine.getModHash();
+        } catch { /* ignore */ }
+        scope.setExtra('modHash', modHash);
       });
 
     } catch (e) {
@@ -524,17 +535,37 @@ export class Application {
       currentHandler = this; // 设置当前handler为Application本身
     });
 
-    // VXL测试路由 - 严格按照原始项目逻辑
     this.routing.addRoute("/vxltest", async () => {
       if (!Engine.vfs) {
         throw new Error("Original game files must be provided.");
       }
       console.log('[Application] Initializing VxlTester');
       
-      // 按照原始项目，VxlTester直接使用document.body
       const { VxlTester } = await import('./tools/VxlTester');
       await VxlTester.main(Engine.vfs, this.runtimeVars);
-      currentHandler = VxlTester; // 设置当前处理器
+      currentHandler = VxlTester;
+    });
+
+    this.routing.addRoute("/lobbytest", async () => {
+      if (!Engine.vfs) {
+        throw new Error("Original game files must be provided.");
+      }
+      console.log('[Application] Initializing LobbyFormTester');
+
+      const { LobbyFormTester } = await import('./tools/LobbyFormTester');
+      await LobbyFormTester.main(this.rootEl!, this.strings);
+      currentHandler = LobbyFormTester;
+    });
+
+    this.routing.addRoute("/soundtest", async () => {
+      if (!Engine.vfs) {
+        throw new Error("Original game files must be provided.");
+      }
+      console.log('[Application] Initializing SoundTester');
+
+      const { SoundTester } = await import('./tools/SoundTester');
+      await SoundTester.main(Engine.vfs, this.rootEl!);
+      currentHandler = SoundTester;
     });
 
     // Initialize routing

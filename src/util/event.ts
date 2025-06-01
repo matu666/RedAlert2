@@ -33,8 +33,8 @@ export class EventDispatcher<TSource = any, TData = any> implements IEvent<TSour
     this.listeners.delete(listener);
   }
 
-  dispatch(source: TSource, data: TData): void {
-    this.listeners.forEach((listener) => listener(data, source));
+  dispatch(source: TSource, data?: TData): void {
+    this.listeners.forEach((listener) => listener(data as TData, source));
   }
 
   asEvent(): IEvent<TSource, TData> {

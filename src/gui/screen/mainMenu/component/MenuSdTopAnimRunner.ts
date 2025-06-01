@@ -1,5 +1,5 @@
 import { MenuSlotAnimationRunner, AnimationType } from './MenuSlotAnimationRunner';
-import { AnimationState } from '../../../../engine/Animation';
+import { AnimationState } from '@/engine/Animation';
 
 export class MenuSdTopAnimRunner extends MenuSlotAnimationRunner {
   getCurrentFrame(): number {

@@ -20,8 +20,8 @@ const tooltipMap = new Map<string, string>([
 
 export class CountryRules {
   private id: string;
-  private name: string;
-  private uiName: string;
+  public name!: string;
+  public uiName!: string;
   private uiTooltip: string;
   private side: SideType;
   public multiplay: boolean;
