@@ -21,6 +21,7 @@ import type { Viewport } from './gui/Viewport'; // Import Viewport type
 import { Gui } from './gui/Gui'; // Import GUI system
 import { BasicErrorBoxApi } from './gui/component/BasicErrorBoxApi'; // Import BasicErrorBoxApi
 import { Engine } from './engine/Engine'; // Import Engine
+import { ImageContext } from './gui/component/ImageContext';
 
 // Type for the callback function
 export type SplashScreenUpdateCallback = (props: ComponentProps<typeof SplashScreenComponent> | null) => void;
@@ -443,6 +444,12 @@ export class Application {
 
       this.gameResConfig = gameResConfig;
       this.cdnResourceLoader = cdnResLoader;
+      
+      // Set up ImageContext
+      ImageContext.cdnBaseUrl = this.gameResConfig?.isCdn() 
+        ? this.gameResConfig.getCdnBaseUrl() 
+        : undefined;
+      ImageContext.vfs = Engine.vfs;
       
       // NEW: Load core rules/ini definitions now that resources & VFS are ready
       try {
