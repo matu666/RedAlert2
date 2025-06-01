@@ -1,4 +1,4 @@
-import { CrateGeneratorTrait } from '../trait/CrateGeneratorTrait';
+import { UNSUPPORTED_POWERUP_TYPES } from '../trait/CrateGeneratorTrait';
 import { PowerupType } from '../type/PowerupType';
 
 interface PowerupEntry {
@@ -19,7 +19,7 @@ export class PowerupsRules {
       const type = PowerupType[key as keyof typeof PowerupType];
 
       if (type !== undefined) {
-        if (!CrateGeneratorTrait.UNSUPPORTED_POWERUP_TYPES.includes(type)) {
+        if (!UNSUPPORTED_POWERUP_TYPES.includes(type)) {
           this.powerups.push({
             type,
             probShares: shares,
