@@ -13,6 +13,8 @@ import { HtmlView } from "@/gui/jsx/HtmlView";
 import { aiUiNames, RANDOM_START_POS, NO_TEAM_ID } from "@/game/gameopts/constants";
 import { PlayerRankType } from "@/network/ladder/PlayerRankType";
 import { LadderType } from "@/network/ladder/wladderConfig";
+import { ShpBuilder } from '@/engine/renderable/builder/ShpBuilder';
+import { TextureUtils } from '@/engine/gfx/TextureUtils.js';
 
 interface PlayerProfile {
   name: string;
@@ -51,6 +53,7 @@ interface ViewportBounds {
 
 export class LobbyFormTester {
   private static disposables = new CompositeDisposable();
+  private static homeButton?: HTMLButtonElement;
 
   static main(container: HTMLElement, strings: any): void {
     const renderer = new Renderer(800, 600);
@@ -225,9 +228,61 @@ export class LobbyFormTester {
     this.disposables.add(() =>
       container.removeChild(uiScene.getHtmlContainer().getElement())
     );
+
+    // Build home button to return to selection page
+    this.buildHomeButton(container);
+  }
+
+  private static buildHomeButton(parent: HTMLElement): void {
+    const homeButton = this.homeButton = document.createElement('button');
+    homeButton.innerHTML = '← 主页';
+    homeButton.style.cssText = `
+      position: absolute;
+      left: 10px;
+      top: 10px;
+      padding: 8px 16px;
+      background-color: rgba(0, 0, 0, 0.7);
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      z-index: 1000;
+      transition: background-color 0.2s;
+    `;
+    homeButton.onmouseover = () => {
+      homeButton.style.backgroundColor = 'rgba(0, 0, 0, 0.9)';
+    };
+    homeButton.onmouseout = () => {
+      homeButton.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+    };
+    homeButton.onclick = () => {
+      window.location.hash = '/';
+    };
+    parent.appendChild(homeButton);
+    this.disposables.add(() => homeButton.remove());
   }
 
   static destroy(): void {
     this.disposables.dispose();
+    if (this.homeButton) {
+      this.homeButton.remove();
+      this.homeButton = undefined;
+    }
+
+    // 清理可能导致纹理失效的全局缓存，避免返回主界面后贴图变黑
+    try {
+      // ShpBuilder 缓存
+      if (ShpBuilder?.clearCaches) {
+        ShpBuilder.clearCaches();
+      }
+      // TextureUtils 静态缓存
+      if (TextureUtils?.cache) {
+        TextureUtils.cache.forEach((tex: any) => tex.dispose?.());
+        TextureUtils.cache.clear();
+      }
+    } catch (err) {
+      console.warn('[LobbyFormTester] Failed to clear caches during destroy:', err);
+    }
   }
 }

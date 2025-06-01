@@ -351,6 +351,9 @@ export class Gui {
     const subScreens = new Map<MainMenuScreenType, any>();
     subScreens.set(MainMenuScreenType.Home, HomeScreen);
     subScreens.set(MainMenuScreenType.OptionsStorage, StorageScreen);
+    // 底层测试入口屏幕
+    const { TestEntryScreen } = await import('./screen/mainMenu/main/TestEntryScreen');
+    subScreens.set(MainMenuScreenType.TestEntry, TestEntryScreen);
     
     // 添加信息与制作人员相关屏幕
     const { InfoAndCreditsScreen } = await import('./screen/mainMenu/infoAndCredits/InfoAndCreditsScreen');

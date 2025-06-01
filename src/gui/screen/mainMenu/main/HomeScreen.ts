@@ -114,14 +114,14 @@ export class HomeScreen implements Screen {
           await this.messageBoxApi.alert('Options - 功能开发中\n\n需要设置界面', this.strings.get('GUI:OK') || 'OK');
         }
       },
-      // 临时管理存储，项目未完全贯通前，调试存储系统使用
+      // 底层测试入口，进入各类底层测试与文件系统管理
       {
-        label: '临时管理存储',
-        tooltip: '管理游戏资源存储和文件系统',
+        label: '底层测试入口',
+        tooltip: '进入底层文件系统与测试工具',
         onClick: () => {
-          console.log('[HomeScreen] Storage Management clicked');
+          console.log('[HomeScreen] Test Entry clicked');
           if (this.controller) {
-            this.controller.goToScreen(MainMenuScreenType.OptionsStorage);
+            this.controller.pushScreen(MainMenuScreenType.TestEntry);
           }
         }
       },
