@@ -10,6 +10,7 @@ export class SoundTester {
   private static sounds: LazyResourceCollection<WavFile>;
   private static audioBag: AudioBagFile;
   private static listEl: HTMLDivElement;
+  private static homeButton?: HTMLButtonElement;
 
   static async main(fileSystem: any, containerElement: HTMLElement): Promise<void> {
     this.sounds = Engine.getSounds();
@@ -22,6 +23,7 @@ export class SoundTester {
     fileSystem.addArchive(this.audioBag, "audio.bag");
 
     this.buildBrowser();
+    this.buildHomeButton();
   }
 
   private static selectSound(soundName: string): void {
@@ -76,8 +78,41 @@ export class SoundTester {
     document.body.appendChild(listElement);
   }
 
+  private static buildHomeButton(): void {
+    const homeButton = this.homeButton = document.createElement('button');
+    homeButton.innerHTML = '← 主页';
+    homeButton.style.cssText = `
+      position: absolute;
+      left: 10px;
+      top: 10px;
+      padding: 8px 16px;
+      background-color: rgba(0, 0, 0, 0.7);
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      z-index: 1000;
+      transition: background-color 0.2s;
+    `;
+    homeButton.onmouseover = () => {
+      homeButton.style.backgroundColor = 'rgba(0, 0, 0, 0.9)';
+    };
+    homeButton.onmouseout = () => {
+      homeButton.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+    };
+    homeButton.onclick = () => {
+      window.location.hash = '/';
+    };
+    document.body.appendChild(homeButton);
+  }
+
   static destroy(): void {
-    this.listEl.remove();
+    this.listEl?.remove();
+    if (this.homeButton) {
+      this.homeButton.remove();
+      this.homeButton = undefined;
+    }
     this.disposables.dispose();
   }
 }
