@@ -1,4 +1,4 @@
-import PcxJs from 'pcx-js'; // Assuming default export from pcx-js
+import PcxJs from '@ra2web/pcxfile'; // Assuming default export from pcx-js
 import { CanvasUtils } from '../engine/gfx/CanvasUtils';
 import type { VirtualFile } from './vfs/VirtualFile';
 import { DataStream } from './DataStream';
