@@ -1,28 +1,28 @@
-import { Renderer } from '../engine/gfx/Renderer';
-import { UiScene } from './UiScene';
-import { JsxRenderer } from './jsx/JsxRenderer';
-import { BoxedVar } from '../util/BoxedVar';
-import { RootController } from './screen/RootController';
-import { ScreenType, MainMenuScreenType } from './screen/ScreenType';
-import { MainMenuRootScreen } from './screen/mainMenu/MainMenuRootScreen';
-import { HomeScreen } from './screen/mainMenu/main/HomeScreen';
-import { StorageScreen } from './screen/options/StorageScreen';
-import { Config } from '../Config';
-import { Strings } from '../data/Strings';
-import { Engine } from '../engine/Engine';
-import { MusicType } from '../engine/sound/Music';
-import { MessageBoxApi } from './component/MessageBoxApi';
-import { ShpFile } from '../data/ShpFile';
-import { Palette } from '../data/Palette';
-import { UiAnimationLoop } from '../engine/UiAnimationLoop';
-import { Mixer } from '../engine/sound/Mixer';
-import { ChannelType } from '../engine/sound/ChannelType';
-import { AudioSystem } from '../engine/sound/AudioSystem';
-import { Sound } from '../engine/sound/Sound';
-import { SoundSpecs } from '../engine/sound/SoundSpecs';
-import { Music } from '../engine/sound/Music';
-import { MusicSpecs } from '../engine/sound/MusicSpecs';
-import { LocalPrefs, StorageKey } from '../LocalPrefs';
+import { Renderer } from './engine/gfx/Renderer.js';
+import { UiScene } from './gui/UiScene.js';
+import { JsxRenderer } from './gui/jsx/JsxRenderer.js';
+import { BoxedVar } from './util/BoxedVar.js';
+import { RootController } from './gui/screen/RootController.js';
+import { ScreenType, MainMenuScreenType } from './gui/screen/ScreenType.js';
+import { MainMenuRootScreen } from './gui/screen/mainMenu/MainMenuRootScreen.js';
+import { HomeScreen } from './gui/screen/mainMenu/main/HomeScreen.js';
+import { StorageScreen } from './gui/screen/options/StorageScreen.js';
+import { Config } from './Config.js';
+import { Strings } from './data/Strings.js';
+import { Engine } from './engine/Engine.js';
+import { MusicType } from './engine/sound/Music.js';
+import { MessageBoxApi } from './gui/component/MessageBoxApi.js';
+import { ShpFile } from './data/ShpFile.js';
+import { Palette } from './data/Palette.js';
+import { UiAnimationLoop } from './engine/UiAnimationLoop.js';
+import { Mixer } from './engine/sound/Mixer.js';
+import { ChannelType } from './engine/sound/ChannelType.js';
+import { AudioSystem } from './engine/sound/AudioSystem.js';
+import { Sound } from './engine/sound/Sound.js';
+import { SoundSpecs } from './engine/sound/SoundSpecs.js';
+import { Music } from './engine/sound/Music.js';
+import { MusicSpecs } from './engine/sound/MusicSpecs.js';
+import { LocalPrefs, StorageKey } from './LocalPrefs.js';
 
 export class Gui {
   private appVersion: string;
@@ -352,12 +352,12 @@ export class Gui {
     subScreens.set(MainMenuScreenType.Home, HomeScreen);
     subScreens.set(MainMenuScreenType.OptionsStorage, StorageScreen);
     // 底层测试入口屏幕
-    const { TestEntryScreen } = await import('./screen/mainMenu/main/TestEntryScreen');
+    const { TestEntryScreen } = await import('./gui/screen/mainMenu/main/TestEntryScreen.js');
     subScreens.set(MainMenuScreenType.TestEntry, TestEntryScreen);
     
     // 添加信息与制作人员相关屏幕
-    const { InfoAndCreditsScreen } = await import('./screen/mainMenu/infoAndCredits/InfoAndCreditsScreen');
-    const { CreditsScreen } = await import('./screen/mainMenu/credits/CreditsScreen');
+    const { InfoAndCreditsScreen } = await import('./gui/screen/mainMenu/infoAndCredits/InfoAndCreditsScreen.js');
+    const { CreditsScreen } = await import('./gui/screen/mainMenu/credits/CreditsScreen.js');
     subScreens.set(MainMenuScreenType.InfoAndCredits, InfoAndCreditsScreen);
     subScreens.set(MainMenuScreenType.Credits, CreditsScreen);
     
@@ -408,13 +408,13 @@ export class Gui {
     // Clear static caches to avoid stale GPU resources across GUI instances
     try {
       // Clear SHP builder caches (textures, geometries, materials)
-      const { ShpBuilder } = await import('../engine/renderable/builder/ShpBuilder');
+      const { ShpBuilder } = await import('./engine/renderable/builder/ShpBuilder.js');
       if (ShpBuilder?.clearCaches) {
         ShpBuilder.clearCaches();
         console.log('[Gui] Cleared ShpBuilder caches');
       }
       // Clear palette texture caches
-      const TexUtils = await import('../engine/gfx/TextureUtils.js');
+      const TexUtils = await import('./engine/gfx/TextureUtils.js');
       if (TexUtils?.TextureUtils?.cache) {
         TexUtils.TextureUtils.cache.forEach((tex: any) => tex.dispose?.());
         TexUtils.TextureUtils.cache.clear();
