@@ -67,7 +67,7 @@ const MenuVideo: React.FC<MenuVideoProps> = ({ src, className = 'video-wrapper' 
         >
           RED ALERT 2 WEB
         </div>
-        <div className="logo" style={{ opacity: 1 }} />
+        {/*<div className="logo" style={{ opacity: 1 }} />*/}
       </div>
     );
   }
@@ -84,7 +84,7 @@ const MenuVideo: React.FC<MenuVideoProps> = ({ src, className = 'video-wrapper' 
       >
         <source src="" type="video/webm" />
       </video>
-      <div ref={logoRef} className="logo" style={{ opacity: 0 }} />
+      {/*<div ref={logoRef} className="logo" style={{ opacity: 0 }} />*/}
     </div>
   );
 };

@@ -69,7 +69,7 @@ export class WavFile {
     if (wav.bitDepth === '4') {
       wav.fromIMAADPCM();
     }
-    return wav.toBuffer();
+    return wav.toBuffer() as Uint8Array;
   }
 
   isRawImaAdpcm(): boolean {
