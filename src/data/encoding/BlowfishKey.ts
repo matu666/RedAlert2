@@ -18,6 +18,9 @@ const a = new Int8Array([
 ]);
 
 class i {
+  key1: Uint32Array<ArrayBuffer>;
+  key2: Uint32Array<ArrayBuffer>;
+  len: number;
   constructor() {
     (this.key1 = new Uint32Array(64)),
       (this.key2 = new Uint32Array(64));
@@ -25,6 +28,17 @@ class i {
 }
 
 export class BlowfishKey {
+  pubkey: i;
+  glob1: Uint32Array<ArrayBuffer>;
+  glob2: Uint32Array<ArrayBuffer>;
+  glob1_hi: Uint32Array<ArrayBuffer>;
+  glob1_hi_inv: Uint32Array<ArrayBuffer>;
+  glob1_bitlen: any;
+  glob1_len_x2: number;
+  glob1_hi_bitlen: number;
+  glob1_hi_inv_lo: number;
+  glob1_hi_inv_hi: number;
+  
   constructor() {
     (this.pubkey = new i()),
       (this.glob1 = new Uint32Array(64)),
