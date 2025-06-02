@@ -2,6 +2,12 @@
 
 红色警戒2，一款经典的即时战略类游戏，使用React + TypeScript + Vite构建。
 
+![image](https://github.com/user-attachments/assets/f146dc1c-ca15-456a-a8f0-4b43f2d431e8)
+
+![image](https://github.com/user-attachments/assets/a23760df-e679-4b32-a9a2-ca51c214c420)
+
+![image](https://github.com/user-attachments/assets/4781f451-7a51-45e2-919b-cbcb8bbd727a)
+
 ## 🎮 线上游玩
 
 [立即开始游戏](https://game.ra2web.com) 🎮
@@ -275,8 +281,6 @@ npm run test
 
 ## 📞 联系方式
 
-- 项目主页：[GitHub Repository]
-- 问题反馈：[GitHub Issues]
-- 讨论社区：[GitHub Discussions]
+- 项目主页：[[GitHub Repository]](https://github.com/huangkaoya/redalert2)
 
 ---
