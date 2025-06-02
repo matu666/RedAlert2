@@ -1,15 +1,14 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { Application, SplashScreenUpdateCallback } from './Application'; // Adjust path if needed
-import SplashScreenComponent from './gui/component/SplashScreen'; // Renamed to avoid conflict
+import { useEffect, useRef, useState } from 'react';
+import { Application, SplashScreenUpdateCallback } from './Application';
+import SplashScreenComponent from './gui/component/SplashScreen';
 import type { ComponentProps } from 'react';
-import GameResourcesViewer from './gui/component/GameResourcesViewer'; // Import the new component
-import { GlslGenerationTest } from './test/GlslGenerationTest'; // Import the test component
+import { GlslGenerationTest } from './test/GlslGenerationTest';
 
 function App() {
   const appRef = useRef<Application | null>(null);
-  const appInitialized = useRef<boolean>(false); // Prevent double initialization in StrictMode
+  const appInitialized = useRef<boolean>(false);
   const [splashScreenProps, setSplashScreenProps] = useState<ComponentProps<typeof SplashScreenComponent> | null>(null);
-  const [showTestMode, setShowTestMode] = useState(false); // New state for test mode
+  const [showTestMode, setShowTestMode] = useState(false);
 
   useEffect(() => {
     if (appInitialized.current) {

@@ -18,7 +18,7 @@ import { GameResConfig } from './engine/gameRes/GameResConfig'; // Import GameRe
 import { GameResSource } from './engine/gameRes/GameResSource'; // Import GameResSource enum
 import { LocalPrefs, StorageKey } from './LocalPrefs'; // Import LocalPrefs and StorageKey
 import type { Viewport } from './gui/Viewport'; // Import Viewport type
-import { Gui } from './gui/Gui'; // Import GUI system
+import { Gui } from './Gui'; // Import GUI system
 import { BasicErrorBoxApi } from './gui/component/BasicErrorBoxApi'; // Import BasicErrorBoxApi
 import { Engine } from './engine/Engine'; // Import Engine
 import { ImageContext } from './gui/component/ImageContext';
