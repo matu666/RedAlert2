@@ -50,7 +50,7 @@ export class MenuVideo extends React.Component<MenuVideoProps, MenuVideoState> {
           <video style="outline: none;" loop playsinline muted autoPlay>
               <source src="${url}" type="${mimeType}" />
           </video>
-          <div class="logo" style="opacity: 0;" />
+          <!--<div class="logo" style="opacity: 0;" />-->
         `,
       },
     });
