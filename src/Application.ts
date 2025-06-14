@@ -575,6 +575,17 @@ export class Application {
       currentHandler = SoundTester;
     });
 
+    this.routing.addRoute("/buildtest", async () => {
+      if (!Engine.vfs) {
+        throw new Error("Original game files must be provided.");
+      }
+      console.log('[Application] Initializing BuildingTester');
+
+      const { BuildingTester } = await import('./tools/BuildingTester');
+      await BuildingTester.main([]);
+      currentHandler = BuildingTester;
+    });
+
     // Initialize routing
     this.routing.init();
   }

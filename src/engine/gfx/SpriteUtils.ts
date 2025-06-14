@@ -2,8 +2,46 @@ import { isBetween } from "../../util/math";
 import { BufferGeometryUtils } from "./BufferGeometryUtils";
 import * as THREE from 'three';
 
+interface TextureArea {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+interface Offset {
+  x: number;
+  y: number;
+}
+
+interface Align {
+  x: number;
+  y: number;
+}
+
+interface ImageSize {
+  width: number;
+  height: number;
+}
+
+interface SpriteGeometryOptions {
+  camera: THREE.Camera;
+  texture: THREE.Texture;
+  textureArea?: TextureArea;
+  offset?: Offset;
+  scale?: number;
+  flat?: boolean;
+  depth?: boolean;
+  depthOffset?: number;
+  align: Align;
+}
+
 class SpriteUtilsClass {
-  static MAGIC_DEPTH_SCALE = 0.8;
+  static readonly MAGIC_DEPTH_SCALE: number = 0.8;
+
+  public readonly USE_INDEXED_GEOMETRY: boolean;
+  public readonly VERTICES_PER_SPRITE: number;
+  public readonly TRIANGLES_PER_SPRITE: number;
 
   constructor() {
     this.USE_INDEXED_GEOMETRY = true;
@@ -11,7 +49,7 @@ class SpriteUtilsClass {
     this.TRIANGLES_PER_SPRITE = 4;
   }
 
-  createSpriteGeometry(options) {
+  createSpriteGeometry(options: SpriteGeometryOptions): THREE.BufferGeometry {
     if (typeof options !== "object") {
       throw new Error("Invalid argument");
     }
@@ -34,7 +72,7 @@ class SpriteUtilsClass {
 
     const textureWidth = options.textureArea.width;
     const textureHeight = options.textureArea.height;
-    const imageSize = {
+    const imageSize: ImageSize = {
       width: options.texture.image.width,
       height: options.texture.image.height,
     };
@@ -113,13 +151,13 @@ class SpriteUtilsClass {
     return geometry;
   }
 
-  createRectGeometry(width, height) {
+  createRectGeometry(width: number, height: number): THREE.BufferGeometry {
     return this.USE_INDEXED_GEOMETRY
       ? this.createIndexedRectGeometry(width, height)
       : this.createNonIndexedRectGeometry(width, height);
   }
 
-  createNonIndexedRectGeometry(width, height) {
+  createNonIndexedRectGeometry(width: number, height: number): THREE.BufferGeometry {
     let geometry = new THREE.BufferGeometry();
     const vertices = new Float32Array([
       -0.5 * width, 0.5 * height, 0,
@@ -133,7 +171,7 @@ class SpriteUtilsClass {
     return geometry;
   }
 
-  createIndexedRectGeometry(width, height) {
+  createIndexedRectGeometry(width: number, height: number): THREE.BufferGeometry {
     let geometry = new THREE.BufferGeometry();
     const vertices = new Float32Array([
       -0.5 * width, 0.5 * height, 0,
@@ -148,8 +186,8 @@ class SpriteUtilsClass {
     return geometry;
   }
 
-  addRectUvs(geometry, textureArea, imageSize) {
-    const uvs = new Float32Array(2 * geometry.getAttribute("position").count);
+  addRectUvs(geometry: THREE.BufferGeometry, textureArea: TextureArea, imageSize: ImageSize): void {
+    const uvs = new Float32Array(2 * geometry.getAttribute("position")!.count);
     if (this.USE_INDEXED_GEOMETRY) {
       this.writeIndexedRectUvsIntoBuffer(uvs, 0, textureArea, imageSize);
     } else {
@@ -158,7 +196,12 @@ class SpriteUtilsClass {
     geometry.setAttribute("uv", new THREE.BufferAttribute(uvs, 2));
   }
 
-  writeNonIndexedRectUvsIntoBuffer(buffer, offset, textureArea, imageSize) {
+  writeNonIndexedRectUvsIntoBuffer(
+    buffer: Float32Array, 
+    offset: number, 
+    textureArea: TextureArea, 
+    imageSize: ImageSize
+  ): void {
     const u = textureArea.x / imageSize.width;
     const v = 1 - (textureArea.y + textureArea.height) / imageSize.height;
     const uWidth = textureArea.width / imageSize.width;
@@ -170,7 +213,12 @@ class SpriteUtilsClass {
     );
   }
 
-  writeIndexedRectUvsIntoBuffer(buffer, offset, textureArea, imageSize) {
+  writeIndexedRectUvsIntoBuffer(
+    buffer: Float32Array, 
+    offset: number, 
+    textureArea: TextureArea, 
+    imageSize: ImageSize
+  ): void {
     const u = textureArea.x / imageSize.width;
     const v = 1 - (textureArea.y + textureArea.height) / imageSize.height;
     const uWidth = textureArea.width / imageSize.width;
@@ -179,11 +227,11 @@ class SpriteUtilsClass {
     buffer.set([u, v + vHeight, u + uWidth, v + vHeight, u, v, u + uWidth, v], 8 * offset);
   }
 
-  applyDepth(geometry, camera, depthOffset) {
-    let positions = geometry.getAttribute("position");
+  applyDepth(geometry: THREE.BufferGeometry, camera: THREE.Camera, depthOffset: number): void {
+    let positions = geometry.getAttribute("position") as THREE.BufferAttribute;
     for (let i = 0, count = positions.count; i < count; i++) {
       const x = positions.getX(i) * SpriteUtilsClass.MAGIC_DEPTH_SCALE;
-      let z;
+      let z: number;
       if (x < 0) {
         z = depthOffset - (Math.abs(x) / Math.cos(camera.rotation.x)) * Math.tan(camera.rotation.y);
       } else {
@@ -193,8 +241,8 @@ class SpriteUtilsClass {
     }
   }
 
-  applyFlatDepth(geometry, depthOffset) {
-    let positions = geometry.getAttribute("position");
+  applyFlatDepth(geometry: THREE.BufferGeometry, depthOffset: number): void {
+    let positions = geometry.getAttribute("position") as THREE.BufferAttribute;
     for (let i = 0, count = positions.count; i < count; i++) {
       positions.setZ(i, depthOffset);
     }
@@ -206,9 +254,12 @@ const spriteUtilsInstance = new SpriteUtilsClass();
 
 // For import * as SpriteUtils pattern (ShpBuilder.js)
 export const createSpriteGeometry = spriteUtilsInstance.createSpriteGeometry.bind(spriteUtilsInstance);
-export const VERTICES_PER_SPRITE = spriteUtilsInstance.VERTICES_PER_SPRITE;
-export const TRIANGLES_PER_SPRITE = spriteUtilsInstance.TRIANGLES_PER_SPRITE;
-export const MAGIC_DEPTH_SCALE = SpriteUtilsClass.MAGIC_DEPTH_SCALE;
+export const VERTICES_PER_SPRITE: number = spriteUtilsInstance.VERTICES_PER_SPRITE;
+export const TRIANGLES_PER_SPRITE: number = spriteUtilsInstance.TRIANGLES_PER_SPRITE;
+export const MAGIC_DEPTH_SCALE: number = SpriteUtilsClass.MAGIC_DEPTH_SCALE;
 
 // For import { SpriteUtils } pattern (TypeScript files)
-export const SpriteUtils = spriteUtilsInstance; 
+export const SpriteUtils = spriteUtilsInstance;
+
+// Export types for external use
+export type { TextureArea, Offset, Align, ImageSize, SpriteGeometryOptions };

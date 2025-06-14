@@ -83,39 +83,70 @@ export class TmpImage {
 
     // Main tile data: (width * height) cells, 2 cells per byte (4 bits per cell)
     const mainTileDataByteLength = (tileWidthCells * tileHeightCells) / 2;
-    this.tileData = stream.readUint8Array(mainTileDataByteLength);
+
+    // Ensure we don't try to read past EOF – malformed offsets sometimes point near EOF and
+    // would cause RangeError.  If the requested data length exceeds the remaining bytes,
+    // we treat this tile as empty/placeholder (just filled with zeros) and advance the
+    // stream to the end to stay in sync with original logic (which would have crashed).
+    if (stream.position + mainTileDataByteLength > stream.byteLength) {
+      console.warn(
+        `TmpImage: mainTileData (${mainTileDataByteLength} bytes) exceeds remaining buffer ` +
+        `(${stream.byteLength - stream.position}). Using zero-filled placeholder.`
+      );
+      this.tileData = new Uint8Array(mainTileDataByteLength); // zeros
+      stream.seek(stream.byteLength); // move to EOF to keep subsequent offsets reproducible
+      this.hasZData = false;
+      this.hasExtraData = false;
+      return;
+    }
+
+    this.tileData = stream.mapUint8Array(mainTileDataByteLength);
 
     this.hasZData = (this.flags & TmpImageFlags.ZData) === TmpImageFlags.ZData;
     if (this.hasZData) {
       // Z-data for main tile data, same byte length as mainTileDataByteLength
-      this.zData = stream.readUint8Array(mainTileDataByteLength);
+      // Guard against malformed offsets that would read past EOF.
+      if (stream.position + mainTileDataByteLength > stream.byteLength) {
+        console.warn(
+          `TmpImage: ZData (${mainTileDataByteLength} bytes) exceeds remaining buffer ` +
+          `(${stream.byteLength - stream.position}). Skipping ZData.`
+        );
+        // Mark as missing but keep flag so logic stays consistent with original behaviour.
+        this.zData = undefined;
+        // Move to EOF to stay in sync with original crash behaviour
+        stream.seek(stream.byteLength);
+      } else {
+        this.zData = stream.mapUint8Array(mainTileDataByteLength);
+      }
     }
 
     this.hasExtraData = (this.flags & TmpImageFlags.ExtraData) === TmpImageFlags.ExtraData;
     if (this.hasExtraData) {
-      const extraDataByteLength = Math.abs(this.extraWidth * this.extraHeight); // Each byte is 1 cell for extra data
-      this.extraData = stream.readUint8Array(extraDataByteLength);
-      
-      // Original had a conditional skip based on `r` (dataBlockSize) and presence of ZData & ExtraData
-      // if (this.hasZData && this.hasExtraData && this.dataBlockSize > 0 && this.dataBlockSize < stream.byteLength)
-      // This implies dataBlockSize might be the Z-buffer for the *extraData*.
-      // The original `e.position += Math.abs(this.extraWidth * this.extraHeight)` for this seems redundant if it's for z-buffer of extraData.
-      // Assuming `dataBlockSize` (`r`) specifically refers to Z-data for extra data if both flags are set.
-      if (this.hasZData && this.dataBlockSize > 0 && this.dataBlockSize === extraDataByteLength) {
-          // This implies that the zData flag might mean z-buffer for *main* data,
-          // AND if extraData is present, an additional z-buffer for *extra* data follows, of size `dataBlockSize`.
-          // This part is a bit ambiguous in the original. For now, assume ZData means main Z, and if ExtraData also present,
-          // then `dataBlockSize` might be an *additional* Z-buffer for the extra data.
-          // However, the original code `e.position += Math.abs(this.extraWidth * this.extraHeight)` here is suspicious
-          // as it's the same size as extraData itself, not zData for extraData.
-          // Let's assume the original intent was to skip Z-data for extraData if present, size of `extraDataByteLength`
-          // if (this.hasZData && this.hasExtraData && this.dataBlockSize > 0 && this.dataBlockSize < stream.byteLength - stream.position)
-          // The condition `r < e.byteLength` is to prevent reading past EOF. And `0 < r`.
-          // The actual skip was `Math.abs(this.extraWidth * this.extraHeight)`. This is the size of extraData itself, not a Z-buffer for it.
-          // This suggests a possible bug in original or a very specific format quirk where if ZData and ExtraData flags are set,
-          // an additional copy or related block of `extraDataByteLength` is present.
-          // For now, I will omit this potentially problematic skip as its purpose is unclear and could be an error.
-          // console.warn("Ambiguous skip after extraData in TmpImage based on original logic, omitting for now.");
+      const extraDataByteLength = Math.abs(this.extraWidth * this.extraHeight); // 1 byte per cell
+
+      // Ensure extraData block is within bounds.
+      if (stream.position + extraDataByteLength > stream.byteLength) {
+        console.warn(
+          `TmpImage: extraData (${extraDataByteLength} bytes) exceeds remaining buffer ` +
+          `(${stream.byteLength - stream.position}). Skipping extraData.`
+        );
+        this.extraData = undefined;
+        stream.seek(stream.byteLength);
+      } else {
+        // Read the extraData block itself
+        this.extraData = stream.mapUint8Array(extraDataByteLength);
+      }
+
+      // In original implementation: if ZData & ExtraData are present and `r` (dataBlockSize)
+      // is a positive value *within* the stream, then advance by extraDataByteLength bytes.
+      if (
+        this.hasZData &&
+        this.hasExtraData &&
+        this.dataBlockSize > 0 &&
+        this.dataBlockSize < stream.byteLength
+      ) {
+        // Advance safely without overrunning.
+        stream.seek(Math.min(stream.position + extraDataByteLength, stream.byteLength));
       }
     }
   }

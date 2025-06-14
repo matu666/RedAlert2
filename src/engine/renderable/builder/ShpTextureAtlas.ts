@@ -2,29 +2,32 @@ import { IndexedBitmap } from "../../../data/Bitmap";
 import { TextureAtlas } from "../../gfx/TextureAtlas";
 
 export class ShpTextureAtlas {
-  fromShpFile(shpFile) {
-    let bitmaps = [];
+  private images: IndexedBitmap[];
+  private atlas: TextureAtlas;
+
+  fromShpFile(shpFile: any): ShpTextureAtlas {
+    const bitmaps: IndexedBitmap[] = [];
     for (let i = 0; i < shpFile.numImages; i++) {
       const image = shpFile.getImage(i);
       bitmaps.push(new IndexedBitmap(image.width, image.height, image.imageData));
     }
     
-    let atlas = new TextureAtlas();
+    const atlas = new TextureAtlas();
     atlas.pack(bitmaps);
     this.images = bitmaps;
     this.atlas = atlas;
     return this;
   }
 
-  getTextureArea(imageIndex) {
+  getTextureArea(imageIndex: number): any {
     return this.atlas.getImageRect(this.images[imageIndex]);
   }
 
-  getTexture() {
+  getTexture(): any {
     return this.atlas.getTexture();
   }
 
-  dispose() {
+  dispose(): void {
     this.atlas.dispose();
   }
 }

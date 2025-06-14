@@ -5,9 +5,9 @@ import { PalDrawable } from "./drawable/PalDrawable";
 import * as THREE from 'three';
 
 class TextureUtilsClass {
-  static cache = new Map();
+  static cache = new Map<string, THREE.Texture>();
 
-  static textureFromPalette(palette) {
+  static textureFromPalette(palette: { hash: string }): THREE.Texture {
     const hash = palette.hash;
     let texture = TextureUtilsClass.cache.get(hash);
     
@@ -21,7 +21,7 @@ class TextureUtilsClass {
     return texture;
   }
 
-  static textureFromPalettes(palettes) {
+  static textureFromPalettes(palettes: Array<{ hash: string }>): THREE.Texture {
     if (!palettes.length) {
       throw new Error("At least one palette is required");
     }
@@ -46,7 +46,7 @@ class TextureUtilsClass {
     return texture;
   }
 
-  static textureFromPalBitmap(bitmap) {
+  static textureFromPalBitmap(bitmap: RgbaBitmap): THREE.Texture {
     const canvas = CanvasUtils.canvasFromRgbaImageData(
       bitmap.data,
       bitmap.width,
@@ -73,4 +73,4 @@ export const textureFromPalettes = TextureUtilsClass.textureFromPalettes.bind(Te
 export const textureFromPalBitmap = TextureUtilsClass.textureFromPalBitmap.bind(TextureUtilsClass);
 
 // For import { TextureUtils } pattern (TypeScript files)
-export const TextureUtils = TextureUtilsClass; 
+export const TextureUtils = TextureUtilsClass;

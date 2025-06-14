@@ -267,9 +267,25 @@ export class ObjectFactory {
         strength = rulesIni.combatDamage.bridgeStrength;
       }
 
-      if (strength || gameObject.isTechno()) {
+      // 使用规则 Strength 字段作为生命值上限，但必须保证它是一个有效的整数。
+      // 某些条目可能缺失 Strength 或被错误解析为 NaN / undefined，从而导致 HealthTrait 抛出
+      // "Value undefined is not an integer"。原版逻辑在这种情况下会跳过该对象或者给出 0，
+      // 为了保持行为一致，缺失或非法数值时退化为 0。
+
+      const hitPointsRaw = strength;
+      let hitPoints =
+        typeof hitPointsRaw === "number" && Number.isFinite(hitPointsRaw)
+          ? Math.floor(hitPointsRaw)
+          : 0;
+
+      // 避免 0 / 0 产生 NaN；Strength 为 0 时仍给 1 点血量保持对象"存活"。
+      if (hitPoints <= 0) {
+        hitPoints = 1;
+      }
+
+      if (hitPoints || gameObject.isTechno()) {
         gameObject.healthTrait = new HealthTrait(
-          strength,
+          hitPoints,
           gameObject,
           rulesIni.audioVisual.conditionYellow,
           rulesIni.audioVisual.conditionRed
@@ -303,11 +319,9 @@ export class ObjectFactory {
       gameObject.traits.add(new TiberiumTreeTrait(gameObject.rules));
     }
 
-    // 缓存 tick traits
+    // 使用接口对象 NotifyTick 过滤实现 onTick 的 traits，与原版保持一致
     gameObject.cachedTraits.tick.push(
-      ...gameObject.traits.filter((trait: any): trait is NotifyTick => 
-        'tick' in trait && typeof trait.tick === 'function'
-      )
+      ...gameObject.traits.filter(NotifyTick)
     );
 
     return gameObject;

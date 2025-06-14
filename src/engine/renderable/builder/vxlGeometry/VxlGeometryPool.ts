@@ -3,6 +3,8 @@ import { isNotNullOrUndefined } from "@/util/typeGuard";
 import { VxlGeometryMonotoneBuilder } from "@/engine/renderable/builder/vxlGeometry/VxlGeometryMonotoneBuilder";
 
 export class VxlGeometryPool {
+  cache: any;
+  modelQuality: ModelQuality;
   constructor(cache, modelQuality = ModelQuality.High) {
     this.cache = cache;
     this.modelQuality = modelQuality;

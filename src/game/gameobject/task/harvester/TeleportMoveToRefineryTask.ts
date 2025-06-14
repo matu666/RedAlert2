@@ -1,7 +1,7 @@
 import { MoveTask } from "@/game/gameobject/task/move/MoveTask";
 import { LocomotorType } from "@/game/type/LocomotorType";
 import { ZoneType } from "@/game/gameobject/unit/ZoneType";
-import { MoveState } from "@/game/gameobject/trait/MoveState";
+import { MoveState } from "../../trait/MoveTrait";
 
 export class TeleportMoveToRefineryTask extends MoveTask {
   private teleportTile: any;

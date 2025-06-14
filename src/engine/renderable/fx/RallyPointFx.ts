@@ -1,0 +1,241 @@
+import * as THREE from 'three';
+import { MeshLine, MeshLineMaterial } from 'three.meshline';
+import { Coords } from '@/game/Coords';
+
+interface Camera extends THREE.Camera {
+  top: number;
+  right: number;
+  rotation: THREE.Euler;
+}
+
+interface Container {
+  remove(item: RallyPointFx): void;
+}
+
+export class RallyPointFx {
+  private camera: Camera;
+  private sourcePos: THREE.Vector3;
+  private targetPos: THREE.Vector3;
+  private color: THREE.Color;
+  private renderOrder?: number;
+  private needsUpdate: boolean = false;
+  private visible: boolean = true;
+  private cameraHash: string;
+  private container?: Container;
+  private wrapper?: THREE.Object3D;
+  private lineMesh?: THREE.Mesh;
+  private shadowLineMesh?: THREE.Mesh;
+  private lastUpdateMillis?: number;
+
+  constructor(
+    camera: Camera,
+    sourcePos: THREE.Vector3,
+    targetPos: THREE.Vector3,
+    color: THREE.Color,
+    renderOrder?: number
+  ) {
+    this.camera = camera;
+    this.sourcePos = sourcePos;
+    this.targetPos = targetPos;
+    this.color = color;
+    this.renderOrder = renderOrder;
+    this.cameraHash = this.camera.top + "_" + this.camera.right;
+  }
+
+  setContainer(container: Container): void {
+    this.container = container;
+  }
+
+  get3DObject(): THREE.Object3D | undefined {
+    return this.wrapper;
+  }
+
+  create3DObject(): void {
+    if (!this.wrapper) {
+      this.wrapper = new THREE.Object3D();
+      this.wrapper.matrixAutoUpdate = false;
+
+      this.lineMesh = this.createLineMesh();
+      this.lineMesh.name = "fx_rallypoint";
+      this.lineMesh.matrixAutoUpdate = false;
+
+      this.shadowLineMesh = this.createLineShadowMesh();
+      this.shadowLineMesh.name = "fx_rallypoint_shadow";
+      this.shadowLineMesh.matrixAutoUpdate = false;
+
+      this.wrapper.add(this.lineMesh);
+      this.wrapper.add(this.shadowLineMesh);
+    }
+  }
+
+  update(currentTime: number): void {
+    if (!this.lastUpdateMillis) {
+      this.lastUpdateMillis = currentTime;
+    }
+
+    const deltaTime = (currentTime - this.lastUpdateMillis) / (1000 / 120);
+    this.lastUpdateMillis = currentTime;
+
+    if (this.wrapper) {
+      this.wrapper.visible = this.visible;
+    }
+
+    const currentCameraHash = this.camera.top + "_" + this.camera.right;
+    
+    if (currentCameraHash !== this.cameraHash) {
+      this.cameraHash = currentCameraHash;
+      [this.lineMesh, this.shadowLineMesh].forEach((mesh) => {
+        if (mesh && mesh.material instanceof MeshLineMaterial) {
+          mesh.material.uniforms.resolution.value.copy(
+            this.computeResolution(this.camera)
+          );
+        }
+      });
+    }
+
+    if (this.needsUpdate) {
+      this.needsUpdate = false;
+      
+      if (this.lineMesh) {
+        this.lineMesh.geometry = this.createLineGeometry(this.sourcePos, this.targetPos);
+      }
+      
+      if (this.shadowLineMesh) {
+        this.shadowLineMesh.geometry = this.createShadowLineGeometry(this.sourcePos, this.targetPos);
+      }
+
+      if (this.lineMesh && this.lineMesh.material instanceof MeshLineMaterial) {
+        this.lineMesh.material.uniforms.color.value = this.color.clone();
+      }
+
+      const distance = this.sourcePos.distanceTo(this.targetPos);
+      
+      [this.lineMesh, this.shadowLineMesh].forEach((mesh) => {
+        if (mesh && mesh.material instanceof MeshLineMaterial) {
+          const material = mesh.material;
+          material.uniforms.dashArray.value = this.computeDashArray(distance);
+          material.depthTest = this.renderOrder === undefined;
+        }
+      });
+
+      if (this.lineMesh) {
+        this.lineMesh.renderOrder = this.renderOrder ?? 0;
+      }
+      
+      if (this.shadowLineMesh) {
+        this.shadowLineMesh.renderOrder = this.renderOrder !== undefined ? this.renderOrder - 1 : 0;
+      }
+    }
+
+    [this.lineMesh, this.shadowLineMesh].forEach((mesh) => {
+      if (mesh && mesh.material instanceof MeshLineMaterial) {
+        const material = mesh.material;
+        material.uniforms.dashOffset.value -= 
+          (material.uniforms.dashArray.value / 50) * deltaTime;
+      }
+    });
+  }
+
+  private createLineMesh(): THREE.Mesh {
+    const sourcePos = this.sourcePos.clone();
+    const targetPos = this.targetPos.clone();
+    
+    const mesh = new THREE.Mesh(
+      this.createLineGeometry(sourcePos, targetPos),
+      this.createLineMaterial(this.color.clone(), sourcePos.distanceTo(targetPos))
+    );
+
+    if (this.renderOrder) {
+      mesh.renderOrder = this.renderOrder;
+    }
+
+    return mesh;
+  }
+
+  private createLineShadowMesh(): THREE.Mesh {
+    const mesh = new THREE.Mesh(
+      this.createShadowLineGeometry(this.sourcePos, this.targetPos),
+      this.createLineMaterial(
+        new THREE.Color(0x000000),
+        this.sourcePos.distanceTo(this.targetPos)
+      )
+    );
+
+    if (this.renderOrder) {
+      mesh.renderOrder = this.renderOrder - 1;
+    }
+
+    return mesh;
+  }
+
+  private createShadowLineGeometry(sourcePos: THREE.Vector3, targetPos: THREE.Vector3): THREE.BufferGeometry {
+    const offset = new THREE.Vector3(
+      +Coords.ISO_WORLD_SCALE,
+      0,
+      +Coords.ISO_WORLD_SCALE
+    );
+
+    return this.createLineGeometry(
+      sourcePos.clone().add(offset),
+      targetPos.clone().add(offset)
+    );
+  }
+
+  private createLineGeometry(sourcePos: THREE.Vector3, targetPos: THREE.Vector3): THREE.BufferGeometry {
+    const geometry = new THREE.Geometry();
+    geometry.vertices.push(sourcePos, targetPos);
+
+    const meshLine = new MeshLine();
+    meshLine.setGeometry(geometry);
+    
+    return meshLine.geometry;
+  }
+
+  private createLineMaterial(color: THREE.Color, distance: number): MeshLineMaterial {
+    return new MeshLineMaterial({
+      color: color,
+      lineWidth: 2,
+      resolution: this.computeResolution(this.camera),
+      transparent: true,
+      sizeAttenuation: 0,
+      dashArray: this.computeDashArray(distance),
+      depthTest: this.renderOrder === undefined,
+    });
+  }
+
+  private computeDashArray(distance: number): number {
+    return Math.min(1, 5 / distance) * Coords.ISO_WORLD_SCALE;
+  }
+
+  private computeResolution(camera: Camera): THREE.Vector2 {
+    const top = camera.top;
+    const aspectRatio = camera.right / camera.top;
+    const adjustedHeight = (2 * top) / Math.cos(camera.rotation.y);
+    
+    return new THREE.Vector2(adjustedHeight * aspectRatio, adjustedHeight)
+      .multiplyScalar(
+        (top * Math.cos(this.camera.rotation.x)) / Coords.ISO_WORLD_SCALE
+      );
+  }
+
+  remove(): void {
+    if (this.container) {
+      this.container.remove(this);
+    }
+  }
+
+  dispose(): void {
+    if (this.wrapper) {
+      [this.lineMesh, this.shadowLineMesh].forEach((mesh) => {
+        if (mesh) {
+          if (mesh.geometry) {
+            mesh.geometry.dispose();
+          }
+          if (mesh.material instanceof THREE.Material) {
+            mesh.material.dispose();
+          }
+        }
+      });
+    }
+  }
+}
