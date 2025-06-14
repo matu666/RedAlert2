@@ -120,9 +120,11 @@ export class BuildingTester {
     IsoCoords.init({ x: 0, y: 0 });
     this.theater = await Engine.loadTheater(TheaterType.Snow);
 
+    debugger;
     const rules = new Rules(Engine.getRules());
     this.buildBrowser(rules.buildingRules);
     this.rules = rules;
+    console.log('current all rules', rules);
     this.art = new Art(rules, Engine.getArt());
     this.images = Engine.getImages();
     this.voxels = Engine.getVoxels();
@@ -362,6 +364,7 @@ export class BuildingTester {
     controls.appendChild(selectionDiv);
 
     [SelectionLevel.None, SelectionLevel.Hover, SelectionLevel.Selected].forEach((level) => {
+      console.log('current level', level, this.currentBuilding.rules);
       const button = document.createElement("button");
       button.innerHTML = SelectionLevel[level];
       button.disabled = level === SelectionLevel.Selected && 
