@@ -31,4 +31,8 @@ export const defaultSpeedsByLocomotor = new Map<LocomotorType, SpeedType>([
   [LocomotorType.Aircraft, SpeedType.Winged],
   [LocomotorType.Missile, SpeedType.Winged]
 ]);
+
+// 将映射挂载到枚举对象，保持与原版 JS 的访问方式一致
+(LocomotorType as any).locomotorTypesByClsId = locomotorTypesByClsId;
+(LocomotorType as any).defaultSpeedsByLocomotor = defaultSpeedsByLocomotor;
   

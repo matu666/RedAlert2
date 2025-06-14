@@ -6,7 +6,7 @@ import { OreSpread } from '@/game/map/OreSpread';
 import { OverlayTibType } from '@/engine/type/OverlayTibType';
 import { TiberiumTrait } from './TiberiumTrait';
 
-enum SpawnStatus {
+export enum SpawnStatus {
   Idle = 0,
   Spawning = 1
 }

@@ -1,15 +1,19 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
-import App from './App.tsx'
 // 如果您有全局 CSS，可以在这里导入，例如:
 // import './index.css' 
 
 // In your test file or main.tsx
 
+import './setupThreeGlobal';
+
+import App from './App.tsx'
+
 import { MixEntry } from './data/MixEntry';
 import { Crc32 } from './data/Crc32';
 import { binaryStringToUint8Array } from './util/string';
 
+// --------------- Test code (for development) ---------------
 console.log("--- Hashing Test Start (with debug logging) ---");
 
 // Filename length 7 (4k+3)

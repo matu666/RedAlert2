@@ -47,6 +47,9 @@ const PaletteBasicShader = {
 };
 
 export class PaletteBasicMaterial extends THREE.MeshBasicMaterial {
+  uniforms: any;
+  vertexShader: string;
+  fragmentShader: string;
   get palette() {
     return this.uniforms.palette.value;
   }

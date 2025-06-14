@@ -142,17 +142,25 @@ export class DataStream {
   }
 
   private _trimAlloc(): void {
-    if (this._byteLength === this._buffer.byteLength) {
-      return; 
+    // Calculate the actual length of data this DataStream should expose (view size)
+    const viewLength = this.byteLength; // byteLength already accounts for byteOffset
+    // Early exit if buffer is already tightly sized and starts at offset 0
+    if (this._byteOffset === 0 && this._buffer.byteLength === viewLength) {
+      return;
     }
-    
-    const newBuffer = new ArrayBuffer(this._byteLength); 
+
+    // Allocate a new buffer exactly the size of the view
+    const newBuffer = new ArrayBuffer(viewLength);
     const newUint8Array = new Uint8Array(newBuffer);
-    const oldUint8Array = new Uint8Array(this._buffer, 0, this._byteLength); 
+    // Copy only the relevant slice from the original buffer (respecting byteOffset)
+    const oldUint8Array = new Uint8Array(this._buffer, this._byteOffset, viewLength);
     newUint8Array.set(oldUint8Array);
-    
+
+    // Reset internal offsets so that the view starts at 0 in the new buffer
     this._buffer = newBuffer;
-    this._dataView = new DataView(this._buffer, this._byteOffset, this._byteLength - this._byteOffset);
+    this._byteOffset = 0;
+    this._byteLength = viewLength;
+    this._dataView = new DataView(this._buffer, 0, this._byteLength);
   }
 
   public seek(offset: number): void {
@@ -563,6 +571,12 @@ export class DataStream {
   public toUint8Array(): Uint8Array {
     this._trimAlloc();
     return new Uint8Array(this._dataView.buffer, this._dataView.byteOffset, this._dataView.byteLength);
+  }
+
+  public getBytes(): Uint8Array {
+    // Provide compatibility with original project API.
+    // Simply return a Uint8Array view of the used portion of the buffer.
+    return this.toUint8Array();
   }
 
   // --- Static methods ---

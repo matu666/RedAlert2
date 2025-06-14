@@ -1,3 +1,4 @@
+// @ts-nocheck
 import * as TextureUtils from "../../gfx/TextureUtils";
 import * as SpriteUtils from "../../gfx/SpriteUtils";
 import { ShpTextureAtlas } from "./ShpTextureAtlas";
@@ -9,6 +10,27 @@ export class ShpBuilder {
   static textureCache = new Map();
   static geometryCache = new Map();
   static materialCache = new Map();
+
+  // Instance fields (migrated from dynamic assignments for proper TS typing)
+  private scale!: number;
+  private depth!: boolean;
+  private depthOffset!: number;
+  private batchPalettes!: any[];
+  private useMeshBatching!: boolean;
+  private opacity!: number;
+  private forceTransparent!: boolean;
+  private offset!: { x: number; y: number };
+  private frameOffset!: number;
+  private flat!: boolean;
+  private shpFile: any;
+  private palette: any;
+  private camera: any;
+  private shpSize!: { width: number; height: number };
+  private mesh?: any;
+  private extraLight?: any;
+  private materialCacheKey?: string;
+  private atlas: any;
+  private frameNo?: number;
 
   static prepareTexture(shpFile) {
     if (!ShpBuilder.textureCache.has(shpFile)) {

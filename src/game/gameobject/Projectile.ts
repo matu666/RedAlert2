@@ -25,7 +25,7 @@ import { CollisionType } from './unit/CollisionType';
 import { Vector2 } from '@/game/math/Vector2';
 import { Vector3 } from '@/game/math/Vector3';
 
-enum ProjectileState {
+export enum ProjectileState {
   Travel = 0,
   Impact = 1,
   Detonation = 2,
