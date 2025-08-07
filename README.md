@@ -1,5 +1,7 @@
 # RA2Web React
 
+免责声明：这是基于 AI 对《时空分裂（chronodivide）》客户端的反编译（game.chronodivide.com），并意图基于最新的react和three版本进行重构。但所有权利归《时空分裂（chronodivide）》的所有者所有。未经《时空分裂（chronodivide）》的所有者许可，严禁用于任何商业行为。需要注意的是，《时空分裂（chronodivide）》的所有者从未以任何方式开源游戏客户端代码（即便存在诸如mod-sdk之类的周边开源内容）。
+
 红色警戒2，一款经典的即时战略类游戏，使用React + TypeScript + Vite构建。
 
 ![image](https://github.com/user-attachments/assets/f146dc1c-ca15-456a-a8f0-4b43f2d431e8)
