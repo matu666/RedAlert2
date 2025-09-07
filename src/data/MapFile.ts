@@ -15,32 +15,32 @@ import { SpecialFlags } from "@/data/map/SpecialFlags";
 export class MapFile extends IniFile {
   static artSectionPrefix = "ART";
 
-  fullSize: { x: number; y: number; width: number; height: number };
-  localSize: { x: number; y: number; width: number; height: number };
-  theaterType: TheaterType;
-  iniFormat: number;
-  tiles: any[];
-  maxTileNum: number;
-  waypoints: any[];
-  structures: any[];
-  vehicles: any[];
-  infantries: any[];
-  aircrafts: any[];
-  terrains: any[];
-  overlays: any[];
-  maxOverlayId: number;
-  smudges: any[];
-  lighting: MapLighting;
-  ionLighting: MapLighting;
-  tags: any;
-  triggers: any;
-  unknownEventTypes: any;
-  unknownActionTypes: any;
-  cellTags: any;
-  variables: Map<number, Variable>;
-  startingLocations: { x: number; y: number }[];
-  specialFlags: SpecialFlags;
-  artOverrides?: IniFile;
+  declare fullSize: { x: number; y: number; width: number; height: number };
+  declare localSize: { x: number; y: number; width: number; height: number };
+  declare theaterType: TheaterType;
+  declare iniFormat: number;
+  declare tiles: any[];
+  declare maxTileNum: number;
+  declare waypoints: any[];
+  declare structures: any[];
+  declare vehicles: any[];
+  declare infantries: any[];
+  declare aircrafts: any[];
+  declare terrains: any[];
+  declare overlays: any[];
+  declare maxOverlayId: number;
+  declare smudges: any[];
+  declare lighting: MapLighting;
+  declare ionLighting: MapLighting;
+  declare tags: any;
+  declare triggers: any;
+  declare unknownEventTypes: any;
+  declare unknownActionTypes: any;
+  declare cellTags: any;
+  declare variables: Map<number, Variable>;
+  declare startingLocations: { x: number; y: number }[];
+  declare specialFlags: SpecialFlags;
+  declare artOverrides?: IniFile;
 
   fromString(e: string) {
     super.fromString(e);
@@ -124,20 +124,19 @@ export class MapFile extends IniFile {
   }
 
   readTagsAndTriggers() {
-    this.tags = new TagsReader().read(
-      this.getOrCreateSection("Tags"),
-    );
-    var e = this.getOrCreateSection("Triggers"),
-      t = this.getOrCreateSection("Events"),
-      i = this.getOrCreateSection("Actions"),
-      {
-        triggers: triggers,
-        unknownEventTypes: unknownEventTypes,
-        unknownActionTypes: unknownActionTypes,
-      } = new TriggerReader().read(e, t, i, this.tags);
-    (this.triggers = triggers),
-      (this.unknownEventTypes = unknownEventTypes),
-      (this.unknownActionTypes = unknownActionTypes);
+    const tagsSection = this.getOrCreateSection("Tags");
+    this.tags = new TagsReader().read(tagsSection);
+    const triggersSection = this.getOrCreateSection("Triggers");
+    const eventsSection = this.getOrCreateSection("Events");
+    const actionsSection = this.getOrCreateSection("Actions");
+    const {
+      triggers,
+      unknownEventTypes,
+      unknownActionTypes,
+    } = new TriggerReader().read(triggersSection, eventsSection, actionsSection, this.tags);
+    this.triggers = triggers;
+    this.unknownEventTypes = unknownEventTypes;
+    this.unknownActionTypes = unknownActionTypes;
   }
 
   readCellTags(e: number) {

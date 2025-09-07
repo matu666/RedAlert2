@@ -293,9 +293,8 @@ export class IniSection {
       if (typeof value === 'string') {
         result += value;
       } else if (Array.isArray(value)) {
-        // Original only concatenated if typeof value was string.
-        // Decide if arrays should be joined or ignored. Sticking to original:
-        // result += value.join(''); 
+        // Join array values in order; some INI sections split long payloads across repeated keys
+        result += value.join('');
       }
     }
     return result;
