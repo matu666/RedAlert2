@@ -1,8 +1,16 @@
 # RA2Web React
 
-免责声明：这是基于 AI 对《时空分裂（chronodivide）》客户端的反编译（game.chronodivide.com），并意图基于最新的react和three版本进行重构。但所有权利归《时空分裂（chronodivide）》的所有者所有。未经《时空分裂（chronodivide）》的所有者许可，严禁用于任何商业行为。需要注意的是，《时空分裂（chronodivide）》的所有者从未以任何方式开源游戏客户端代码（即便存在诸如mod-sdk之类的周边开源内容）。
+免责声明：这是基于《时空分裂（chronodivide）》客户端（game.chronodivide.com）中文版RA2WEB的分析而开发，并意图基于最新的react和three版本进行重构。但项目所有权利（包括收益权）归《时空分裂（chronodivide）》的所有者所有。未经《时空分裂（chronodivide）》的所有者许可，严禁用于任何商业行为。需要注意的是，《时空分裂（chronodivide）》的所有者从未以任何方式开源游戏客户端代码（即便存在诸如mod-sdk之类的周边开源内容）。本项目运行产生的BUG、功能不完善，不能等同视为对《时空分裂（chronodivide）》的名誉贬损。任何基于本项目开展商业行为，包括但不限于植入广告、开发“弹幕红警”收受礼物获利、直接封装收费、以“作者”身份骗取赞助和充电收益等，均视为对《时空分裂（chronodivide）》原作者Alexandru Ciucă的侵权。
 
-红色警戒2，一款经典的即时战略类游戏，使用React + TypeScript + Vite构建。
+Disclaimer
+
+This project is developed based on the analysis of the Chinese version RA2WEB of the Chronodivide client (game.chronodivide.com), and is intended to be reconstructed using the latest versions of React and Three.js. However, all rights to the project (including profit rights) belong to the owner of Chronodivide. Without the permission of the owner of Chronodivide, it is strictly prohibited to use this project for any commercial purposes.
+
+It should be noted that the owner of Chronodivide has never open-sourced the game client code in any form (even if there are peripheral open-source contents such as mod-sdk). Bugs or incomplete functions arising from the operation of this project shall not be deemed as damage to the reputation of Chronodivide.
+
+Any commercial activities conducted based on this project, including but not limited to inserting advertisements, developing "Danmu Red Alert" (a game variant) to profit from receiving gifts, directly packaging and charging for the project, or defrauding sponsorships and "recharge rewards" in the name of the "author", shall be deemed as infringement against Alexandru Ciucă, the original author of Chronodivide.
+
+红色警戒2网页版，一款经典的即时战略类游戏的完整TypeScript重构版本，使用React + TypeScript + Vite + Three.js构建。
 
 ![image](https://github.com/user-attachments/assets/f146dc1c-ca15-456a-a8f0-4b43f2d431e8)
 
@@ -10,39 +18,45 @@
 
 ![image](https://github.com/user-attachments/assets/4781f451-7a51-45e2-919b-cbcb8bbd727a)
 
-## 🎮 线上游玩
-
-[立即开始游戏](https://game.ra2web.com) 🎮
-
 ## 🎮 项目简介
 
-本项目是红色警戒2（red alert 2）的源代码，支持单人游戏、多人对战、地图编辑等功能，全平台通用。
+本项目是红色警戒2（Red Alert 2）的完整TypeScript重构版本，基于原版游戏逻辑进行现代化改造。目前处于开发阶段，正在逐步实现完整的游戏功能。
+
+**注意：这是一个开发中的项目，并非完整可玩的游戏版本。**
 
 ## ✨ 主要特性
 
-### 🎯 核心功能
-- **多人对战** - 实时网络对战支持
-- **地图系统** - 内置地图编辑器和自定义地图支持
-- **MOD支持** - 支持游戏模组和自定义内容
-- **回放系统** - 游戏录像回放功能
+### 🎯 开发进度
+- **游戏引擎** - ✅ 基础引擎架构完成
+- **数据解析** - ✅ 支持原版文件格式（MIX、SHP、VXL、INI等）
+- **图形渲染** - ✅ Three.js渲染系统
+- **音频系统** - ✅ 完整音频引擎
+- **用户界面** - 🚧 自定义JSX渲染器开发中
+- **游戏逻辑** - 🚧 核心游戏机制实现中
+- **网络对战** - 📋 计划中（基础框架已搭建）
 
 ### 🎵 音频系统
-- **完整音频支持** - 音效、音乐、语音全面支持
-- **动态音量控制** - 分频道音量调节
-- **音乐播放列表** - 支持随机播放和循环播放
-- **浏览器兼容** - 自动处理浏览器音频策略
+- **多格式支持** - WAV、MP3音频文件解析
+- **Web Audio API** - 现代浏览器音频处理
+- **音频混合器** - 支持多通道音量控制
+- **AudioBag支持** - 原版音频包格式兼容
+- **浏览器策略** - 自动处理音频播放限制
 
 ### 🎨 图形渲染
-- **Three.js渲染** - 基于WebGL的高性能3D渲染
-- **原版资源支持** - 完全兼容原版游戏资源格式
-- **动画系统** - 单位动画、建筑动画、特效系统
-- **UI系统** - 自定义JSX渲染器，完美还原原版UI
+- **Three.js引擎** - 基于WebGL的现代3D渲染
+- **原版资源** - SHP、VXL、TMP、PCX格式完整支持
+- **等距视角** - 忠实还原原版等距投影
+- **Sprite批处理** - 优化的2D精灵渲染
+- **着色器系统** - 可扩展的GLSL着色器支持
+- **React集成** - 自定义JSX渲染器用于UI
 
 ### 📁 文件系统
-- **虚拟文件系统** - 支持MIX档案格式
-- **本地文件访问** - File System Access API集成
-- **资源管理** - 智能资源加载和缓存
-- **跨平台兼容** - 支持多种浏览器和操作系统
+- **虚拟文件系统** - 完整的VFS抽象层
+- **MIX档案支持** - 原版MIX文件格式解析
+- **文件系统API** - 现代浏览器本地文件访问
+- **懒加载** - 按需资源加载和缓存
+- **7z解压** - 支持压缩包资源导入
+- **跨平台** - 支持所有现代浏览器
 
 ## 🚀 快速开始
 
@@ -50,7 +64,8 @@
 
 - Node.js 18+ 
 - npm 或 yarn
-- 现代浏览器（支持ES2020+）
+- 现代浏览器（支持ES2020+、WebGL 2.0、Web Audio API）
+- 支持File System Access API的浏览器（推荐Chrome/Edge）
 
 ### 安装步骤
 
@@ -73,100 +88,129 @@ npm run dev
 4. **访问应用**
 打开浏览器访问 `http://localhost:3000`
 
-### 游戏资源导入
+**调试模式：**
+- `http://localhost:3000?test=glsl` - GLSL着色器测试
+- `http://localhost:3000?debug=true` - 启用调试模式
 
-首次运行需要导入红色警戒2游戏文件：
+### 开发测试
 
-1. 点击"导入游戏文件"按钮
-2. 选择红色警戒2安装目录或游戏文件
-3. 等待资源解析和导入完成
-4. 开始游戏！
+项目包含多个测试工具用于验证各个模块：
+
+1. **文件格式测试** - 验证MIX、SHP、VXL等文件解析
+2. **渲染测试** - 测试图形渲染和着色器
+3. **音频测试** - 验证音频系统功能
+4. **数据结构测试** - 验证游戏数据解析
+
+**注意：** 完整游戏功能仍在开发中。
 
 ## 🛠 技术架构
 
-### 前端技术栈
+### 技术栈
 - **React 18** - 用户界面框架
-- **TypeScript** - 类型安全的JavaScript
-- **Vite** - 现代构建工具
-- **Three.js** - 3D图形渲染
-- **Web Audio API** - 音频处理
+- **TypeScript 5.3+** - 严格类型检查
+- **Vite** - 现代构建工具和开发服务器
+- **Three.js 0.177** - WebGL 3D渲染引擎
+- **Web Audio API** - 现代音频处理
+- **File System Access API** - 本地文件访问
+- **WebWorkers** - 后台数据处理
+- **7z-wasm** - 压缩文件解析
 
 ### 核心模块
 
 #### 🎮 游戏引擎 (`src/engine/`)
-- **Engine.ts** - 游戏引擎核心
-- **Renderer** - 图形渲染系统
-- **AudioSystem** - 音频引擎
-- **VirtualFileSystem** - 虚拟文件系统
+- **Engine.ts** - 游戏引擎核心和资源管理
+- **gfx/** - WebGL渲染系统和着色器
+- **sound/** - 音频系统（AudioSystem、Mixer、Music等）
+- **renderable/** - 可渲染对象系统（100+个渲染组件）
+- **gameRes/** - 游戏资源配置和加载
+- **animation/** - 动画系统
 
 #### 🎨 用户界面 (`src/gui/`)
 - **Gui.ts** - GUI系统主控制器
-- **JsxRenderer** - 自定义JSX渲染器
-- **Screen系统** - 屏幕管理和导航
-- **Component库** - 可复用UI组件
+- **jsx/** - 自定义JSX渲染器实现
+- **screen/** - 屏幕管理系统（190+个屏幕文件）
+- **component/** - React UI组件库（30个组件）
+- **HtmlReactElement** - HTML与React桥接
+- **Viewport.ts** - 视口管理
 
 #### 📁 数据处理 (`src/data/`)
-- **文件格式解析** - SHP, VXL, MIX, INI等
-- **资源管理** - 懒加载和缓存
-- **数据流处理** - 二进制数据读取
+- **文件格式** - MixFile、ShpFile、VxlFile、TmpFile、PcxFile等
+- **编码解析** - Blowfish、Format80、Format5、MiniLzo等
+- **地图数据** - 完整的地图文件解析和对象系统
+- **虚拟文件系统** - VFS抽象层（10个VFS组件）
+- **数据流** - 二进制数据读取和CRC32校验
+- **配置文件** - INI文件解析器
 
 #### 🌐 网络系统 (`src/network/`)
-- **多人对战** - WebRTC P2P连接
-- **房间管理** - 游戏房间创建和加入
-- **同步机制** - 游戏状态同步
+- **WolConnection** - 基础网络连接框架
+- **IRC连接** - 聊天系统支持
+- **天梯系统** - 排行榜和玩家档案
+- **HTTP请求** - RESTful API客户端
+- **回放系统** - 游戏录像数据结构
 
-## 📖 使用指南
+**注意：** 网络对战功能仍在开发中
 
-### 基本操作
+## 🛠 开发指南
 
-1. **主菜单导航**
-   - 快速匹配：快速找到对战
-   - 自定义游戏：创建或加入房间
-   - 单人游戏：离线游戏模式
-   - 设置：音频、图形、键盘设置
+### 项目当前状态
 
-2. **游戏内操作**
-   - 鼠标左键：选择单位/建筑
-   - 鼠标右键：移动/攻击命令
-   - 键盘快捷键：建造、技能等
+1. **已完成模块**
+   - 数据文件解析（MIX、SHP、VXL等）
+   - 图形渲染引擎
+   - 音频系统
+   - 基础游戏引擎
+   - UI框架
 
-3. **音频设置**
-   - 主音量：总体音量控制
-   - 音乐：背景音乐音量
-   - 音效：游戏音效音量
-   - 语音：单位语音音量
+2. **开发中模块**
+   - 游戏逻辑系统（Game.ts包含1100+行代码）
+   - 用户界面屏幕
+   - 网络系统
 
-### 高级功能
+3. **测试工具**
+   - 各种Tester类用于验证功能
+   - GLSL着色器测试
+   - 文件格式解析测试
 
-#### MOD支持
-```bash
-# 将MOD文件放入mods目录
-/mods/your-mod-name/
-  ├── rules.ini
-  ├── art.ini
-  └── assets/
-```
+### 核心系统架构
 
-#### 自定义地图
-- 支持标准.map和.mpr格式
-- 内置地图编辑器
-- 在线地图分享
+#### 游戏对象系统
+- **GameObject基类** - 所有游戏对象的基础
+- **Trait系统** - 模块化行为组件（30+个trait）
+- **事件系统** - 游戏事件总线（68个事件类型）
+- **AI系统** - 人工智能和机器人
 
-## 🔧 开发指南
+#### 地图系统
+- **MapFile** - 地图文件解析
+- **Theater** - 地形主题系统
+- **触发器** - 90+个触发器类型
+- **叠加层** - 矿物、道路等地形叠加
 
-### 项目结构
+### 详细项目结构
 ```
 ra2web-react/
 ├── src/
-│   ├── engine/          # 游戏引擎
-│   ├── gui/             # 用户界面
-│   ├── data/            # 数据处理
-│   ├── network/         # 网络系统
-│   ├── game/            # 游戏逻辑
-│   └── util/            # 工具函数
-├── public/              # 静态资源
-├── extracted_modules_simple/  # 原始JS模块
-└── docs/                # 文档
+│   ├── engine/          # 游戏引擎 (200+ 文件)
+│   │   ├── gfx/         # WebGL渲染系统 (34 文件)
+│   │   ├── renderable/  # 可渲染对象 (100 文件)
+│   │   ├── sound/       # 音频系统 (15 文件)
+│   │   └── gameRes/     # 资源管理 (16 文件)
+│   ├── gui/             # 用户界面 (250+ 文件)
+│   │   ├── screen/      # 屏幕管理 (190 文件)
+│   │   ├── component/   # React组件 (30 文件)
+│   │   └── jsx/         # JSX渲染器 (4 文件)
+│   ├── data/            # 数据处理 (80+ 文件)
+│   │   ├── vfs/         # 虚拟文件系统 (10 文件)
+│   │   ├── encoding/    # 编码解析 (6 文件)
+│   │   └── map/         # 地图数据 (14 文件)
+│   ├── game/            # 游戏逻辑 (500+ 文件)
+│   │   ├── gameobject/  # 游戏对象 (166 文件)
+│   │   ├── event/       # 事件系统 (68 文件)
+│   │   ├── trigger/     # 触发器 (90 文件)
+│   │   └── trait/       # 特性系统 (30 文件)
+│   ├── network/         # 网络系统 (基础框架)
+│   ├── util/            # 工具函数 (30+ 文件)
+│   └── tools/           # 开发测试工具 (10 文件)
+└── public/              # 静态资源和库文件
 ```
 
 ### 开发命令
@@ -180,23 +224,15 @@ npm run build
 
 # 预览生产版本
 npm run preview
-
-# 类型检查
-npm run type-check
-
-# 代码格式化
-npm run format
-
-# 运行测试
-npm run test
 ```
 
-### 代码规范
+### 开发规范
 
-- 使用TypeScript严格模式
-- 遵循ESLint配置
-- 使用Prettier格式化代码
-- 编写单元测试
+- **TypeScript严格模式** - 启用所有类型检查
+- **模块化设计** - 清晰的模块边界和依赖关系
+- **事件驱动** - 使用EventDispatcher进行组件通信
+- **资源懒加载** - LazyResourceCollection按需加载
+- **错误处理** - 完整的错误处理和日志系统
 
 ### 调试技巧
 
@@ -208,81 +244,99 @@ npm run test
 2. **调试参数**
    ```
    ?debug=true          # 启用调试模式
-   ?test=glsl          # 运行GLSL测试
-   ?fps=true           # 显示FPS计数器
+   ?test=glsl          # 运行GLSL着色器测试
    ```
+
+3. **测试工具类**
+   - `AircraftTester` - 飞行器测试
+   - `BuildingTester` - 建筑测试
+   - `VehicleTester` - 载具测试
+   - `SoundTester` - 音频测试
+   - `ShpTester` - SHP文件测试
 
 ## 🐛 故障排除
 
-### 常见问题
+### 开发问题
 
-#### 音频无法播放
-- **原因**：浏览器自动播放策略
-- **解决**：点击页面任意位置激活音频
-- **状态**：系统会自动显示激活提示
+#### TypeScript编译错误
+- **检查类型定义** - 确保所有接口正确实现
+- **导入路径** - 使用相对路径导入模块
+- **严格模式** - 处理null/undefined检查
 
-#### 游戏文件导入失败
-- **检查**：确保选择正确的游戏目录
-- **格式**：支持原版安装目录或压缩包
-- **空间**：确保浏览器存储空间充足
+#### 渲染问题
+- **WebGL支持** - 确保浏览器支持WebGL 2.0
+- **着色器编译** - 使用`?test=glsl`测试着色器
+- **Three.js版本** - 当前使用0.177版本
 
-#### 性能问题
-- **图形设置**：降低渲染质量
-- **浏览器**：使用Chrome或Edge获得最佳性能
-- **硬件加速**：确保浏览器启用硬件加速
+#### 文件系统访问
+- **CORS策略** - 开发服务器已配置跨域头
+- **文件API** - 需要支持File System Access API的浏览器
+- **权限** - 用户需要授权文件访问
 
-#### 网络连接问题
-- **防火墙**：检查防火墙设置
-- **NAT**：某些网络环境可能需要端口转发
-- **浏览器**：确保允许WebRTC连接
+#### 音频系统
+- **Web Audio API** - 确保浏览器支持
+- **用户交互** - 音频播放需要用户手势激活
+- **格式支持** - WAV和MP3文件解析
 
-### 错误报告
+### 贡献开发
 
-如果遇到问题，请提供以下信息：
-- 浏览器版本和操作系统
-- 控制台错误信息
-- 重现步骤
-- 游戏文件版本
+项目正在积极开发中，欢迎贡献：
+- **功能实现** - 实现游戏逻辑和UI
+- **测试编写** - 为各个模块编写测试
+- **性能优化** - 优化渲染和数据处理
+- **文档编写** - 改进代码文档和注释
 
 ## 🤝 贡献指南
 
-欢迎贡献代码！请遵循以下步骤：
+### 开发流程
 
-1. Fork项目
-2. 创建功能分支 (`git checkout -b feature/amazing-feature`)
-3. 提交更改 (`git commit -m 'Add amazing feature'`)
-4. 推送分支 (`git push origin feature/amazing-feature`)
-5. 创建Pull Request
+1. **Fork项目** - 创建你的项目副本
+2. **创建分支** - `git checkout -b feature/module-name`
+3. **迁移模块** - 将JavaScript模块转换为TypeScript
+4. **添加类型** - 为所有函数和类添加类型注解
+5. **测试功能** - 使用相应的Tester类验证功能
+6. **提交代码** - 提供清晰的提交信息
+7. **创建PR** - 详细描述更改内容
 
-### 贡献领域
-- 🐛 Bug修复
-- ✨ 新功能开发
-- 📚 文档改进
-- 🎨 UI/UX优化
-- 🔧 性能优化
-- 🌐 国际化支持
+### 迁移优先级
+- 🔥 **核心游戏逻辑** - Game.ts相关功能
+- 🎨 **UI屏幕** - 完善用户界面
+- 🌐 **网络系统** - 实现多人对战
+- 🎮 **游戏对象** - 单位、建筑、武器系统
+- 🗺️ **地图编辑器** - 地图创建和编辑功能
 
 ## 📄 许可证
 
-本项目基于GNU General Public License v3.0（GPL-3.0）许可证开源。这是一个严格的Copyleft许可证，要求任何基于本项目的衍生作品也必须以相同的许可证开源。详见 [LICENSE](LICENSE) 文件。
+本项目基于GNU General Public License v3.0（GPL-3.0）许可证开源。详见 [LICENSE](LICENSE) 文件。
 
-### 许可证要求
+### 重要说明
 - ✅ 可以自由使用、修改和分发
 - ✅ 必须保留版权声明和许可证文本
 - ⚠️ 任何衍生作品必须使用相同的GPL-3.0许可证
 - ⚠️ 必须提供源代码（包括修改后的版本）
 - ⚠️ 不能将GPL代码集成到专有软件中
 
+**注意：** 本项目仅用于学习和研究目的。红色警戒2是EA公司的知识产权，请确保拥有合法的游戏副本。
+
 ## 🙏 致谢
 
-- [Chronodivide](https://github.com/Chronodivide)
-- Three.js社区
-- React生态系统贡献者
-- 所有测试用户和贡献者
-- 无数热爱红警2的玩家
+- **原始项目** - 基于现有的RA2Web实现
+- **Three.js社区** - 提供强大的WebGL渲染引擎
+- **React团队** - 现代用户界面框架
+- **TypeScript团队** - 类型安全的JavaScript超集
+- **开源社区** - 各种依赖库的维护者
+- **红警2玩家社区** - 持续的热情和支持
+- **EA Games** - 原版红色警戒2游戏
 
-## 📞 联系方式
+## 📞 项目信息
 
-- 项目主页：[[GitHub Repository]](https://github.com/huangkaoya/redalert2)
+- **开发状态**: 🚧 积极开发中
+- **版本**: 0.0.0 (开发版)
+- **技术栈**: React 18 + TypeScript 5.3 + Three.js 0.177 + Vite
+- **目标**: 完整的红色警戒2网页版实现
+
+---
+
+**免责声明**: 本项目仅供学习研究使用，不用于商业目的。红色警戒2及相关商标归EA公司所有。
 
 ---
