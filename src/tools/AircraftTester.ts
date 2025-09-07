@@ -37,6 +37,8 @@ import { VxlGeometryPool } from "@/engine/renderable/builder/vxlGeometry/VxlGeom
 import { VxlGeometryCache } from "@/engine/gfx/geometry/VxlGeometryCache";
 import { ShadowQuality } from "@/engine/renderable/entity/unit/ShadowQuality";
 import { CanvasMetrics } from "@/gui/CanvasMetrics";
+import { PipOverlay } from "@/engine/renderable/entity/PipOverlay";
+import { TextureUtils } from "@/engine/gfx/TextureUtils";
 import { ZoneType } from "@/game/gameobject/unit/ZoneType";
 import { LightingDirector } from "@/engine/gfx/lighting/LightingDirector";
 
@@ -64,6 +66,9 @@ export class AircraftTester {
     const renderer = (this.renderer = new Renderer(800, 600));
     renderer.init(document.body);
     renderer.initStats(document.body);
+
+    // 添加返回按钮
+    this.buildHomeButton();
 
     const worldScene = WorldScene.factory(
       { x: 0, y: 0, width: 800, height: 600 },
@@ -383,6 +388,45 @@ export class AircraftTester {
     }, 50);
   }
 
+  private static buildHomeButton(): void {
+    const homeButton = document.createElement('button');
+    homeButton.innerHTML = '点此返回主页';
+    homeButton.style.cssText = `
+      position: fixed;
+      left: 50%;
+      top: 10px;
+      transform: translateX(-50%);
+      padding: 10px 20px;
+      background-color: rgba(0, 0, 0, 0.8);
+      color: white;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: bold;
+      z-index: 1000;
+      transition: all 0.3s ease;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    `;
+    homeButton.onmouseover = () => {
+      homeButton.style.backgroundColor = 'rgba(0, 0, 0, 0.95)';
+      homeButton.style.borderColor = 'rgba(255, 255, 255, 0.6)';
+      homeButton.style.transform = 'translateX(-50%) translateY(-2px)';
+      homeButton.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.4)';
+    };
+    homeButton.onmouseout = () => {
+      homeButton.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+      homeButton.style.borderColor = 'rgba(255, 255, 255, 0.3)';
+      homeButton.style.transform = 'translateX(-50%) translateY(0)';
+      homeButton.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.3)';
+    };
+    homeButton.onclick = () => {
+      window.location.hash = '/';
+    };
+    document.body.appendChild(homeButton);
+    this.disposables.add(() => homeButton.remove());
+  }
+
   static destroy(): void {
     this.renderer.dispose();
     this.uiAnimationLoop.destroy();
@@ -392,6 +436,19 @@ export class AircraftTester {
       this.controlsEl = undefined;
     }
     this.disposables.dispose();
+
+    // Clear global caches to avoid stale resources on next entry
+    try {
+      if ((PipOverlay as any)?.clearCaches) {
+        PipOverlay.clearCaches();
+      }
+      if ((TextureUtils as any)?.cache) {
+        TextureUtils.cache.forEach((tex: any) => tex.dispose?.());
+        TextureUtils.cache.clear();
+      }
+    } catch (err) {
+      console.warn('[AircraftTester] Failed to clear caches during destroy:', err);
+    }
   }
 }
 

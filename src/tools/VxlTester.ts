@@ -319,28 +319,37 @@ export class VxlTester {
   }
 
   private static buildBrowser(): void {
-    // 创建返回主页的小按钮（固定在左上角）
+    // 创建返回主页的按钮（固定在顶部中间）
     const homeButton = document.createElement('button');
-    homeButton.innerHTML = '← 主页';
+    homeButton.innerHTML = '点此返回主页';
     homeButton.style.cssText = `
-      position: absolute;
-      left: 10px;
+      position: fixed;
+      left: 50%;
       top: 10px;
-      padding: 8px 16px;
-      background-color: rgba(0, 0, 0, 0.7);
+      transform: translateX(-50%);
+      padding: 10px 20px;
+      background-color: rgba(0, 0, 0, 0.8);
       color: white;
-      border: none;
-      border-radius: 4px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-radius: 6px;
       cursor: pointer;
-      font-size: 14px;
+      font-size: 16px;
+      font-weight: bold;
       z-index: 1000;
-      transition: background-color 0.2s;
+      transition: all 0.3s ease;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
     `;
     homeButton.onmouseover = () => {
-      homeButton.style.backgroundColor = 'rgba(0, 0, 0, 0.9)';
+      homeButton.style.backgroundColor = 'rgba(0, 0, 0, 0.95)';
+      homeButton.style.borderColor = 'rgba(255, 255, 255, 0.6)';
+      homeButton.style.transform = 'translateX(-50%) translateY(-2px)';
+      homeButton.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.4)';
     };
     homeButton.onmouseout = () => {
-      homeButton.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+      homeButton.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+      homeButton.style.borderColor = 'rgba(255, 255, 255, 0.3)';
+      homeButton.style.transform = 'translateX(-50%) translateY(0)';
+      homeButton.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.3)';
     };
     homeButton.onclick = () => {
       window.location.hash = '/';
@@ -441,5 +450,18 @@ export class VxlTester {
     this.palette = undefined;
     
     console.log('[VxlTester] VxlTester destroyed successfully');
+
+    // Clear global caches to avoid stale resources on next entry
+    try {
+      const { PipOverlay } = require("@/engine/renderable/entity/PipOverlay");
+      const { TextureUtils } = require("@/engine/gfx/TextureUtils");
+      PipOverlay?.clearCaches?.();
+      if (TextureUtils?.cache) {
+        TextureUtils.cache.forEach((tex: any) => tex.dispose?.());
+        TextureUtils.cache.clear();
+      }
+    } catch (err) {
+      console.warn('[VxlTester] Failed to clear caches during destroy:', err);
+    }
   }
 } 

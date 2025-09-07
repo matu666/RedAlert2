@@ -1,12 +1,13 @@
 import { TriggerEventType } from './TriggerEventType';
 import { TriggerActionType } from './TriggerActionType';
+import { IniSection } from '@/data/IniSection';
 
 export class TriggerReader {
-  read(triggers: Map<string, string>, events: Map<string, string>, actions: Map<string, string>, tags: Map<string, any>) {
+  read(triggers: IniSection, events: IniSection, actions: IniSection, tags: Array<any>) {
     const triggerList = this.readTriggers(triggers);
     const { events: eventMap, unknownEventTypes } = this.readEvents(events);
     const { actions: actionMap, unknownActionTypes } = this.readActions(actions);
-    const tagList = [...tags.values()];
+    const tagList = [...tags.values?.() ?? tags];
     const rootTriggers = new Set(triggerList);
 
     for (const trigger of triggerList.values()) {
@@ -59,12 +60,13 @@ export class TriggerReader {
     };
   }
 
-  private readTriggers(triggers: Map<string, string>) {
+  private readTriggers(triggers: IniSection) {
     const result: any[] = [];
-    for (const [id, data] of triggers.entries()) {
-      const parts = data.split(',');
+    for (const [id, raw] of triggers.entries) {
+      if (typeof raw !== 'string') continue;
+      const parts = raw.split(',');
       if (parts.length < 8) {
-        console.warn(`Invalid trigger ${id}=${data}. Skipping.`);
+        console.warn(`Invalid trigger ${id}=${raw}. Skipping.`);
       } else {
         const trigger = {
           id,
@@ -88,14 +90,15 @@ export class TriggerReader {
     return result;
   }
 
-  private readEvents(events: Map<string, string>) {
+  private readEvents(events: IniSection) {
     const eventMap = new Map();
     const unknownTypes = new Set();
 
-    for (const [triggerId, data] of events.entries()) {
-      const parts = data.split(',');
+    for (const [triggerId, raw] of events.entries) {
+      if (typeof raw !== 'string') continue;
+      const parts = raw.split(',');
       if (parts.length < 4) {
-        console.warn(`Invalid event ${triggerId}=${data}. Skipping.`);
+        console.warn(`Invalid event ${triggerId}=${raw}. Skipping.`);
       } else {
         const eventCount = Number(parts.shift());
         const eventList = [];
@@ -127,18 +130,19 @@ export class TriggerReader {
     return { events: eventMap, unknownEventTypes: unknownTypes };
   }
 
-  private readActions(actions: Map<string, string>) {
+  private readActions(actions: IniSection) {
     const actionMap = new Map();
     const unknownTypes = new Set();
 
-    for (const [triggerId, data] of actions.entries()) {
-      const parts = data.split(',');
+    for (const [triggerId, raw] of actions.entries) {
+      if (typeof raw !== 'string') continue;
+      const parts = raw.split(',');
       if (parts.length < 9) {
-        console.warn(`Invalid action ${triggerId}=${data}. Skipping.`);
+        console.warn(`Invalid action ${triggerId}=${raw}. Skipping.`);
       } else {
         const actionCount = Number(parts.shift());
         if (parts.length < 8 * actionCount) {
-          console.warn(`Invalid action ${triggerId}=${data}. Skipping.`);
+          console.warn(`Invalid action ${triggerId}=${raw}. Skipping.`);
         } else {
           const actionList = [];
 

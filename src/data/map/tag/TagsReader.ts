@@ -1,7 +1,8 @@
 import { TagRepeatType } from './TagRepeatType';
+import { IniSection } from '@/data/IniSection';
 
 export class TagsReader {
-  read(entries: Map<string, string>): Array<{
+  read(section: IniSection): Array<{
     id: string;
     repeatType: number;
     name: string;
@@ -14,8 +15,11 @@ export class TagsReader {
       triggerId: string;
     }> = [];
 
-    for (const [id, value] of entries) {
-      const parts = value.split(',');
+    for (const [id, rawValue] of section.entries) {
+      if (typeof rawValue !== 'string') {
+        continue;
+      }
+      const parts = rawValue.split(',');
       
       if (parts.length < 3) {
         console.warn(`Invalid tag ${id}=${value}. Skipping.`);

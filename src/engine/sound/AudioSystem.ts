@@ -68,8 +68,18 @@ export class AudioSystem {
   dispose(): void {
     this.disposables.dispose();
     if (this.audioContext) {
-      this.audioContext.close();
+      const ctx = this.audioContext;
+      if (ctx.state !== 'closed') {
+        try {
+          // close() returns a promise; swallow InvalidStateError if already closed
+          void ctx.close().catch(() => {});
+        } catch {
+          // no-op
+        }
+      }
       this.soundsPlaying.clear();
+      // Prevent re-closing attempts
+      this.audioContext = undefined;
     }
   }
 

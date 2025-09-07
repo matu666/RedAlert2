@@ -42,7 +42,7 @@ export class Format80 {
           }
         } else if (count === 63) {
           const length = stream.readInt16();
-          const srcIndex = stream.readInt16();
+          let srcIndex = stream.readInt16();
           if (srcIndex >= outputPos) {
             throw new Error(`srcIndex >= destIndex ${srcIndex} ${outputPos}`);
           }
@@ -52,7 +52,7 @@ export class Format80 {
           }
         } else {
           const count2 = 3 + count;
-          const srcIndex = stream.readInt16();
+          let srcIndex = stream.readInt16();
           if (srcIndex >= outputPos) {
             throw new Error(`srcIndex >= destIndex ${srcIndex} ${outputPos}`);
           }
