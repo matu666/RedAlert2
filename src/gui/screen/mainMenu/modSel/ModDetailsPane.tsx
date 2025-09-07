@@ -1,5 +1,5 @@
 import React from "react";
-import { ModStatus } from "gui/screen/mainMenu/modSel/ModStatus";
+import { ModStatus } from "@/gui/screen/mainMenu/modSel/ModStatus";
 
 interface ModDetails {
   supported: boolean;

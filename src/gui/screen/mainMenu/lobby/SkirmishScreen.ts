@@ -8,24 +8,24 @@ import {
   NO_TEAM_ID,
   aiUiNames
 } from "game/gameopts/constants";
-import { LobbyForm } from "gui/screen/mainMenu/lobby/component/LobbyForm";
-import { LobbyType, SlotOccupation } from "gui/screen/mainMenu/lobby/component/viewmodel/lobby";
-import { ScreenType } from "gui/screen/mainMenu/ScreenType";
-import { CompositeDisposable } from "util/disposable/CompositeDisposable";
-import { jsx } from "gui/jsx/jsx";
-import { HtmlView } from "gui/jsx/HtmlView";
-import { DownloadError } from "engine/ResourceLoader";
+import { LobbyForm } from "@/gui/screen/mainMenu/lobby/component/LobbyForm";
+import { LobbyType, SlotOccupation } from "@/gui/screen/mainMenu/lobby/component/viewmodel/lobby";
+import { ScreenType } from "@/gui/screen/mainMenu/ScreenType";
+import { CompositeDisposable } from "@/util/disposable/CompositeDisposable";
+import { jsx } from "@/gui/jsx/jsx";
+import { HtmlView } from "@/gui/jsx/HtmlView";
+import { DownloadError } from "@/engine/ResourceLoader";
 import { CancellationTokenSource, OperationCanceledError } from "@puzzl/core/lib/async/cancellation";
-import { MapPreviewRenderer } from "gui/screen/mainMenu/lobby/MapPreviewRenderer";
-import { findIndexReverse } from "util/array";
+import { MapPreviewRenderer } from "@/gui/screen/mainMenu/lobby/MapPreviewRenderer";
+import { findIndexReverse } from "@/util/array";
 import { StorageKey } from "LocalPrefs";
-import { isNotNullOrUndefined } from "util/typeGuard";
-import { PreferredHostOpts } from "gui/screen/mainMenu/lobby/PreferredHostOpts";
-import { MainMenuScreen } from "gui/screen/mainMenu/MainMenuScreen";
+import { isNotNullOrUndefined } from "@/util/typeGuard";
+import { PreferredHostOpts } from "@/gui/screen/mainMenu/lobby/PreferredHostOpts";
+import { MainMenuScreen } from "@/gui/screen/mainMenu/MainMenuScreen";
 import { MapFile } from "data/MapFile";
-import { MapDigest } from "engine/MapDigest";
-import { MainMenuRoute } from "gui/screen/mainMenu/MainMenuRoute";
-import { MusicType } from "engine/sound/Music";
+import { MapDigest } from "@/engine/MapDigest";
+import { MainMenuRoute } from "@/gui/screen/mainMenu/MainMenuRoute";
+import { MusicType } from "@/engine/sound/Music";
 import { Parser } from "network/gameopt/Parser";
 import { Serializer } from "network/gameopt/Serializer";
 

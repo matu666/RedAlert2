@@ -1,4 +1,4 @@
-import { KeyCommandType } from "gui/screen/game/worldInteraction/keyboard/KeyCommandType";
+import { KeyCommandType } from "@/gui/screen/game/worldInteraction/keyboard/KeyCommandType";
 
 interface Strings {
   get(key: string, ...args: any[]): string;

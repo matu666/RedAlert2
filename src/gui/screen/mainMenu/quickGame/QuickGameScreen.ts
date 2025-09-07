@@ -1,20 +1,20 @@
 import { Task } from "@puzzl/core/lib/async/Task";
 import { CancellationTokenSource, OperationCanceledError } from "@puzzl/core/lib/async/cancellation";
-import { jsx } from "gui/jsx/jsx";
-import { HtmlView } from "gui/jsx/HtmlView";
-import { MusicType } from "engine/sound/Music";
-import { MainMenuScreen } from "gui/screen/mainMenu/MainMenuScreen";
-import { ScreenType } from "gui/screen/mainMenu/ScreenType";
-import { CompositeDisposable } from "util/disposable/CompositeDisposable";
+import { jsx } from "@/gui/jsx/jsx";
+import { HtmlView } from "@/gui/jsx/HtmlView";
+import { MusicType } from "@/engine/sound/Music";
+import { MainMenuScreen } from "@/gui/screen/mainMenu/MainMenuScreen";
+import { ScreenType } from "@/gui/screen/mainMenu/ScreenType";
+import { CompositeDisposable } from "@/util/disposable/CompositeDisposable";
 import { 
   RANDOM_COUNTRY_ID, 
   RANDOM_COLOR_ID,
   OBS_COUNTRY_ID 
 } from "game/gameopts/constants";
-import { SoundKey } from "engine/sound/SoundKey";
-import { ChannelType } from "engine/sound/ChannelType";
-import { MainMenuRoute } from "gui/screen/mainMenu/MainMenuRoute";
-import { QuickGameForm } from "gui/screen/mainMenu/quickGame/component/QuickGameForm";
+import { SoundKey } from "@/engine/sound/SoundKey";
+import { ChannelType } from "@/engine/sound/ChannelType";
+import { MainMenuRoute } from "@/gui/screen/mainMenu/MainMenuRoute";
+import { QuickGameForm } from "@/gui/screen/mainMenu/quickGame/component/QuickGameForm";
 import { StorageKey } from "LocalPrefs";
 import { WLadderService } from "network/ladder/WLadderService";
 import { LadderQueueType } from "network/ladder/wladderConfig";
@@ -29,7 +29,7 @@ import {
   RPL_REQUEUE,
   RPL_STATS
 } from "network/qmCodes";
-import { ChatUi } from "gui/screen/mainMenu/quickGame/ChatUi";
+import { ChatUi } from "@/gui/screen/mainMenu/quickGame/ChatUi";
 
 enum QueueState {
   None = 0,

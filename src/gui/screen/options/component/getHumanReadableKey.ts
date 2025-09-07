@@ -1,5 +1,5 @@
-import { getKeyName } from "util/keyNames";
-import { isMac, isIpad } from "util/userAgent";
+import { getKeyName } from "@/util/keyNames";
+import { isMac, isIpad } from "@/util/userAgent";
 
 interface KeyEvent {
   ctrlKey: boolean;

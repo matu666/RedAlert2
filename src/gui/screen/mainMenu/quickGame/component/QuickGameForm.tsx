@@ -1,12 +1,12 @@
 import React from "react";
 import classnames from "classnames";
-import { Image } from "gui/component/Image";
-import { ButtonSelect } from "gui/component/ButtonSelect";
-import { ColorSelect } from "gui/component/ColorSelect";
-import { CountrySelect } from "gui/component/CountrySelect";
-import { Option } from "gui/component/Option";
-import { RankIndicator } from "gui/screen/mainMenu/lobby/component/RankIndicator";
-import { QuickGameChat } from "gui/screen/mainMenu/quickGame/component/QuickGameChat";
+import { Image } from "@/gui/component/Image";
+import { ButtonSelect } from "@/gui/component/ButtonSelect";
+import { ColorSelect } from "@/gui/component/ColorSelect";
+import { CountrySelect } from "@/gui/component/CountrySelect";
+import { Option } from "@/gui/component/Option";
+import { RankIndicator } from "@/gui/screen/mainMenu/lobby/component/RankIndicator";
+import { QuickGameChat } from "@/gui/screen/mainMenu/quickGame/component/QuickGameChat";
 
 interface QuickGameFormProps {
   strings: any;

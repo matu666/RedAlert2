@@ -1,27 +1,8 @@
-System.register(
-  "gui/screen/game/worldInteraction/keyboard/command/SelectTypeByCmd",
-  [
-    "gui/screen/game/worldInteraction/keyboard/KeyCommand",
-    "util/disposable/CompositeDisposable",
-  ],
-  function (e, t) {
-    "use strict";
-    let KeyCommand: any, CompositeDisposable: any, SelectByTypeCmd: any;
-    t && t.id;
-    return {
-      setters: [
-        function (e: any) {
-          KeyCommand = e;
-        },
-        function (e: any) {
-          CompositeDisposable = e;
-        },
-      ],
-      execute: function () {
-        e(
-          "SelectByTypeCmd",
-          (SelectByTypeCmd = class SelectByTypeCmd {
-            public triggerMode = KeyCommand.TriggerMode.KeyDownUp;
+import { TriggerMode } from '../KeyCommand';
+import { CompositeDisposable } from '@/util/disposable/CompositeDisposable';
+
+export class SelectByTypeCmd {
+            public triggerMode = TriggerMode.KeyDownUp;
             private unitSelectionHandler: any;
             private disposables: any;
             private keyDownTime?: number;
@@ -29,7 +10,7 @@ System.register(
 
             constructor(unitSelectionHandler: any) {
               this.unitSelectionHandler = unitSelectionHandler;
-              this.disposables = new CompositeDisposable.CompositeDisposable();
+              this.disposables = new CompositeDisposable();
               this.handleUserSelectionUpdate = (selectionUpdate: any) => {
                 if (!selectionUpdate.queryType &&
                     this.keyDownTime) {
@@ -67,9 +48,4 @@ System.register(
             dispose(): void {
               this.disposables.dispose();
             }
-          }),
-        );
-      },
-    };
-  },
-);
+}

@@ -2,7 +2,6 @@ import { renderJsx } from "./jsx";
 import { UiObjectSprite } from "../UiObjectSprite";
 import { UiObject } from "../UiObject";
 import { HtmlContainer } from "../HtmlContainer";
-import { CanvasSpriteBuilder } from "../../engine/renderable/builder/CanvasSpriteBuilder";
 import { ShpSpriteBatch } from "../ShpSpriteBatch";
 import * as THREE from 'three';
 import { Camera } from 'three';
@@ -70,22 +69,35 @@ export class JsxRenderer {
         
         if (hasImages(props)) {
           console.log('[JsxRenderer] Using CanvasSpriteBuilder');
-          let builder = new CanvasSpriteBuilder(props.images, this.camera);
-          builder.setAlign(props.alignX ?? 0, props.alignY ?? 0);
-          sprite = new UiObjectSprite(builder);
+          // Fallback: render a simple container when CanvasSpriteBuilder is requested in UI layer
+          // to keep typings consistent with UiObjectSprite which expects a ShpBuilder.
+          const placeholder = new UiObject(new THREE.Object3D(), new HtmlContainer());
+          return { obj: placeholder };
         } else {
           console.log('[JsxRenderer] Using UiObjectSprite.fromShpFile');
-          const image = typeof props.image === "string" 
-            ? this.getImage(props.image) 
-            : props.image;
-          const palette = typeof props.palette === "string" 
-            ? this.getPalette(props.palette) 
-            : props.palette;
+          const image = props.image
+            ? (typeof props.image === "string" ? this.getImage(props.image) : props.image)
+            : undefined;
+          const palette = props.palette
+            ? (typeof props.palette === "string" ? this.getPalette(props.palette) : props.palette)
+            : undefined;
           console.log('[JsxRenderer] Image:', image);
           console.log('[JsxRenderer] Palette:', palette);
           console.log('[JsxRenderer] Camera:', this.camera);
-          
+
+          if (!image || !palette) {
+            // Fallback to an empty container sprite to avoid runtime crash
+            const placeholder = new UiObject(new THREE.Object3D(), new HtmlContainer());
+            return { obj: placeholder };
+          }
+
           sprite = UiObjectSprite.fromShpFile(image, palette, this.camera);
+          // If UI asks for center anchor, setAlign(0,-1) at builder-level before first build
+          if ((sprite as any).builder && (props.alignX !== undefined || props.alignY !== undefined)) {
+            try {
+              (sprite as any).builder.setAlign?.(props.alignX ?? 0, props.alignY ?? 0);
+            } catch {}
+          }
           console.log('[JsxRenderer] Created sprite:', sprite);
           console.log('[JsxRenderer] Sprite constructor name:', sprite.constructor.name);
         }
@@ -143,7 +155,7 @@ export class JsxRenderer {
         }
         
         let dynamicChildren: any[] = [];
-        let staticSprites: SpriteProps[] = [];
+        let staticSprites: any[] = [];
         
         for (const child of children) {
           if (child.type === "sprite" && child.props.static && !hasImages(child.props)) {

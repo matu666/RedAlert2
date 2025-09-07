@@ -1,22 +1,22 @@
-import { jsx } from "gui/jsx/jsx";
-import { HtmlView } from "gui/jsx/HtmlView";
-import { MapSel, SortType } from "gui/screen/mainMenu/mapSel/component/MapSel";
-import { MapPreviewRenderer } from "gui/screen/mainMenu/lobby/MapPreviewRenderer";
+import { jsx } from "@/gui/jsx/jsx";
+import { HtmlView } from "@/gui/jsx/HtmlView";
+import { MapSel, SortType } from "@/gui/screen/mainMenu/mapSel/component/MapSel";
+import { MapPreviewRenderer } from "@/gui/screen/mainMenu/lobby/MapPreviewRenderer";
 import { Task } from "@puzzl/core/lib/async/Task";
 import { CancellationTokenSource, OperationCanceledError, CancellationToken } from "@puzzl/core/lib/async/cancellation";
-import { MainMenuScreen } from "gui/screen/mainMenu/MainMenuScreen";
+import { MainMenuScreen } from "@/gui/screen/mainMenu/MainMenuScreen";
 import { GameModeType } from "game/ini/GameModeType";
 import { StorageKey } from "LocalPrefs";
 import { MapFile } from "data/MapFile";
 import { VirtualFile } from "data/vfs/VirtualFile";
-import { MapSupport } from "engine/MapSupport";
+import { MapSupport } from "@/engine/MapSupport";
 import { IOError } from "data/vfs/IOError";
 import { StorageQuotaError } from "data/vfs/StorageQuotaError";
 import { FileNotFoundError } from "data/vfs/FileNotFoundError";
-import { Engine } from "engine/Engine";
-import { CompositeDisposable } from "util/disposable/CompositeDisposable";
-import { DownloadError } from "engine/ResourceLoader";
-import { MapManifest } from "engine/MapManifest";
+import { Engine } from "@/engine/Engine";
+import { CompositeDisposable } from "@/util/disposable/CompositeDisposable";
+import { DownloadError } from "@/engine/ResourceLoader";
+import { MapManifest } from "@/engine/MapManifest";
 import { NameNotAllowedError } from "data/vfs/NameNotAllowedError";
 
 interface GameMode {

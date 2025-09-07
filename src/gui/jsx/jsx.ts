@@ -81,13 +81,13 @@ export function renderJsx(
         
         // Setup component lifecycle
         if (instance.onRender && obj.onFrame) {
-          obj.onFrame.subscribeOnce((deltaTime: number) => instance.onRender(deltaTime));
+          obj.onFrame.subscribeOnce((deltaTime: number, source: any) => instance.onRender(deltaTime));
         }
         if (instance.onFrame && obj.onFrame) {
-          obj.onFrame.subscribe((deltaTime: number) => instance.onFrame(deltaTime));
+          obj.onFrame.subscribe((deltaTime: number, source: any) => instance.onFrame(deltaTime));
         }
         if (instance.onDispose && obj.onDispose) {
-          obj.onDispose.subscribe(() => instance.onDispose());
+          obj.onDispose.subscribe((_data?: any, _source?: any) => instance.onDispose());
         }
         
         refTarget = instance;

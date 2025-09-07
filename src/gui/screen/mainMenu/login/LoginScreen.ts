@@ -1,15 +1,15 @@
-import { jsx } from "gui/jsx/jsx";
+import { jsx } from "@/gui/jsx/jsx";
 import { WolError } from "network/WolError";
-import { LoginBox } from "gui/screen/mainMenu/login/LoginBox";
-import { ScreenType } from "gui/screen/mainMenu/ScreenType";
-import { HtmlView } from "gui/jsx/HtmlView";
+import { LoginBox } from "@/gui/screen/mainMenu/login/LoginBox";
+import { ScreenType } from "@/gui/screen/mainMenu/ScreenType";
+import { HtmlView } from "@/gui/jsx/HtmlView";
 import { Task } from "@puzzl/core/lib/async/Task";
 import { sleep } from "@puzzl/core/lib/async/sleep";
 import { StorageKey } from "LocalPrefs";
-import { MainMenuScreen } from "gui/screen/mainMenu/MainMenuScreen";
-import { ServerPings } from "gui/screen/mainMenu/login/ServerPings";
+import { MainMenuScreen } from "@/gui/screen/mainMenu/MainMenuScreen";
+import { ServerPings } from "@/gui/screen/mainMenu/login/ServerPings";
 import { OperationCanceledError, CancellationToken } from "@puzzl/core/lib/async/cancellation";
-import { MainMenuRoute } from "gui/screen/mainMenu/MainMenuRoute";
+import { MainMenuRoute } from "@/gui/screen/mainMenu/MainMenuRoute";
 
 interface Region {
   id: string;

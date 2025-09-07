@@ -15,10 +15,6 @@ export class VirtualFile {
     try {
       const arrayBuffer = await realFile.arrayBuffer();
       const dataStream = new DataStream(arrayBuffer);
-      // The original JS code had `e._trimAlloc = () => {}` where `e` was the DataStream.
-      // This was likely to prevent the DataStream from reallocating or trimming its underlying buffer.
-      // In our DataStream.ts, we can achieve this by setting `dynamicSize = false`.
-      dataStream.dynamicSize = false; 
       return new VirtualFile(dataStream, realFile.name);
     } catch (error) {
       if (error instanceof DOMException) {
@@ -41,7 +37,6 @@ export class VirtualFile {
   public static fromBytes(bytes: Uint8Array, filename: string): VirtualFile {
     const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
     const dataStream = new DataStream(view); // Pass the DataView directly
-    dataStream.dynamicSize = false; // Data is fixed
     return new VirtualFile(dataStream, filename);
   }
 
@@ -67,7 +62,6 @@ export class VirtualFile {
       view = new DataView(buffer.buffer, buffer.byteOffset + byteOffset, byteLength ?? buffer.byteLength - byteOffset);
     }
     const dataStream = new DataStream(view);
-    dataStream.dynamicSize = false; // Data is a fixed view
     return new VirtualFile(dataStream, filename);
   }
 

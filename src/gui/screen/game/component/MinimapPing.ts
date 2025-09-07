@@ -48,20 +48,20 @@ export class MinimapPing extends UiObject {
     color1: THREE.Color,
     color2: THREE.Color,
   ): THREE.LineSegments {
-    const geometry = new THREE.Geometry();
-    const vertices = [
-      new THREE.Vector3(-0.5 * width, -0.5 * height, 0),
-      new THREE.Vector3(-0.5 * width, 0.5 * height, 0),
-      new THREE.Vector3(0.5 * width, 0.5 * height, 0),
-      new THREE.Vector3(0.5 * width, -0.5 * height, 0),
+    const verts = [
+      -0.5 * width, -0.5 * height, 0,
+      -0.5 * width,  0.5 * height, 0,
+      -0.5 * width,  0.5 * height, 0,
+       0.5 * width,  0.5 * height, 0,
+       0.5 * width,  0.5 * height, 0,
+       0.5 * width, -0.5 * height, 0,
+       0.5 * width, -0.5 * height, 0,
+      -0.5 * width, -0.5 * height, 0,
     ];
-    const colors = [color1, color2];
-    vertices.forEach((v, idx) => {
-      geometry.vertices.push(v, vertices[(idx + 1) % vertices.length]);
-      geometry.colors.push(colors[idx % 2], colors[(idx + 1) % 2]);
-    });
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3));
     const material = new THREE.LineBasicMaterial({
-      vertexColors: THREE.VertexColors,
+      color: color1.getHex(),
       side: THREE.DoubleSide,
     });
     return new THREE.LineSegments(geometry, material);
@@ -91,7 +91,7 @@ export class MinimapPing extends UiObject {
     let lerpT = Math.min(1, this.colorLerpFactor) - Math.max(0, this.colorLerpFactor - 1);
     this.matHiColor.copy(this.hiColor).lerp(this.lowColor, lerpT);
     this.matLowColor.copy(this.lowColor).lerp(this.hiColor, lerpT);
-    (obj as any).geometry.colorsNeedUpdate = true;
+    // If using per-vertex colors, update material uniforms or attributes instead.
   }
 
   override destroy(): void {

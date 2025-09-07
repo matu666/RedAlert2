@@ -1,9 +1,9 @@
-import { CanvasUtils } from "engine/gfx/CanvasUtils";
-import { HtmlContainer } from "gui/HtmlContainer";
-import { UiObject } from "gui/UiObject";
-import { LobbyType } from "gui/screen/mainMenu/lobby/component/viewmodel/lobby";
+import { CanvasUtils } from "@/engine/gfx/CanvasUtils";
+import { HtmlContainer } from "@/gui/HtmlContainer";
+import { UiObject } from "@/gui/UiObject";
+import { LobbyType } from "@/gui/screen/mainMenu/lobby/component/viewmodel/lobby";
 import { Coords } from "game/Coords";
-import { IsoCoords } from "engine/IsoCoords";
+import { IsoCoords } from "@/engine/IsoCoords";
 
 interface MapFile {
   decodePreviewImage(): { data: Uint8Array; width: number; height: number };

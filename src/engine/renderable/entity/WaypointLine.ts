@@ -214,7 +214,7 @@ export class WaypointLine {
 
   private createLineHeads(positions: THREE.Vector3[]): THREE.Points[] {
     const geometry = new THREE.BufferGeometry();
-    geometry.addAttribute(
+    geometry.setAttribute(
       "position",
       new THREE.BufferAttribute(
         new Float32Array(positions.map((pos) => [pos.x, pos.y, pos.z]).flat()),
@@ -237,7 +237,7 @@ export class WaypointLine {
     const positionAttribute = geometry.getAttribute("position") as THREE.BufferAttribute;
     
     if (positionAttribute.array.length !== flatPositions.length) {
-      geometry.addAttribute(
+      geometry.setAttribute(
         "position",
         new THREE.BufferAttribute(new Float32Array(flatPositions), 3),
       );

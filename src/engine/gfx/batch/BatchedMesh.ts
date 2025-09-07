@@ -26,8 +26,9 @@ export class BatchedMesh extends THREE.Mesh {
     this.batchMode = batchMode;
     this.castShadow = false;
     
-    // Disable default layer
+    // Use a dedicated picking layer so the raycaster can target original meshes
     this.layers.disable(0);
+    this.layers.enable(1);
   }
 
   getOpacity(): number {

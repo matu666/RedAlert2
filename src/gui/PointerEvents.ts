@@ -465,6 +465,8 @@ export class PointerEvents {
       const raycaster = new THREE.Raycaster();
       const normalizedPointer = this.normalizePointer(pointerPos, scenes[i].viewport);
       raycaster.setFromCamera(normalizedPointer, scenes[i].camera);
+      // Ensure picking also considers non-rendered batching layer (layer 1)
+      raycaster.layers.enable(1);
       
       const sceneObjects = objectsByScene
         .get(scenes[i].scene)!

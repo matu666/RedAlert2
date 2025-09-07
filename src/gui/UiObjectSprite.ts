@@ -19,6 +19,7 @@ export class UiObjectSprite extends UiObject {
       x: Math.floor(shpFile.width / 2),
       y: Math.floor(shpFile.height / 2)
     });
+    // Do NOT force global UI alignment here; allow caller to choose via setAlign
     return new UiObjectSprite(builder);
   }
 

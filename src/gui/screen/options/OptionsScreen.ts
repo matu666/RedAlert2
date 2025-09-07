@@ -1,12 +1,12 @@
-import { jsx } from "gui/jsx/jsx";
-import { MainMenuController } from "gui/screen/mainMenu/MainMenuController";
-import { GameMenuController } from "gui/screen/game/gameMenu/GameMenuController";
-import { ScreenType as GameScreenType } from "gui/screen/game/gameMenu/ScreenType";
-import { ScreenType as MainScreenType } from "gui/screen/mainMenu/ScreenType";
-import { StorageKey } from "LocalPrefs";
-import { HtmlView } from "gui/jsx/HtmlView";
-import { GeneralOpts } from "gui/screen/options/component/GeneralOpts";
-import { GeneralOptions } from "gui/screen/options/GeneralOptions";
+import { jsx } from "@/gui/jsx/jsx";
+import { MainMenuController } from "@/gui/screen/mainMenu/MainMenuController";
+import { GameMenuController } from "@/gui/screen/game/gameMenu/GameMenuController";
+import { ScreenType as GameScreenType } from "@/gui/screen/game/gameMenu/ScreenType";
+import { ScreenType as MainScreenType } from "@/gui/screen/mainMenu/ScreenType";
+import { StorageKey } from "@/LocalPrefs";
+import { HtmlView } from "@/gui/jsx/HtmlView";
+import { GeneralOpts } from "@/gui/screen/options/component/GeneralOpts";
+import { GeneralOptions } from "@/gui/screen/options/GeneralOptions";
 
 interface ScreenController {
   setSidebarButtons(buttons: SidebarButton[]): void;

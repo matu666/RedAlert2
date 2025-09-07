@@ -10,9 +10,9 @@ export class VxlGeometryNaiveBuilder {
     let geometry = new THREE.BufferGeometry();
 
     geometry.setIndex(this.createIndexAttr(voxels, boxGeometry, vertexCount));
-    geometry.addAttribute("position", this.createPositionAttr(vxl, voxels, boxGeometry));
-    geometry.addAttribute("normal", this.createNormalAttr(vxl, voxels, vertexCount));
-    geometry.addAttribute("color", this.createColorAttr(voxels, vertexCount, normalArray, voxelField));
+    geometry.setAttribute("position", this.createPositionAttr(vxl, voxels, boxGeometry));
+    geometry.setAttribute("normal", this.createNormalAttr(vxl, voxels, vertexCount));
+    geometry.setAttribute("color", this.createColorAttr(voxels, vertexCount, normalArray, voxelField));
     
     geometry = BufferGeometryUtils.mergeVertices(geometry);
     geometry.computeBoundingBox();

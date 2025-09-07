@@ -1,6 +1,6 @@
-import { FullScreen } from "gui/FullScreen";
+import { FullScreen } from "@/gui/FullScreen";
 import React, { useState } from "react";
-import { getHumanReadableKey } from "gui/screen/options/component/getHumanReadableKey";
+import { getHumanReadableKey } from "@/gui/screen/options/component/getHumanReadableKey";
 
 interface KeyEvent {
   shiftKey: boolean;

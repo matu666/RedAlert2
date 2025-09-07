@@ -1,7 +1,7 @@
 import React from "react";
-import { Chat } from "gui/component/Chat";
-import { List } from "gui/component/List";
-import { ChannelUser } from "gui/component/ChannelUser";
+import { Chat } from "@/gui/component/Chat";
+import { List } from "@/gui/component/List";
+import { ChannelUser } from "@/gui/component/ChannelUser";
 import { ChatRecipientType } from "network/chat/ChatMessage";
 
 interface QuickGameChatProps {

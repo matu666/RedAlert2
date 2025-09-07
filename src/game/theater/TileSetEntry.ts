@@ -38,21 +38,19 @@ export class TileSetEntry {
    */
   getTmpFile(
     subTileIndex: number,
-    originalTParam: number, // Changed from randomIndexSelector to reflect original usage where 'frame' (a number) was passed
+    randomIndexSelector: (min: number, max: number) => number,
     preferNonDamaged: boolean = false,
   ): TmpFile | undefined {
     if (this.files.length > 0) {
       // Original JS: var r = this.files[t(0, this.files.length - 1)];
-      // Here, originalTParam was 'frame' (a number) but used as a function.
-      // We replicate this potentially erroneous call using 'as any'.
-      const selectedFileIndex = (originalTParam as any)(0, this.files.length - 1);
+      const selectedFileIndex = randomIndexSelector(0, this.files.length - 1);
       let fileToReturn = this.files[selectedFileIndex];
 
       if (
         preferNonDamaged &&
-        fileToReturn && // Ensure fileToReturn is not undefined after problematic selectedFileIndex
+        fileToReturn &&
         subTileIndex < fileToReturn.images.length &&
-        (fileToReturn.images[subTileIndex] as any).hasDamagedData // Use 'as any' to access property like original JS
+        (fileToReturn.images[subTileIndex] as any).hasDamagedData
       ) {
         const fallbackIndex = Math.min(preferNonDamaged ? 1 : 0, this.files.length - 1);
         return this.files[fallbackIndex];

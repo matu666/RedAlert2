@@ -23,6 +23,8 @@ import { SoundSpecs } from './engine/sound/SoundSpecs.js';
 import { Music } from './engine/sound/Music.js';
 import { MusicSpecs } from './engine/sound/MusicSpecs.js';
 import { LocalPrefs, StorageKey } from './LocalPrefs.js';
+import { GeneralOptions } from './gui/screen/options/GeneralOptions.js';
+import { FullScreen } from './gui/FullScreen.js';
 
 export class Gui {
   private appVersion: string;
@@ -46,6 +48,11 @@ export class Gui {
   private sound?: Sound;
   private music?: Music;
   private localPrefs: LocalPrefs;
+  
+  // 选项系统
+  private generalOptions?: GeneralOptions;
+  private fullScreen?: FullScreen;
+  private keyBinds?: any;
   
   // Resources
   private images: Map<string, ShpFile> = new Map();
@@ -82,6 +89,9 @@ export class Gui {
     
     // Initialize audio system
     await this.initAudioSystem();
+    
+    // Initialize options system
+    this.initOptionsSystem();
     
     // Initialize JSX renderer
     this.initJsxRenderer();
@@ -361,6 +371,14 @@ export class Gui {
     subScreens.set(MainMenuScreenType.InfoAndCredits, InfoAndCreditsScreen);
     subScreens.set(MainMenuScreenType.Credits, CreditsScreen);
     
+    // 添加选项相关屏幕
+    const { OptionsScreen } = await import('./gui/screen/options/OptionsScreen.js');
+    const { SoundOptsScreen } = await import('./gui/screen/options/SoundOptsScreen.js');
+    const { KeyboardScreen } = await import('./gui/screen/options/KeyboardScreen.js');
+    subScreens.set(MainMenuScreenType.Options, OptionsScreen);
+    subScreens.set(MainMenuScreenType.OptionsSound, SoundOptsScreen);
+    subScreens.set(MainMenuScreenType.OptionsKeyboard, KeyboardScreen);
+    
     // Create main menu root screen - use Engine's collections directly
     const mainMenuRootScreen = new MainMenuRootScreen(
       subScreens,
@@ -372,7 +390,12 @@ export class Gui {
       this.appVersion,
       videoSrc,  // Pass video source
       this.sound,  // Pass sound system
-      this.music   // Pass music system
+      this.music,   // Pass music system
+      this.generalOptions,  // Pass general options
+      this.localPrefs,      // Pass local preferences
+      this.fullScreen,      // Pass fullscreen system
+      this.mixer,           // Pass audio mixer
+      this.keyBinds         // Pass key bindings
     );
     
     // Add screen to root controller
@@ -658,6 +681,34 @@ export class Gui {
     } catch (error) {
       console.error('[Gui] Failed to initialize music system:', error);
     }
+  }
+
+  private initOptionsSystem(): void {
+    console.log('[Gui] Initializing options system');
+    
+    // 创建GeneralOptions实例
+    this.generalOptions = new GeneralOptions();
+    
+    // 尝试从本地存储加载选项
+    const optionsData = this.localPrefs.getItem(StorageKey.Options);
+    if (optionsData) {
+      try {
+        this.generalOptions.unserialize(optionsData);
+        console.log('[Gui] Loaded general options from local storage');
+      } catch (error) {
+        console.warn('Failed to read general options from local storage', error);
+      }
+    }
+    
+    // 创建FullScreen实例
+    this.fullScreen = new FullScreen(document);
+    this.fullScreen.init();
+    
+    // 创建KeyBinds实例（暂时使用模拟数据）
+    // TODO: 实现真正的KeyBinds加载逻辑
+    this.keyBinds = null; // 暂时设为null，避免错误
+    
+    console.log('[Gui] Options system initialized');
   }
 
 

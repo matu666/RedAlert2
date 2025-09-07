@@ -47,39 +47,39 @@ export class HomeScreen implements Screen {
     console.log('[HomeScreen] Entering home screen');
     
     const buttons: SidebarButton[] = [
+      // {
+      //   label: this.strings.get('GUI:QuickMatch') || 'Quick Match',
+      //   tooltip: this.strings.get('STT:WOLWelcomeQuickMatch') || 'Quick multiplayer match',
+      //   disabled: !this.quickMatchEnabled,
+      //   onClick: async () => {
+      //     console.log('[HomeScreen] Quick Match clicked');
+      //     await this.messageBoxApi.alert('Quick Match - 功能开发中\n\n需要登录系统和服务器连接', this.strings.get('GUI:OK') || 'OK');
+      //   }
+      // },
+      // {
+      //   label: this.strings.get('GUI:CustomMatch') || 'Custom Match',
+      //   tooltip: this.strings.get('STT:WOLWelcomeCustomMatch') || 'Custom multiplayer match',
+      //   onClick: async () => {
+      //     console.log('[HomeScreen] Custom Match clicked');
+      //     await this.messageBoxApi.alert('Custom Match - 功能开发中\n\n需要登录系统和游戏大厅', this.strings.get('GUI:OK') || 'OK');
+      //   }
+      // },
       {
-        label: this.strings.get('GUI:QuickMatch') || 'Quick Match',
-        tooltip: this.strings.get('STT:WOLWelcomeQuickMatch') || 'Quick multiplayer match',
-        disabled: !this.quickMatchEnabled,
+        label: '遭遇战',
+        tooltip: '与AI进行单人遭遇战',
         onClick: async () => {
-          console.log('[HomeScreen] Quick Match clicked');
-          await this.messageBoxApi.alert('Quick Match - 功能开发中\n\n需要登录系统和服务器连接', this.strings.get('GUI:OK') || 'OK');
+          console.log('[HomeScreen] 遭遇战 clicked');
+          await this.messageBoxApi.alert('遭遇战 - 功能开发中\n\n需要遭遇战系统和AI', this.strings.get('GUI:OK') || 'OK');
         }
       },
-      {
-        label: this.strings.get('GUI:CustomMatch') || 'Custom Match',
-        tooltip: this.strings.get('STT:WOLWelcomeCustomMatch') || 'Custom multiplayer match',
-        onClick: async () => {
-          console.log('[HomeScreen] Custom Match clicked');
-          await this.messageBoxApi.alert('Custom Match - 功能开发中\n\n需要登录系统和游戏大厅', this.strings.get('GUI:OK') || 'OK');
-        }
-      },
-      {
-        label: this.strings.get('GUI:Demo') || 'Demo Mode',
-        tooltip: this.strings.get('STT:Demo') || 'Play a singleplayer match against a training dummy',
-        onClick: async () => {
-          console.log('[HomeScreen] Demo Mode clicked');
-          await this.messageBoxApi.alert('Demo Mode - 功能开发中\n\n需要遭遇战系统和AI', this.strings.get('GUI:OK') || 'OK');
-        }
-      },
-      {
-        label: this.strings.get('GUI:Replays') || 'Replays',
-        tooltip: this.strings.get('STT:Replays') || 'Play back a recording of a previously played game',
-        onClick: async () => {
-          console.log('[HomeScreen] Replays clicked');
-          await this.messageBoxApi.alert('Replays - 功能开发中\n\n需要回放系统', this.strings.get('GUI:OK') || 'OK');
-        }
-      }
+      // {
+      //   label: this.strings.get('GUI:Replays') || 'Replays',
+      //   tooltip: this.strings.get('STT:Replays') || 'Play back a recording of a previously played game',
+      //   onClick: async () => {
+      //     console.log('[HomeScreen] Replays clicked');
+      //     await this.messageBoxApi.alert('Replays - 功能开发中\n\n需要回放系统', this.strings.get('GUI:OK') || 'OK');
+      //   }
+      // }
     ];
 
     // Add mods button if storage is enabled
@@ -109,9 +109,11 @@ export class HomeScreen implements Screen {
       {
         label: this.strings.get('GUI:Options') || 'Options',
         tooltip: this.strings.get('STT:MainButtonOptions') || 'Game options and settings',
-        onClick: async () => {
+        onClick: () => {
           console.log('[HomeScreen] Options clicked');
-          await this.messageBoxApi.alert('Options - 功能开发中\n\n需要设置界面', this.strings.get('GUI:OK') || 'OK');
+          if (this.controller) {
+            this.controller.pushScreen(MainMenuScreenType.Options);
+          }
         }
       },
       // 底层测试入口，进入各类底层测试与文件系统管理

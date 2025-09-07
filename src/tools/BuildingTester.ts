@@ -205,7 +205,7 @@ export class BuildingTester {
       new Map(),
     );
 
-    const tileCollection = new TileCollection([], null, this.rules.general, getRandomInt);
+    const tileCollection = new TileCollection([], null as any, this.rules.general, (min: number, max: number) => getRandomInt(min, max));
     const tileOccupation = new TileOccupation(tileCollection);
     const mapBounds = new MapBounds();
     const bridges = new Bridges(this.theater.tileSets, tileCollection, tileOccupation, mapBounds, this.rules);

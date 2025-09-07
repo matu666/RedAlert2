@@ -1,7 +1,7 @@
 import React, { useRef, useState, useEffect } from "react";
-import { List, ListItem } from "gui/component/List";
-import { Select } from "gui/component/Select";
-import { Option } from "gui/component/Option";
+import { List, ListItem } from "@/gui/component/List";
+import { Select } from "@/gui/component/Select";
+import { Option } from "@/gui/component/Option";
 
 enum SortType {
   None = "",

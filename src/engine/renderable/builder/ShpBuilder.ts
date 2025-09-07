@@ -22,6 +22,7 @@ export class ShpBuilder {
   private offset!: { x: number; y: number };
   private frameOffset!: number;
   private flat!: boolean;
+  private uiAnchorCompensation!: boolean;
   private shpFile: any;
   private palette: any;
   private camera: any;
@@ -31,6 +32,7 @@ export class ShpBuilder {
   private materialCacheKey?: string;
   private atlas: any;
   private frameNo?: number;
+  private align?: { x: number; y: number };
 
   static prepareTexture(shpFile) {
     if (!ShpBuilder.textureCache.has(shpFile)) {
@@ -57,11 +59,19 @@ export class ShpBuilder {
     this.offset = { x: 0, y: 0 };
     this.frameOffset = 0;
     this.flat = false;
+    this.uiAnchorCompensation = false;
     this.shpFile = shpFile;
     this.palette = palette;
     this.camera = camera;
     this.shpSize = { width: shpFile.width, height: shpFile.height };
     this.setFrame(0);
+  }
+
+  setUiAnchorCompensation(enabled) {
+    if (this.mesh) {
+      throw new Error("UI anchor compensation can only be set before calling build()");
+    }
+    this.uiAnchorCompensation = enabled;
   }
 
   useMaterial(texture, palette, transparent) {
@@ -122,6 +132,13 @@ export class ShpBuilder {
     this.offset = offset;
   }
 
+  setAlign(x, y) {
+    if (this.mesh) {
+      throw new Error("Align can only be set before calling build()");
+    }
+    this.align = { x, y };
+  }
+
   setFrameOffset(frameOffset) {
     if (this.mesh) {
       throw new Error("frameOffset can only be set before calling build()");
@@ -141,12 +158,14 @@ export class ShpBuilder {
       x: image.x - Math.floor(this.shpSize.width / 2) + Math.floor(this.offset.x),
       y: image.y - Math.floor(this.shpSize.height / 2) + Math.floor(this.offset.y),
     };
+    // Prefer explicit align if provided; otherwise use UI compensation flag; fallback to default
+    const align = this.align ? this.align : (this.uiAnchorCompensation ? { x: 0, y: -1 } : { x: 1, y: -1 });
     
     return {
       texture: this.atlas.getTexture(),
       textureArea: this.atlas.getTextureArea(frameNo),
       flat: this.flat,
-      align: { x: 1, y: -1 },
+      align: align,
       offset: offset,
       camera: this.camera,
       depth: this.depth,

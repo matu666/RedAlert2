@@ -1,7 +1,7 @@
-import { jsx } from "gui/jsx/jsx";
-import { HtmlView } from "gui/jsx/HtmlView";
-import { Iframe } from "gui/screen/mainMenu/component/Iframe";
-import { MainMenuScreen } from "gui/screen/mainMenu/MainMenuScreen";
+import { jsx } from "@/gui/jsx/jsx";
+import { HtmlView } from "@/gui/jsx/HtmlView";
+import { Iframe } from "@/gui/screen/mainMenu/component/Iframe";
+import { MainMenuScreen } from "@/gui/screen/mainMenu/MainMenuScreen";
 
 export class PatchNotesScreen extends MainMenuScreen {
   private strings: any;

@@ -1,4 +1,4 @@
-import { ModManager } from "gui/screen/mainMenu/modSel/ModManager";
+import { ModManager } from "@/gui/screen/mainMenu/modSel/ModManager";
 
 interface IniSection {
   getString(key: string): string | undefined;

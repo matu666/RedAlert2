@@ -69,6 +69,8 @@ export class SidebarCard extends UiComponent<SidebarCardProps> {
     };
   }
 
+  private handleWheel: (e: any) => void;
+
   createUiObject(): UiObject {
     const uiObject = new UiObject(
       new THREE.Object3D(),
@@ -253,13 +255,13 @@ export class SidebarCard extends UiComponent<SidebarCardProps> {
     let frameId = cameoNameToIdMap.get(cameoName);
     
     if (frameId === undefined) {
-      cameoName = ObjectArt.MISSING_CAMEO + ".shp";
+      cameoName = (ObjectArt as any).MISSING_CAMEO + ".shp";
       frameId = cameoNameToIdMap.get(cameoName);
     }
     
     if (frameId === undefined) {
       throw new Error(
-        `Missing cameo placeholder image "${ObjectArt.MISSING_CAMEO}.shp"`,
+        `Missing cameo placeholder image "${(ObjectArt as any).MISSING_CAMEO}.shp"`,
       );
     }
     
@@ -282,20 +284,23 @@ export class SidebarCard extends UiComponent<SidebarCardProps> {
 
   updateStatusText(item: any, labelObject: any): void {
     const isVisible = [SidebarModel.SidebarItemStatus.Ready, SidebarModel.SidebarItemStatus.OnHold].includes(item.status);
+    if (!labelObject || !labelObject.get3DObject) return;
     labelObject.get3DObject().visible = isVisible;
     
+    if (typeof labelObject.setFrame !== 'function' || typeof labelObject.setPosition !== 'function') return;
+    const labelAlign = (labelObject as any).builder?.setAlign ? (labelObject as any).builder.setAlign.bind((labelObject as any).builder) : undefined;
     if (item.status === SidebarModel.SidebarItemStatus.Ready) {
       labelObject.setFrame(LabelType.Ready);
       labelObject.setPosition(
         this.getCameoSize().width / 2,
         labelObject.getPosition().y,
       );
-      labelObject.builder.setAlign(0, -1);
+      if (labelAlign) labelAlign(0, -1);
     } else if (item.status === SidebarModel.SidebarItemStatus.OnHold) {
       labelObject.setFrame(LabelType.OnHold);
       const xPos = item.quantity > 1 ? 0 : this.getCameoSize().width / 2;
       labelObject.setPosition(xPos, labelObject.getPosition().y);
-      labelObject.builder.setAlign(item.quantity > 1 ? -1 : 0, -1);
+      if (labelAlign) labelAlign(item.quantity > 1 ? -1 : 0, -1);
     }
   }
 
@@ -306,10 +311,20 @@ export class SidebarCard extends UiComponent<SidebarCardProps> {
       const frame = item.quantity > SidebarCard.MAX_QUANTITY
         ? SidebarCard.MAX_QUANTITY
         : item.quantity - 1;
-      quantityObject.setFrame(frame);
-      quantityObject.setVisible(true);
+      if (quantityObject && typeof quantityObject.setFrame === 'function') {
+        quantityObject.setFrame(frame);
+      }
+      quantityObject?.setVisible?.(true);
+      if (quantityObject && !quantityObject.setVisible && quantityObject.get3DObject) {
+        const obj = quantityObject.get3DObject();
+        if (obj) obj.visible = true;
+      }
     } else {
-      quantityObject.setVisible(false);
+      quantityObject?.setVisible?.(false);
+      if (quantityObject && !quantityObject.setVisible && quantityObject.get3DObject) {
+        const obj = quantityObject.get3DObject();
+        if (obj) obj.visible = false;
+      }
     }
   }
 
@@ -347,14 +362,15 @@ export class SidebarCard extends UiComponent<SidebarCardProps> {
     const width = cameoSize.width;
     const height = cameoSize.height;
     
-    const geometry = new THREE.Geometry();
-    geometry.vertices.push(
-      new THREE.Vector3(0, 0, 0),
-      new THREE.Vector3(0, height, 0),
-      new THREE.Vector3(width, height, 0),
-      new THREE.Vector3(width, 0, 0),
-      new THREE.Vector3(0, 0, 0),
-    );
+    const geometry = new THREE.BufferGeometry();
+    const positions = new Float32Array([
+      0, 0, 0,
+      0, height, 0,
+      width, height, 0,
+      width, 0, 0,
+      0, 0, 0,
+    ]);
+    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
     
     const material = new THREE.LineBasicMaterial({
       color: this.props.textColor,

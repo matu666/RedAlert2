@@ -1,6 +1,6 @@
-import { ModelQuality } from "engine/renderable/entity/unit/ModelQuality";
-import { ShadowQuality } from "engine/renderable/entity/unit/ShadowQuality";
-import { BoxedVar } from "util/BoxedVar";
+import { ModelQuality } from "@/engine/renderable/entity/unit/ModelQuality";
+import { ShadowQuality } from "@/engine/renderable/entity/unit/ShadowQuality";
+import { BoxedVar } from "@/util/BoxedVar";
 
 interface Resolution {
   width: number;

@@ -54,17 +54,17 @@ export class VxlGeometryCulledBuilder {
     let i = new THREE.BufferGeometry();
     
     i.setIndex(new THREE.BufferAttribute(new Uint32Array(p), 1));
-    i.addAttribute(
+    i.setAttribute(
       "position",
-      new THREE.BufferAttribute(new Float32Array(u), 3)
+      new THREE.BufferAttribute(new Float32Array(3 * t), 3),
     );
-    i.addAttribute(
+    i.setAttribute(
       "normal",
-      new THREE.BufferAttribute(new Float32Array(d), 3)
+      new THREE.BufferAttribute(new Float32Array(3 * t), 3),
     );
-    i.addAttribute(
+    i.setAttribute(
       "color",
-      new THREE.BufferAttribute(new Float32Array(g), 3)
+      new THREE.BufferAttribute(new Float32Array(4 * t), 4),
     );
     
     i = BufferGeometryUtils.mergeVertices(i);

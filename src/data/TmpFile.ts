@@ -39,39 +39,12 @@ export class TmpFile {
     this.images = [];
     for (let i = 0; i < numberOfTiles; i++) {
       let offset = imageOffsets[i];
-      // In the original implementation negative offsets are clamped to 0 by DataStream.seek(),
-      // resulting in the first tile being duplicated. We replicate that behaviour here: only
-      // offsets that are *beyond* the end of the buffer are considered invalid and replaced
-      // with a placeholder image.
+      // Original behavior: negative offsets clamp to 0 via seek();
+      // offsets beyond EOF clamp to EOF; subsequent reads expand buffer with zeros.
       if (offset < 0) {
-        offset = 0; // clamp negative offsets
+        offset = 0;
       }
-
-      if (offset >= stream.byteLength) { 
-          // Move the main stream pointer to EOF to mimic original seek behaviour
-          stream.seek(offset); // will clamp to byteLength
-          console.warn(`TmpFile: Tile index ${i} has offset ${offset}, which is invalid or points to EOF. Creating empty TmpImage placeholder.`);
-          // Instead of passing an empty stream which would cause read attempts to fail,
-          // allocate a small zero-filled buffer that is large enough for TmpImage to
-          // read its mandatory header fields as well as an empty tile data block.
-          // A TMP tile requires at minimum:
-          //   * 49 bytes header (see TmpImage.fromStream implementation)
-          //   * main tile data           = (blockWidth * blockHeight) / 2 bytes
-          // We allocate that size to avoid out-of-bounds reads, even though the
-          // resulting image will just contain transparent pixels.
-          const minimalHeaderSize = 49;
-          const mainTileDataByteLength = (this.blockWidth * this.blockHeight) / 2;
-          const dummyBufferSize = minimalHeaderSize + mainTileDataByteLength;
-          const dummyStream = new DataStream(dummyBufferSize);
-          // Make the dummy stream a fixed-size buffer so TmpImage won't attempt to
-          // expand it while reading.
-          dummyStream.dynamicSize = false;
-          this.images.push(new TmpImage(dummyStream, this.blockWidth, this.blockHeight));
-          continue; 
-      }
-      
       stream.seek(offset);
-      // The TmpImage constructor reads data for one tile block
       const image = new TmpImage(stream, this.blockWidth, this.blockHeight);
       this.images.push(image);
     }

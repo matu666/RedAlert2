@@ -211,7 +211,7 @@ export class TargetLines {
       };
     }
 
-    const geometry = new THREE.Geometry();
+    const geometry = new THREE.BufferGeometry();
     let pathNodes = config.pathNodes;
 
     if (pathNodes.length) {
@@ -219,34 +219,46 @@ export class TargetLines {
         pathNodes = [pathNodes[0], pathNodes[pathNodes.length - 1]];
       }
 
+      const positions: number[] = [];
       pathNodes.forEach((node) => {
         const pos = Coords.tile3dToWorld(
           node.tile.rx + 0.5,
           node.tile.ry + 0.5,
           node.tile.z + (node.onBridge?.tileElevation ?? 0)
         );
-        geometry.vertices.push(pos);
+        positions.push(pos.x, pos.y, pos.z);
       });
-
-      geometry.vertices[geometry.vertices.length - 1].copy(unit.position.worldPosition);
+      // replace last point with unit current world position
+      positions.splice(positions.length - 3, 3, unit.position.worldPosition.x, unit.position.worldPosition.y, unit.position.worldPosition.z);
+      geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
     } else {
       const target = config.target;
-      geometry.vertices.push(target.position.worldPosition, unit.position.worldPosition);
+      const positions = new Float32Array([
+        target.position.worldPosition.x, target.position.worldPosition.y, target.position.worldPosition.z,
+        unit.position.worldPosition.x, unit.position.worldPosition.y, unit.position.worldPosition.z,
+      ]);
+      geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
     }
 
     const isAttack = !!config.isAttack;
     const material = isAttack ? this.attackLineMaterial! : this.moveLineMaterial!;
-    // TODO(r177): migrate to BufferGeometry/LineSegments if needed
     const line = new THREE.Line(geometry, material);
     line.matrixAutoUpdate = false;
 
     const srcHead = this.createLineHead(isAttack);
-    srcHead.position.copy(geometry.vertices[geometry.vertices.length - 1]);
+    {
+      const pos = (line.geometry.getAttribute('position') as THREE.BufferAttribute);
+      const idx = pos.count - 1;
+      srcHead.position.set(pos.getX(idx), pos.getY(idx), pos.getZ(idx));
+    }
     srcHead.matrixAutoUpdate = false;
     srcHead.updateMatrix();
 
     const destHead = this.createLineHead(isAttack);
-    destHead.position.copy(geometry.vertices[0]);
+    {
+      const pos = (line.geometry.getAttribute('position') as THREE.BufferAttribute);
+      destHead.position.set(pos.getX(0), pos.getY(0), pos.getZ(0));
+    }
     destHead.matrixAutoUpdate = false;
     destHead.updateMatrix();
 

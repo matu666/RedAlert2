@@ -1,7 +1,7 @@
-import { FlyerHelperMode } from "engine/renderable/entity/unit/FlyerHelperMode";
-import { Base64 } from "util/Base64";
-import { BoxedVar } from "util/BoxedVar";
-import { GraphicsOptions } from "gui/screen/options/GraphicsOptions";
+import { FlyerHelperMode } from "@/engine/renderable/entity/unit/FlyerHelperMode";
+import { Base64 } from "@/util/Base64";
+import { BoxedVar } from "@/util/BoxedVar";
+import { GraphicsOptions } from "@/gui/screen/options/GraphicsOptions";
 
 export const SCROLL_BASE_FACTOR = 3;
 
