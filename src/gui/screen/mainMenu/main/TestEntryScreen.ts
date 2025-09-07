@@ -62,6 +62,14 @@ export class TestEntryScreen implements Screen {
         }
       },
       {
+        label: '载具测试',
+        tooltip: '打开 载具 测试工具',
+        onClick: () => {
+          console.log('[TestEntryScreen] 载具测试 clicked');
+          window.location.hash = '/vehicletest';
+        }
+      },
+      {
         label: '大厅测试',
         tooltip: '打开 大厅 测试工具',
         onClick: () => {

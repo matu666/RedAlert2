@@ -25,7 +25,14 @@ export class IniParser {
         continue;
       }
 
-      const match = trimmedLine.match(this.lineRegex);
+      // Match behavior with original parser: allow trailing comments after section headers
+      // Example: "[APSplash] ; comment" should be treated as a valid section header.
+      let processedLine = trimmedLine;
+      if (processedLine.startsWith('[')) {
+        processedLine = processedLine.replace(/]\s*(\/\/|;|#).*$/, ']');
+      }
+
+      const match = processedLine.match(this.lineRegex);
 
       if (match) {
         if (match[1] !== undefined) { // Section header: [SectionName]

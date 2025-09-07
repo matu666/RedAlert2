@@ -120,7 +120,6 @@ export class BuildingTester {
     IsoCoords.init({ x: 0, y: 0 });
     this.theater = await Engine.loadTheater(TheaterType.Snow);
 
-    debugger;
     const rules = new Rules(Engine.getRules());
     this.buildBrowser(rules.buildingRules);
     this.rules = rules;

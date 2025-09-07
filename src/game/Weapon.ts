@@ -166,33 +166,33 @@ export class Weapon {
   private distributedFireAngle: number;
 
   static factory(
-    type: WeaponType,
+    weaponName: string,
+    weaponType: WeaponType,
     gameObject: GameObject,
-    rules: any,
     rulesEngine: RulesEngine,
     flh?: FlhCoords
   ): Weapon {
-    const weaponRules = rulesEngine.getWeapon(type);
+    const weaponRules = rulesEngine.getWeapon(weaponName);
     let warheadName = weaponRules.warhead;
-    
+
     if (warheadName === Warhead.SPECIAL_WARHEAD_NAME) {
-      warheadName = this.findSpecialWarheadName(weaponRules, rules, rulesEngine);
+      warheadName = this.findSpecialWarheadName(weaponRules, gameObject, rulesEngine);
     }
-    
+
     const warhead = new Warhead(rulesEngine.getWarhead(warheadName));
     const projectileRules = rulesEngine.getProjectile(weaponRules.projectile);
     const targeting = new WeaponTargeting(
-      type,
+      weaponType,
       projectileRules,
       weaponRules,
       warhead.rules,
-      rules,
+      gameObject,
       rulesEngine.general
     );
-    
+
     return new this(
-      type,
-      rules,
+      weaponType,
+      gameObject,
       weaponRules,
       warhead,
       projectileRules,
@@ -203,7 +203,7 @@ export class Weapon {
 
   static findSpecialWarheadName(
     weaponRules: WeaponRules,
-    unitRules: any,
+    gameObject: GameObject,
     rulesEngine: RulesEngine
   ): string {
     if (!weaponRules.spawner) {
@@ -214,25 +214,25 @@ export class Weapon {
 
     let warheadName: string;
 
-    if (unitRules.spawns === rulesEngine.general.v3Rocket.type) {
+    if ((gameObject as any).rules.spawns === rulesEngine.general.v3Rocket.type) {
       warheadName = rulesEngine.combatDamage.v3Warhead;
-    } else if (unitRules.spawns === rulesEngine.general.dMisl.type) {
+    } else if ((gameObject as any).rules.spawns === rulesEngine.general.dMisl.type) {
       warheadName = rulesEngine.combatDamage.dMislWarhead;
     } else {
-      if (!unitRules.spawns) {
+      if (!(gameObject as any).rules.spawns) {
         throw new Error(
-          `Can't use "Special" warhead on unit type "${unitRules.name}" without "Spawns"`
+          `Can't use "Special" warhead on unit type "${(gameObject as any).rules.name || (gameObject as any).name}" without "Spawns"`
         );
       }
 
-      const spawnedUnit = rulesEngine.getObject(unitRules.spawns, ObjectType.Aircraft);
-      if (!spawnedUnit.rules.primary) {
+      const spawnedUnitRules: any = rulesEngine.getObject((gameObject as any).rules.spawns, ObjectType.Aircraft);
+      if (!spawnedUnitRules.primary) {
         throw new Error(
-          `Spawned unit "${spawnedUnit.rules.name}" doesn't have a primary weapon`
+          `Spawned unit doesn't have a primary weapon`
         );
       }
 
-      warheadName = rulesEngine.getWeapon(spawnedUnit.rules.primary).warhead;
+      warheadName = rulesEngine.getWeapon(spawnedUnitRules.primary).warhead;
     }
 
     return warheadName;

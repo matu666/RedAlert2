@@ -19,4 +19,12 @@ export class Section {
   constructor() {
     // Properties are initialized with defaults.
   }
+
+  /**
+   * Returns the transformation matrix for the given frame index.
+   * Aligns with original project's HVA section API expected by builders.
+   */
+  public getMatrix(index: number): Matrix4 {
+    return this.matrices[index];
+  }
 } 

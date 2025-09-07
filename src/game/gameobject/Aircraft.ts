@@ -37,7 +37,7 @@ export class Aircraft extends Techno {
     return this.moveTrait.isMoving();
   }
 
-  static factory(id: string, rules: any, owner: any, general: any, map: any) {
+  static factory(id: string, rules: any, owner: any, gameRules: any, map: any) {
     const aircraft = new this(id, rules, owner);
 
     if (aircraft.rules.airportBound && aircraft.rules.dock.length) {
@@ -67,7 +67,7 @@ export class Aircraft extends Techno {
       aircraft.traits.add(new DockableTrait());
     }
 
-    if (!(rules.landable && id !== general.paradrop.paradropPlane)) {
+    if (!(rules.landable && id !== gameRules.general.paradrop.paradropPlane)) {
       aircraft.traits.add(new UnlandableTrait());
     }
 

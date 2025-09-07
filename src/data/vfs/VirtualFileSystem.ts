@@ -76,6 +76,20 @@ export class VirtualFileSystem {
     return [...this.allArchives.keys()];
   }
 
+  // Diagnostics: list which archives contain a given filename
+  debugListFileOwners(filename: string): string[] {
+    const owners: string[] = [];
+    this.allArchives.forEach((archive, name) => {
+      try {
+        if (archive.containsFile(filename)) owners.push(name);
+      } catch {
+        // ignore
+      }
+    });
+    this.logger.info(`[Diag] VFS owners for ${filename}: ${owners.join(', ')}`);
+    return owners;
+  }
+
   private async openFileWithRfs(filename: string): Promise<VirtualFile | undefined> {
     let file: VirtualFile | undefined;
     try {

@@ -32,7 +32,8 @@ export class BlobShadow {
     if (!this.obj) {
       let geometry = BlobShadow.geometries.get(this.radius);
       if (!geometry) {
-        geometry = new THREE.CircleBufferGeometry(
+        // CircleBufferGeometry was removed in newer three.js versions; use CircleGeometry
+        geometry = new THREE.CircleGeometry(
           this.radius * Coords.ISO_WORLD_SCALE
         );
         BlobShadow.geometries.set(this.radius, geometry);
