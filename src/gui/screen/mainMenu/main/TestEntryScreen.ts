@@ -54,11 +54,19 @@ export class TestEntryScreen implements Screen {
         }
       },
       {
-        label: 'WAV测试',
-        tooltip: '打开 WAV 测试工具',
+        label: 'SHP测试',
+        tooltip: '打开 SHP 测试工具',
         onClick: () => {
-          console.log('[TestEntryScreen] WAV测试 clicked');
-          window.location.hash = '/soundtest';
+          console.log('[TestEntryScreen] SHP测试 clicked');
+          window.location.hash = '/shptest';
+        }
+      },
+      {
+        label: '建筑测试',
+        tooltip: '打开 建筑 测试工具',
+        onClick: () => {
+          console.log('[TestEntryScreen] 建筑测试 clicked');
+          window.location.hash = '/buildtest';
         }
       },
       {
@@ -67,6 +75,30 @@ export class TestEntryScreen implements Screen {
         onClick: () => {
           console.log('[TestEntryScreen] 载具测试 clicked');
           window.location.hash = '/vehicletest';
+        }
+      },
+      {
+        label: '飞机测试',
+        tooltip: '打开 飞机 测试工具',
+        onClick: () => {
+          console.log('[TestEntryScreen] 飞机测试 clicked');
+          window.location.hash = '/airtest';
+        }
+      },
+      {
+        label: '步兵测试',
+        tooltip: '打开 步兵 测试工具',
+        onClick: () => {
+          console.log('[TestEntryScreen] 步兵测试 clicked');
+          window.location.hash = '/inftest';
+        }
+      },
+      {
+        label: 'WAV测试',
+        tooltip: '打开 WAV 测试工具',
+        onClick: () => {
+          console.log('[TestEntryScreen] WAV测试 clicked');
+          window.location.hash = '/soundtest';
         }
       },
       {

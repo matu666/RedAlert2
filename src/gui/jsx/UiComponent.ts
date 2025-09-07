@@ -1,13 +1,18 @@
-export class UiComponent {
-  protected props: any;
+export interface UiComponentProps {
+  [key: string]: any;
+}
+
+export class UiComponent<T extends UiComponentProps = UiComponentProps> {
+  protected props: T;
   protected uiObject: any;
 
-  constructor(props: any) {
+  constructor(props: T) {
     this.props = props;
+    // Pass props to createUiObject to mirror original implementation semantics
     this.uiObject = this.createUiObject(props);
   }
 
-  protected createUiObject(props: any): any {
+  protected createUiObject(_props?: T): any {
     throw new Error('Method not implemented.');
   }
 

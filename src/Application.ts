@@ -797,6 +797,21 @@ export class Application {
       currentHandler = VehicleTester;
     });
 
+    this.routing.addRoute("/shptest", async () => {
+      if (!Engine.vfs) {
+        throw new Error("Original game files must be provided.");
+      }
+      console.log('[Application] Initializing ShpTester');
+
+      // 导入 MapFile
+      const { MapFile } = await import('./data/MapFile');
+      const gameMap = new MapFile(Engine.vfs.openFile("mp03t4.map"));
+      
+      const { ShpTester } = await import('./tools/ShpTester');
+      await ShpTester.main(Engine.vfs, gameMap, this.rootEl!, this.strings);
+      currentHandler = ShpTester;
+    });
+
     // Initialize routing
     this.routing.init();
   }

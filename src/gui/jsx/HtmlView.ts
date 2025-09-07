@@ -6,8 +6,8 @@ import * as THREE from 'three';
 export class HtmlView extends UiComponent {
   createUiObject(props: any): UiObject {
     const htmlElement = HtmlReactElement.factory(
-      props.component,
-      props.props || {}
+      this.props.component,
+      this.props.props || {}
     );
     
     htmlElement.setSize(props.width || 0, props.height || 0);
@@ -20,9 +20,7 @@ export class HtmlView extends UiComponent {
       uiObject.setVisible(false);
     }
     
-    if (props.innerRef) {
-      props.innerRef(htmlElement);
-    }
+    this.props.innerRef?.(htmlElement);
     
     return uiObject;
   }
