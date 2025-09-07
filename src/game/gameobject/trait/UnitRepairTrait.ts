@@ -9,7 +9,7 @@ import { NotifyTick } from './interface/NotifyTick';
 import { GameObject } from '@/game/gameobject/GameObject';
 import { World } from '@/game/World';
 
-enum RepairStatus {
+export enum RepairStatus {
   Idle = 0,
   Repairing = 1
 }

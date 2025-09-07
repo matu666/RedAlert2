@@ -236,6 +236,7 @@ export class TargetLines {
 
     const isAttack = !!config.isAttack;
     const material = isAttack ? this.attackLineMaterial! : this.moveLineMaterial!;
+    // TODO(r177): migrate to BufferGeometry/LineSegments if needed
     const line = new THREE.Line(geometry, material);
     line.matrixAutoUpdate = false;
 

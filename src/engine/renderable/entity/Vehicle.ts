@@ -5,6 +5,7 @@ import * as WithPosition from "@/engine/renderable/WithPosition";
 import * as DebugUtils from "@/engine/gfx/DebugUtils";
 import * as ShpRenderable from "@/engine/renderable/ShpRenderable";
 import * as ImageFinder from "@/engine/ImageFinder";
+import { MissingImageError } from "@/engine/ImageFinder";
 import * as MapSpriteTranslation from "@/engine/renderable/MapSpriteTranslation";
 import * as Animation from "@/engine/Animation";
 import * as AnimProps from "@/engine/AnimProps";
@@ -938,7 +939,7 @@ export class Vehicle {
       try {
         i = this.imageFinder.findByObjectArt(this.objectArt);
       } catch (e) {
-        if (!(e instanceof m.ImageFinder.MissingImageError))
+        if (!(e instanceof MissingImageError))
           throw e;
         console.warn(`<${this.gameObject.name}>: ` + e.message);
       }

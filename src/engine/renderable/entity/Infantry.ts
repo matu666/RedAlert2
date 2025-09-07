@@ -1,5 +1,6 @@
 import { WithPosition } from "@/engine/renderable/WithPosition";
-import { ImageFinder } from "@/engine/ImageFinder";
+import * as ImageFinder from "@/engine/ImageFinder";
+import { MissingImageError } from "@/engine/ImageFinder";
 import { DebugUtils } from "@/engine/gfx/DebugUtils";
 import { ShpRenderable } from "@/engine/renderable/ShpRenderable";
 import { Coords } from "@/game/Coords";
@@ -598,7 +599,7 @@ export class Infantry {
     try {
       image = this.imageFinder.findByObjectArt(art);
     } catch (error) {
-      if (!(error instanceof ImageFinder.MissingImageError)) throw error;
+      if (!(error instanceof MissingImageError)) throw error;
       console.warn(`<${this.gameObject.name}>: ` + error.message);
     }
 

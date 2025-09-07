@@ -11,6 +11,7 @@ import * as AnimProps from "@/engine/AnimProps";
 import * as WithPosition from "@/engine/renderable/WithPosition";
 import * as ShpRenderable from "@/engine/renderable/ShpRenderable";
 import * as ImageFinder from "@/engine/ImageFinder";
+import { MissingImageError } from "@/engine/ImageFinder";
 import * as DebugUtils from "@/engine/gfx/DebugUtils";
 import * as MapSpriteTranslation from "@/engine/renderable/MapSpriteTranslation";
 import * as BuildingAnimArtProps from "@/engine/renderable/entity/building/BuildingAnimArtProps";
@@ -281,7 +282,7 @@ export class Building {
     try {
       C = this.imageFinder.findByObjectArt(this.objectArt);
     } catch (e) {
-      if (!(e instanceof P.ImageFinder.MissingImageError))
+      if (!(e instanceof MissingImageError))
         throw e;
       console.warn(e.message);
     }
@@ -295,7 +296,7 @@ export class Building {
           )
         : void 0;
     } catch (e) {
-      if (!(e instanceof P.ImageFinder.MissingImageError))
+      if (!(e instanceof MissingImageError))
         throw e;
       console.warn(e.message);
     }
@@ -460,7 +461,7 @@ export class Building {
       blendDst: THREE.OneFactor,
     })),
       (t = t.lightVisibility),
-      (t = new THREE.PlaneBufferGeometry(2 * t, 2 * t));
+      (t = new THREE.PlaneGeometry(2 * t, 2 * t));
     let l = new THREE.Mesh(t, a);
     (l.rotation.x = -Math.PI / 2),
       (l.renderOrder = 999995),
@@ -757,7 +758,7 @@ export class Building {
           ((h = this.gameObject.turretTrait.facing) !==
             this.lastTurretFacing &&
             ((this.lastTurretFacing = h),
-            (this.turretRot.rotation.y = THREE.Math.degToRad(h)),
+            (this.turretRot.rotation.y = THREE.MathUtils.degToRad(h)),
             this.turretRot.updateMatrix()),
           (h = this.gameObject.turretTrait.isRotating() && !n),
           this.lastTurretRotating !== h &&
@@ -832,14 +833,12 @@ export class Building {
 
   hasObjectWithStoppedAnimation(t) {
     var [i, r] = this.getNormalizedAnimType(t),
-      i = this.animObjects.get(i);
-    if (i) {
-      let e = this.animations.get(i[r]);
-      if (!e)
-        throw new Error(
-          `Missing animation for type '${A.AnimationType[t]}'`,
-        );
-      if (e.getState() === f.AnimationState.STOPPED) return true;
+      list = this.animObjects.get(i);
+    if (list && list.length > 0) {
+      const clampedIndex = Math.min(r, list.length - 1);
+      const animObj = list[clampedIndex];
+      const anim = this.animations.get(animObj);
+      if (anim && anim.getState() === f.AnimationState.STOPPED) return true;
     }
     return false;
   }
@@ -1164,7 +1163,7 @@ export class Building {
           this.objectArt.useTheaterExtension,
         );
       } catch (e) {
-        if (e instanceof P.ImageFinder.MissingImageError) {
+        if (e instanceof MissingImageError) {
           console.warn(e.message);
           continue;
         }
@@ -1343,7 +1342,7 @@ export class Building {
           this.objectArt.useTheaterExtension,
         );
       } catch (e) {
-        if (!(e instanceof P.ImageFinder.MissingImageError))
+        if (!(e instanceof MissingImageError))
           throw e;
         console.warn(e.message);
       }
@@ -1412,12 +1411,10 @@ export class Building {
         `Missing animObjects for animType "${A.AnimationType[e]}"`,
       );
     if (-1 !== t) {
-      if (t >= r.length)
-        throw new RangeError(
-          `Index ${t} exceeds length of animation objects (${r.length}) ` +
-            "of type " +
-            A.AnimationType[e],
-        );
+      if (t >= r.length) {
+        // Clamp to last available index to avoid crashes when optional animations are missing
+        t = Math.max(0, r.length - 1);
+      }
       r = [r[t]];
     }
     for (var s of r) {
@@ -1607,7 +1604,10 @@ export class Building {
         ) {
           var [i, r] = this.getNormalizedAnimType(e);
           this.setAnimationVisibility(i, true, r);
-          r = this.animObjects.get(i)[r];
+          {
+            const list = this.animObjects.get(i);
+            r = list[Math.min(r, list.length - 1)];
+          }
           this.animations.get(r).start(t);
           break;
         }
@@ -1616,7 +1616,10 @@ export class Building {
           this.setAnimationVisibility(A.AnimationType.ACTIVE, false);
           var [r, s] = this.getNormalizedAnimType(e);
           this.setAnimationVisibility(r, true, s);
-          s = this.animObjects.get(r)[s];
+          {
+            const list = this.animObjects.get(r);
+            s = list[Math.min(s, list.length - 1)];
+          }
           this.animations.get(s).start(t);
           break;
         }
@@ -1629,7 +1632,10 @@ export class Building {
         ) {
           var [s, a] = this.getNormalizedAnimType(e);
           this.setAnimationVisibility(s, true, a);
-          a = this.animObjects.get(s)[a];
+          {
+            const list = this.animObjects.get(s);
+            a = list[Math.min(a, list.length - 1)];
+          }
           this.animations.get(a).start(t);
           break;
         }

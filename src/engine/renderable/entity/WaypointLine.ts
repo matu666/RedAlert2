@@ -77,7 +77,7 @@ export class WaypointLine {
         .map((vertex) => vertex.position);
       
       this.lastLineVertexCount = vertices.length;
-      meshLine.setGeometry(vertices.map((pos) => [pos.x, pos.y, pos.z]).flat());
+      meshLine.setPoints(vertices.map((pos) => [pos.x, pos.y, pos.z]).flat());
       
       this.fgLineMesh = new THREE.Mesh(
         meshLine.geometry,
@@ -133,7 +133,7 @@ export class WaypointLine {
         (this.meshLine as any).attributes = undefined;
       }
       
-      this.meshLine!.setGeometry(
+      this.meshLine!.setPoints(
         vertices.map((pos) => [pos.x, pos.y, pos.z]).flat(),
       );
       

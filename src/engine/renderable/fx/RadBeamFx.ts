@@ -119,7 +119,7 @@ export class RadBeamFx {
     }
 
     const meshLine = new MeshLine();
-    meshLine.setGeometry(points);
+    meshLine.setPoints(points);
     return meshLine.geometry;
   }
 

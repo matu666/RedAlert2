@@ -71,11 +71,13 @@ export class LaserFx {
     const sourcePos = this.sourcePos.clone();
     const targetPos = this.targetPos.clone();
     
-    const geometry = new THREE.Geometry();
-    geometry.vertices.push(sourcePos, targetPos);
-    
+    const points = [
+      sourcePos.x, sourcePos.y, sourcePos.z,
+      targetPos.x, targetPos.y, targetPos.z,
+    ];
+
     const meshLine = new MeshLine();
-    meshLine.setGeometry(geometry);
+    meshLine.setPoints(points);
 
     const top = this.camera.top;
     const aspect = this.camera.right / this.camera.top;

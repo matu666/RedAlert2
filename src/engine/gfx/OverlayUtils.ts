@@ -10,9 +10,14 @@ export class OverlayUtils {
       depthWrite: false,
     });
     
-    const geometry = new THREE.CircleGeometry(radius, 64);
-    geometry.vertices.shift();
-    geometry.vertices.push(geometry.vertices[0]);
+    const segments = 64;
+    const curve = new THREE.EllipseCurve(0, 0, radius, radius, 0, Math.PI * 2, false, 0);
+    const points2D = curve.getPoints(segments);
+    const points3D = points2D.map((p) => new THREE.Vector3(p.x, p.y, 0));
+    points3D.push(points3D[0].clone());
+
+    const geometry = new THREE.BufferGeometry();
+    geometry.setFromPoints(points3D);
     
     const line = new THREE.Line(geometry, material);
     line.rotation.x = Math.PI / 2;

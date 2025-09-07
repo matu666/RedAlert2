@@ -85,8 +85,9 @@ export class RallyPointFx {
     if (currentCameraHash !== this.cameraHash) {
       this.cameraHash = currentCameraHash;
       [this.lineMesh, this.shadowLineMesh].forEach((mesh) => {
-        if (mesh && mesh.material instanceof MeshLineMaterial) {
-          mesh.material.uniforms.resolution.value.copy(
+        const material = mesh?.material as MeshLineMaterial | undefined;
+        if (material && (material as any).isMeshLineMaterial) {
+          material.uniforms.resolution.value.copy(
             this.computeResolution(this.camera)
           );
         }
@@ -104,17 +105,18 @@ export class RallyPointFx {
         this.shadowLineMesh.geometry = this.createShadowLineGeometry(this.sourcePos, this.targetPos);
       }
 
-      if (this.lineMesh && this.lineMesh.material instanceof MeshLineMaterial) {
-        this.lineMesh.material.uniforms.color.value = this.color.clone();
+      const lineMat = this.lineMesh?.material as MeshLineMaterial | undefined;
+      if (lineMat && (lineMat as any).isMeshLineMaterial) {
+        lineMat.uniforms.color.value = this.color.clone();
       }
 
       const distance = this.sourcePos.distanceTo(this.targetPos);
       
       [this.lineMesh, this.shadowLineMesh].forEach((mesh) => {
-        if (mesh && mesh.material instanceof MeshLineMaterial) {
-          const material = mesh.material;
+        const material = mesh?.material as MeshLineMaterial | undefined;
+        if (material && (material as any).isMeshLineMaterial) {
           material.uniforms.dashArray.value = this.computeDashArray(distance);
-          material.depthTest = this.renderOrder === undefined;
+          (material as any).depthTest = this.renderOrder === undefined;
         }
       });
 
@@ -128,8 +130,8 @@ export class RallyPointFx {
     }
 
     [this.lineMesh, this.shadowLineMesh].forEach((mesh) => {
-      if (mesh && mesh.material instanceof MeshLineMaterial) {
-        const material = mesh.material;
+      const material = mesh?.material as MeshLineMaterial | undefined;
+      if (material && (material as any).isMeshLineMaterial) {
         material.uniforms.dashOffset.value -= 
           (material.uniforms.dashArray.value / 50) * deltaTime;
       }
@@ -182,12 +184,14 @@ export class RallyPointFx {
   }
 
   private createLineGeometry(sourcePos: THREE.Vector3, targetPos: THREE.Vector3): THREE.BufferGeometry {
-    const geometry = new THREE.Geometry();
-    geometry.vertices.push(sourcePos, targetPos);
+    const points = [
+      sourcePos.x, sourcePos.y, sourcePos.z,
+      targetPos.x, targetPos.y, targetPos.z,
+    ];
 
     const meshLine = new MeshLine();
-    meshLine.setGeometry(geometry);
-    
+    meshLine.setPoints(points);
+
     return meshLine.geometry;
   }
 

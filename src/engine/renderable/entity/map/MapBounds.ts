@@ -13,7 +13,7 @@ interface Size {
   height: number;
 }
 
-interface MapBounds {
+interface BoundsInfo {
   getClampedFullSize(): Point & Size;
   getLocalSize(): Point & Size;
   onLocalResize: {
@@ -23,7 +23,7 @@ interface MapBounds {
 }
 
 interface Map {
-  mapBounds: MapBounds;
+  mapBounds: BoundsInfo;
 }
 
 export class MapBounds {
@@ -76,10 +76,10 @@ export class MapBounds {
   }
 
   private createBoundRect(start: Point, end: Point, color: number): THREE.Line {
-    const topLeft = IsoCoords.screenTileToWorld(start.x, start.y);
-    const bottomRight = IsoCoords.screenTileToWorld(end.x, end.y);
-    const bottomLeft = IsoCoords.screenTileToWorld(end.x, start.y);
-    const topRight = IsoCoords.screenTileToWorld(start.x, end.y);
+    const topLeft = IsoCoords.IsoCoords.screenTileToWorld(start.x, start.y);
+    const bottomRight = IsoCoords.IsoCoords.screenTileToWorld(end.x, end.y);
+    const bottomLeft = IsoCoords.IsoCoords.screenTileToWorld(end.x, start.y);
+    const topRight = IsoCoords.IsoCoords.screenTileToWorld(start.x, end.y);
 
     const material = new THREE.LineBasicMaterial({
       color: color,
@@ -88,14 +88,15 @@ export class MapBounds {
       depthWrite: false,
     });
 
-    const geometry = new THREE.Geometry();
-    geometry.vertices.push(
-      new THREE.Vector3(topLeft.x, 0, topLeft.y),
-      new THREE.Vector3(topRight.x, 0, topRight.y),
-      new THREE.Vector3(bottomRight.x, 0, bottomRight.y),
-      new THREE.Vector3(bottomLeft.x, 0, bottomLeft.y),
-      new THREE.Vector3(topLeft.x, 0, topLeft.y)
-    );
+    const geometry = new THREE.BufferGeometry();
+    const verts = new Float32Array([
+      topLeft.x, 0, topLeft.y,
+      topRight.x, 0, topRight.y,
+      bottomRight.x, 0, bottomRight.y,
+      bottomLeft.x, 0, bottomLeft.y,
+      topLeft.x, 0, topLeft.y,
+    ]);
+    geometry.setAttribute('position', new THREE.BufferAttribute(verts, 3));
 
     this.disposables.add(geometry, material);
 

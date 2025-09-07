@@ -1,5 +1,5 @@
 import { AnimProps } from "@/engine/AnimProps";
-import { ImageFinder } from "@/engine/ImageFinder";
+import { ImageFinder, MissingImageError } from "@/engine/ImageFinder";
 import { ShpAggregator } from "@/engine/renderable/builder/ShpAggregator";
 
 export class BuildingShpHelper {
@@ -42,7 +42,7 @@ export class BuildingShpHelper {
         try {
           shpFile = this.imageFinder.find(anim.image, options.useTheaterExtension);
         } catch (error) {
-          if (error instanceof ImageFinder.MissingImageError) {
+          if (error instanceof MissingImageError) {
             console.warn(error.message);
             continue;
           }

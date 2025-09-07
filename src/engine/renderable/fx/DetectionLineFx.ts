@@ -134,10 +134,12 @@ export class DetectionLineFx {
   }
 
   private createLineGeometry(sourcePos: THREE.Vector3, targetPos: THREE.Vector3): THREE.BufferGeometry {
-    const geometry = new THREE.Geometry();
-    geometry.vertices.push(sourcePos, targetPos);
+    const points = [
+      sourcePos.x, sourcePos.y, sourcePos.z,
+      targetPos.x, targetPos.y, targetPos.z,
+    ];
     const meshLine = new MeshLine();
-    meshLine.setGeometry(geometry);
+    meshLine.setPoints(points);
     return meshLine.geometry;
   }
 

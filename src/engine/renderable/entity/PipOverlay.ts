@@ -276,7 +276,6 @@ export class PipOverlay {
           map: PipOverlay.atlasCache.getTexture(),
           palette: TextureUtils.textureFromPalette(this.palette),
           alphaTest: 0.5,
-          flatShading: true,
           transparent: true,
           depthTest: false,
         });
@@ -499,7 +498,6 @@ export class PipOverlay {
         map: healthTexture,
         palette: TextureUtils.textureFromPalette(this.palette),
         alphaTest: 0.5,
-        flatShading: true,
         transparent: true,
         depthTest: false,
       });
@@ -831,7 +829,6 @@ export class PipOverlay {
         alphaTest: 0.5,
         transparent: true,
         depthTest: false,
-        flatShading: true,
       });
       PipOverlay.controlGroupMaterials.set(texture, material);
     }
@@ -898,7 +895,6 @@ export class PipOverlay {
           alphaTest: 0.5,
           transparent: true,
           depthTest: false,
-          flatShading: true,
         });
         PipOverlay.primaryFactoryMaterials.set(texture, material);
       }

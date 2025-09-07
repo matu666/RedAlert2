@@ -335,7 +335,7 @@ export class WorldSound {
     if (spec.type.includes(SoundType.Screen)) {
       const distanceToViewport = this.worldViewportHelper.distanceToViewport(worldPos);
       const falloffDistance = (this.worldScene.viewport.height + this.worldScene.viewport.width) / 2 / 3;
-      volume *= (window as any).THREE.Math.lerp(1, 0, Math.min(1, distanceToViewport / falloffDistance));
+      volume *= (window as any).THREE.MathUtils.lerp(1, 0, Math.min(1, distanceToViewport / falloffDistance));
     } else if (spec.type.includes(SoundType.Local)) {
       if (this.tileAtViewportCenter) {
         const tileDistance = new (window as any).THREE.Vector2(
