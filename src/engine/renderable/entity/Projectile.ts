@@ -197,11 +197,11 @@ export class Projectile {
         this.vxlRotWrapper.rotation.setFromQuaternion(quaternion, "YXZ");
         
         if (this.gameObject.rules.vertical) {
-          this.vxlRotWrapper.rotation.y = THREE.Math.degToRad(180 + direction);
+          this.vxlRotWrapper.rotation.y = THREE.MathUtils.degToRad(180 + direction);
         }
         this.vxlRotWrapper.updateMatrix();
       } else if (this.sonicWaveMesh) {
-        this.sonicWaveMesh.rotation.y = THREE.Math.degToRad(direction);
+        this.sonicWaveMesh.rotation.y = THREE.MathUtils.degToRad(direction);
         this.sonicWaveMesh.updateMatrix();
       }
     }
@@ -261,7 +261,7 @@ export class Projectile {
       
       mesh.rotation.order = "YXZ";
       mesh.rotation.x = -Math.PI / 2;
-      mesh.rotation.y = THREE.Math.degToRad(this.gameObject.direction);
+      mesh.rotation.y = THREE.MathUtils.degToRad(this.gameObject.direction);
       mesh.updateMatrix();
       mesh.matrixAutoUpdate = false;
       parent.add(mesh);
@@ -346,8 +346,8 @@ export class Projectile {
     }
   }
 
-  createSonicWaveGeometry(): THREE.PlaneBufferGeometry {
-    const geometry = new THREE.PlaneBufferGeometry(
+  createSonicWaveGeometry(): THREE.PlaneGeometry {
+    const geometry = new THREE.PlaneGeometry(
       Coords.LEPTONS_PER_TILE,
       Coords.LEPTONS_PER_TILE / 3,
       10,

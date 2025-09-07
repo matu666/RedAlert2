@@ -5,6 +5,7 @@ import * as WithPosition from "@/engine/renderable/WithPosition";
 import * as DebugUtils from "@/engine/gfx/DebugUtils";
 import * as ShpRenderable from "@/engine/renderable/ShpRenderable";
 import * as ImageFinder from "@/engine/ImageFinder";
+import { MissingImageError } from "@/engine/ImageFinder";
 import * as MapSpriteTranslation from "@/engine/renderable/MapSpriteTranslation";
 import * as Animation from "@/engine/Animation";
 import * as AnimProps from "@/engine/AnimProps";
@@ -565,14 +566,32 @@ export class Vehicle {
   }
 
   startRocking(i, r, s) {
-    (this.rockingStartTime = s),
-      (this.rockingFactor = r),
-      (this.rockingPoint = new THREE.Vector3()),
-      this.bodyVxlBuilder &&
-        ((this.rockingStartTime = s),
-        (this.rockingFactor = r),
-        (this.rockingPoint = new THREE.Vector3()),
-        this.bodyVxlBuilder.getLocalBoundingBox());
+    if (this.bodyVxlBuilder) {
+      (this.rockingStartTime = s), (this.rockingFactor = r);
+      const aabb = this.bodyVxlBuilder.getLocalBoundingBox();
+      if (!aabb) return;
+      let e = new THREE.Box2(
+        new THREE.Vector2(aabb.min.x, aabb.min.y),
+        new THREE.Vector2(aabb.max.x, aabb.max.y),
+      );
+      var n = THREE.MathUtils.degToRad(c.FacingUtil.toWorldDeg(i));
+      let tmp = new THREE.Vector2();
+      let t = new THREE.Vector2(10, 0)
+        .rotateAround(new THREE.Vector2(), n)
+        .setLength(e.getSize(tmp).length() + 1);
+      // Use Liang-Barsky clipping to intersect ray (0,0)->t with AABB
+      let arr: any = t.toArray();
+      const clip: any = (o as any).default || (o as any);
+      try {
+        clip([0, 0], arr, [e.min.x, e.min.y, e.max.x, e.max.y]);
+      } catch {}
+      this.rockingPoint = new THREE.Vector3(arr[0], 0, arr[1]);
+      const perp = t
+        .clone()
+        .rotateAround(new THREE.Vector2(), -Math.PI / 2)
+        .normalize();
+      this.rockingAxis = new THREE.Vector3(perp.x, 0, perp.y);
+    }
   }
 
   updateRocking(t, i) {
@@ -920,7 +939,7 @@ export class Vehicle {
       try {
         i = this.imageFinder.findByObjectArt(this.objectArt);
       } catch (e) {
-        if (!(e instanceof m.ImageFinder.MissingImageError))
+        if (!(e instanceof MissingImageError))
           throw e;
         console.warn(`<${this.gameObject.name}>: ` + e.message);
       }

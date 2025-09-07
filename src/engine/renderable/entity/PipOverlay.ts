@@ -276,7 +276,6 @@ export class PipOverlay {
           map: PipOverlay.atlasCache.getTexture(),
           palette: TextureUtils.textureFromPalette(this.palette),
           alphaTest: 0.5,
-          flatShading: true,
           transparent: true,
           depthTest: false,
         });
@@ -499,7 +498,6 @@ export class PipOverlay {
         map: healthTexture,
         palette: TextureUtils.textureFromPalette(this.palette),
         alphaTest: 0.5,
-        flatShading: true,
         transparent: true,
         depthTest: false,
       });
@@ -593,16 +591,29 @@ export class PipOverlay {
       }
     }
 
+    // three.js r177 does not reliably expose single-channel alpha textures to the sampler's .a in all contexts (WebGL2 swizzles to R).
+    // To keep palette index in texelColor.a (as expected by paletteShaderLib), encode the index into the alpha of an RGBA texture.
+    const rgbaData = new Uint8Array(bitmap.width * bitmap.height * 4);
+    for (let i = 0; i < bitmap.data.length; i++) {
+      const base = i * 4;
+      rgbaData[base] = 0;
+      rgbaData[base + 1] = 0;
+      rgbaData[base + 2] = 0;
+      rgbaData[base + 3] = bitmap.data[i];
+    }
+
     const texture = new THREE.DataTexture(
-      bitmap.data,
+      rgbaData,
       bitmap.width,
       bitmap.height,
-      THREE.AlphaFormat
+      THREE.RGBAFormat
     );
     texture.minFilter = THREE.NearestFilter;
     texture.magFilter = THREE.NearestFilter;
     texture.flipY = true;
     texture.needsUpdate = true;
+    // Keep linear color space to avoid unintended sRGB transforms on indices
+    (texture as any).colorSpace = (THREE as any).LinearSRGBColorSpace ?? (texture as any).colorSpace;
 
     return texture;
   }
@@ -818,7 +829,6 @@ export class PipOverlay {
         alphaTest: 0.5,
         transparent: true,
         depthTest: false,
-        flatShading: true,
       });
       PipOverlay.controlGroupMaterials.set(texture, material);
     }
@@ -885,7 +895,6 @@ export class PipOverlay {
           alphaTest: 0.5,
           transparent: true,
           depthTest: false,
-          flatShading: true,
         });
         PipOverlay.primaryFactoryMaterials.set(texture, material);
       }

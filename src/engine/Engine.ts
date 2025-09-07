@@ -361,6 +361,7 @@ export class Engine {
     const aiFileName = this.getFileNameVariant("ai.ini");
 
     const rulesBase = this.iniFiles.get(rulesFileName);
+    console.log('current rulesBase', rulesBase);
     const artBase = this.iniFiles.get(artFileName);
     const aiBase = this.iniFiles.get(aiFileName);
 
@@ -376,6 +377,7 @@ export class Engine {
 
     this.art = artBase.clone().mergeWith(artCustom);
     this.rules = rulesBase.clone().mergeWith(rulesCustom);
+    console.log('current custom rules', rulesCustom);
     this.ai = aiBase;
     this.modHash = this.computeModHash();
   }
@@ -427,6 +429,7 @@ export class Engine {
 
   static getRules(): IniFile {
     if (!this.rules) throw new Error("Rules must be loaded first");
+    console.log('current rules', this.rules);
     return this.rules;
   }
 

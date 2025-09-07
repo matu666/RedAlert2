@@ -513,7 +513,6 @@ export class RenderableFactory {
           this.voxels,
           this.voxelAnims,
           palette,
-          this.camera,
           this.lighting,
           this.debugWireframes,
           this.gameSpeed,

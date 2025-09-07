@@ -22,7 +22,7 @@ export class RotorHelper {
     }
 
     const direction = Math.sign(speed);
-    const maxRotation = Math.abs(THREE.Math.degToRad(speed));
+    const maxRotation = Math.abs(THREE.MathUtils.degToRad(speed));
     const currentRotationAbs = Math.abs(currentRotation);
 
     return direction * clamp(

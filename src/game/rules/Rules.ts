@@ -187,6 +187,16 @@ export class Rules {
       }
     }
     if (!rules) {
+      try {
+        const known = Array.from(this.warheadRules.keys());
+        const sample = known.slice(0, 20).join(", ");
+        const hasSection = !!this.ini.getSection(name);
+        console.error(
+          `[Diag] Unknown warhead "${name}". hasSection=${hasSection}. Known warheads (sample): ${sample} ... total=${known.length}`
+        );
+      } catch (e) {
+        console.error('[Diag] Unknown warhead diagnostics failed:', e);
+      }
       throw new Error("Unknown warhead " + name);
     }
     return rules;
@@ -485,6 +495,9 @@ export class Rules {
 
   private readWarheads(): void {
     this.warheadTypes.forEach(name => {
+      // if(name.toLowerCase() === "dummywarhead") {
+        //debugger;
+      // }
       const section = this.ini.getSection(name);
       if (section) {
         const rules = new WarheadRules(section);
