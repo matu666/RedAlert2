@@ -49,13 +49,15 @@ export class DebugUtils {
       bitmap.data,
       64,
       64,
-      THREE.AlphaFormat
+      THREE.RedFormat
     );
 
     texture.needsUpdate = true;
     texture.minFilter = THREE.NearestFilter;
     texture.magFilter = THREE.NearestFilter;
 
+    // @ts-ignore - r177
+    (texture as any).colorSpace = THREE.NoColorSpace;
     return texture;
   }
 }

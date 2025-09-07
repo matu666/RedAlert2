@@ -3,12 +3,13 @@ import { Animation } from '@/engine/Animation';
 import { AnimProps } from '@/engine/AnimProps';
 import { IniSection } from '@/data/IniSection';
 import { ShpFile } from '@/data/ShpFile';
+import { BoxedVar } from '@/util/BoxedVar';
 
 export class HighlightAnimRunner extends SimpleRunner {
   private maxAmount: number;
-  private animation: Animation;
+  declare animation: Animation;
 
-  constructor(gameSpeed: number, maxAmount: number = 0.5, loopEnd: number = 2, rate: number = 5) {
+  constructor(gameSpeed: number | BoxedVar<number>, maxAmount: number = 0.5, loopEnd: number = 2, rate: number = 5) {
     super();
     this.maxAmount = maxAmount;
     
@@ -21,7 +22,8 @@ export class HighlightAnimRunner extends SimpleRunner {
     props.loopEnd = loopEnd - 1;
     props.loopCount = 2;
     
-    this.animation = new Animation(props, gameSpeed);
+    const speed = typeof gameSpeed === 'number' ? new BoxedVar(gameSpeed) : gameSpeed;
+    this.animation = new Animation(props, speed);
     this.animation.stop();
   }
 

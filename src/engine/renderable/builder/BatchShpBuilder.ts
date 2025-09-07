@@ -110,10 +110,10 @@ export class BatchShpBuilder {
 
     const vertexCount = this.batchSize * this.verticesPerSprite;
     const positionAttribute = new THREE.BufferAttribute(new Float32Array(3 * vertexCount), 3);
-    geometry.addAttribute("position", positionAttribute);
+    geometry.setAttribute("position", positionAttribute);
     this.positionAttribute = positionAttribute;
 
-    geometry.addAttribute(
+    geometry.setAttribute(
       "uv",
       new THREE.BufferAttribute(new Float32Array(2 * vertexCount), 2)
     );
@@ -121,12 +121,12 @@ export class BatchShpBuilder {
     if (SpriteUtils.USE_INDEXED_GEOMETRY) {
       const indexCount = this.batchSize * this.trianglesPerSprite * 3;
       geometry.setIndex(
-        new THREE.BufferAttribute(new Uint32Array(3 * indexCount), 1)
+        new THREE.BufferAttribute(new Uint32Array(1 * indexCount), 1)
       );
     }
 
     const colorMultAttribute = new THREE.BufferAttribute(new Float32Array(4 * vertexCount), 4);
-    geometry.addAttribute("vertexColorMult", colorMultAttribute);
+    geometry.setAttribute("vertexColorMult", colorMultAttribute);
     this.colorMultAttribute = colorMultAttribute;
 
     let spriteIndex = 0;
@@ -194,35 +194,60 @@ export class BatchShpBuilder {
     let spriteGeometry = SpriteUtils.createSpriteGeometry(options);
 
     const position = item.position;
-    spriteGeometry.applyMatrix(
+    spriteGeometry.applyMatrix4(
       new THREE.Matrix4().makeTranslation(position.x, position.y, position.z)
     );
 
-    let tempGeometry = spriteGeometry;
-    if (tempGeometry.getAttribute("position").count !== this.verticesPerSprite) {
+    const posAttr = geometry.getAttribute("position") as THREE.BufferAttribute;
+    const uvAttr = geometry.getAttribute("uv") as THREE.BufferAttribute;
+    const dstPosArray = posAttr.array as Float32Array;
+    const dstUvArray = uvAttr.array as Float32Array;
+
+    const srcPosAttr = spriteGeometry.getAttribute("position") as THREE.BufferAttribute;
+    const srcUvAttr = spriteGeometry.getAttribute("uv") as THREE.BufferAttribute;
+
+    if (srcPosAttr.count !== this.verticesPerSprite) {
       throw new Error("Vertex count mismatch");
     }
 
-    geometry.merge(tempGeometry, spriteIndex * this.verticesPerSprite);
+    // Copy vertex positions
+    for (let i = 0; i < this.verticesPerSprite; i++) {
+      const dstBase = (spriteIndex * this.verticesPerSprite + i) * 3;
+      dstPosArray[dstBase + 0] = srcPosAttr.getX(i);
+      dstPosArray[dstBase + 1] = srcPosAttr.getY(i);
+      dstPosArray[dstBase + 2] = srcPosAttr.getZ(i);
+    }
 
-    if (tempGeometry.index) {
-      (geometry.index!.array as Uint32Array).set(
-        Uint32Array.from(
-          tempGeometry.index.array as Uint32Array,
-          (value) => value + spriteIndex * this.verticesPerSprite
-        ),
-        spriteIndex * tempGeometry.index.array.length
-      );
-      geometry.index!.needsUpdate = true;
+    // Copy uvs if available
+    if (srcUvAttr) {
+      for (let i = 0; i < this.verticesPerSprite; i++) {
+        const dstBase = (spriteIndex * this.verticesPerSprite + i) * 2;
+        dstUvArray[dstBase + 0] = srcUvAttr.getX(i);
+        dstUvArray[dstBase + 1] = srcUvAttr.getY(i);
+      }
+    }
+
+    // Update index buffer if indexed geometry is enabled and temp has index
+    if (SpriteUtils.USE_INDEXED_GEOMETRY && spriteGeometry.index) {
+      const dstIndex = geometry.getIndex();
+      if (dstIndex) {
+        const dstIndexArray = dstIndex.array as Uint32Array;
+        const srcIndexArray = spriteGeometry.index.array as Uint16Array | Uint32Array;
+        const base = spriteIndex * this.verticesPerSprite;
+        const offset = spriteIndex * spriteGeometry.index.count;
+        for (let i = 0; i < spriteGeometry.index.count; i++) {
+          dstIndexArray[offset + i] = base + (srcIndexArray as any)[i];
+        }
+        dstIndex.needsUpdate = true;
+      }
     }
 
     const lightMult = item.lightMult ?? new THREE.Vector3(1, 1, 1);
     this.setLightingAt(spriteIndex, lightMult, this.colorMultAttribute!.array as Float32Array);
     this.setVisibilityAt(spriteIndex, true, this.colorMultAttribute!.array as Float32Array);
 
-    for (const attribute of Object.values(geometry.attributes)) {
-      attribute.needsUpdate = true;
-    }
+    posAttr.needsUpdate = true;
+    uvAttr.needsUpdate = true;
   }
 
   has(item: BatchItem): boolean {

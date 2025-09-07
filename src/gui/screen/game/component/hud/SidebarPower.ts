@@ -1,5 +1,3 @@
-// 用 TypeScript 重写 SidebarPower 组件
-
 import * as THREE from "three";
 import { jsx } from "@/gui/jsx/jsx";
 import { UiObject } from "@/gui/UiObject";
@@ -50,17 +48,17 @@ function pipCountEquals(a: PipCount, b: PipCount): boolean {
 
 export class SidebarPower extends UiComponent<SidebarPowerProps> {
   visible: boolean = true;
-  pipHighlightAnimRunner: HighlightAnimRunner;
-  pips!: IndexedBitmap[];
-  textureBitmap!: IndexedBitmap;
-  texture!: THREE.DataTexture;
-  mesh!: THREE.Mesh;
-  meshEvtTarget: any;
-  pipCount?: PipCount;
-  targetPipCount!: PipCount;
-  lastPipUpdate?: number;
-  lastPowerDrained?: number;
-  lastPowerGenerated?: number;
+  declare pipHighlightAnimRunner: HighlightAnimRunner;
+  declare pips: IndexedBitmap[];
+  declare textureBitmap: IndexedBitmap;
+  declare texture: THREE.DataTexture;
+  declare mesh: THREE.Mesh;
+  declare meshEvtTarget: any;
+  declare pipCount?: PipCount;
+  declare targetPipCount: PipCount;
+  declare lastPipUpdate?: number;
+  declare lastPowerDrained?: number;
+  declare lastPowerGenerated?: number;
 
   constructor(props: SidebarPowerProps) {
     super(props);
@@ -93,8 +91,10 @@ export class SidebarPower extends UiComponent<SidebarPowerProps> {
 
   createPips(powerImg: any): IndexedBitmap[] {
     const arr: IndexedBitmap[] = [];
+    if (!powerImg || typeof powerImg.numImages !== "number") return arr;
     for (let i = 0; i < powerImg.numImages; i++) {
       const img = powerImg.getImage(i);
+      if (!img) continue;
       arr.push(new IndexedBitmap(img.width, img.height, img.imageData));
     }
     return arr;
@@ -105,10 +105,13 @@ export class SidebarPower extends UiComponent<SidebarPowerProps> {
     width: number,
     height: number,
   ): THREE.DataTexture {
-    const tex = new THREE.DataTexture(data, width, height, THREE.AlphaFormat);
+    const tex = new THREE.DataTexture(data, width, height, THREE.RedFormat);
     tex.needsUpdate = true;
     tex.minFilter = THREE.NearestFilter;
     tex.magFilter = THREE.NearestFilter;
+    // Index map, avoid color space conversions
+    // @ts-ignore - property exists in r177
+    (tex as any).colorSpace = THREE.NoColorSpace;
     return tex;
   }
 
@@ -124,7 +127,8 @@ export class SidebarPower extends UiComponent<SidebarPowerProps> {
       map: this.texture,
       palette: TextureUtils.textureFromPalette(this.props.palette),
       side: THREE.DoubleSide,
-    });
+      useRedIndex: true,
+    } as any);
     const mesh = new THREE.Mesh(geometry, material);
     mesh.frustumCulled = false;
     return mesh;
@@ -163,7 +167,8 @@ export class SidebarPower extends UiComponent<SidebarPowerProps> {
       const l = c
         ? Math.min(1, clamp(powerGenerated - powerDrained, 0, 100) / c)
         : 0;
-      const pipHeight = this.pips[0].height + 1;
+      const hasPips = Array.isArray(this.pips) && this.pips.length > 0;
+      const pipHeight = hasPips ? this.pips[0].height + 1 : 1;
       const n = c
         ? this.computeHeightFromPowerLevel(Math.max(100, c))
         : 1;
@@ -252,6 +257,10 @@ export class SidebarPower extends UiComponent<SidebarPowerProps> {
   }
 
   updateTexture(pipCount: PipCount, highlight: boolean) {
+    if (!this.pips || this.pips.length === 0) {
+      // No pips available; skip drawing to avoid errors during early load
+      return;
+    }
     const pipHeight = this.pips[0].height;
     const totalHeight = this.props.height;
     const pipStep = pipHeight + 1;

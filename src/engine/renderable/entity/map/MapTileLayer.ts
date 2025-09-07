@@ -171,7 +171,7 @@ export class MapTileLayer {
     this.updateColorMultBuffer(lightingData, colorMultBuffer);
 
     const colorMultAttribute = new (THREE as any).BufferAttribute(colorMultBuffer, 4);
-    mergedGeometry.addAttribute("vertexColorMult", colorMultAttribute);
+    mergedGeometry.setAttribute("vertexColorMult", colorMultAttribute);
     this.colorMultAttribute = colorMultAttribute;
 
     // Dispose individual geometries

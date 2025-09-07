@@ -27,11 +27,11 @@ interface DebugTextProps extends UiComponentProps {
 }
 
 export class DebugText extends UiComponent<DebugTextProps> {
-  ctx!: CanvasRenderingContext2D | null;
-  texture!: THREE.Texture;
-  mesh!: THREE.Mesh;
-  lastUpdate?: number;
-  lastText?: string;
+  declare ctx: CanvasRenderingContext2D | null;
+  declare texture: THREE.Texture;
+  declare mesh: THREE.Mesh;
+  declare lastUpdate?: number;
+  declare lastText?: string;
 
   createUiObject(): UiObject {
     const obj = new UiObject(

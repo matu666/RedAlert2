@@ -118,7 +118,7 @@ export class ShpTester {
 
     // Load theater
     const theater = await Engine.loadTheater(TheaterType.Temperate);
-    const gameMapInstance = new GameMap(gameMap, theater.tileSets, rules, () => getRandomInt(0, 1000));
+    const gameMapInstance = new GameMap(gameMap, theater.tileSets, rules, (min: number, max: number) => getRandomInt(min, max));
 
     // Game options
     const gameOptions: GameOptions = { 
@@ -180,15 +180,21 @@ export class ShpTester {
 
     // Add buildings to player
     const buildingTypes = [
-      "GACNST",
-      "GAPOWR", 
-      "GAREFN",
-      "GAPILE",
-      "GAAIRC",
-      "GAWEAP",
-      "GATECH",
-      "NACNST",
-      "NAPOWR",
+      "GACNST", // Allied Construction Yard
+      "GAPOWR", // Allied Power Plant
+      "GAREFN", // Allied Ore Refinery
+      "GAPILE", // Allied Barracks
+      "GAAIRC", // Allied Airfield
+      "GAWEAP", // Allied War Factory
+      "GATECH", // Allied Battle Lab
+      "GAYARD", // Allied Naval Yard
+      "NAPOWR", // Soviet Power Plant
+      "NAREFN", // Soviet Ore Refinery
+      "NAHAND", // Soviet Barracks
+      "NAWEAP", // Soviet War Factory
+      "NATECH", // Soviet Battle Lab
+      "NARADR", // Soviet Radar
+      "NAYARD", // Soviet Naval Yard
     ];
 
     buildingTypes.forEach((buildingType) => {
@@ -228,11 +234,10 @@ export class ShpTester {
     }, 5000);
     this.disposables.add(() => clearInterval(creditsUpdateInterval));
 
-    // Populate sidebar items - simplified for demo
-    const availableObjects = [
-      rules.getBuilding("GACNST"),
-      rules.getBuilding("GAPOWR"),
-    ];
+    // Populate sidebar items - use all building types
+    const availableObjects = buildingTypes
+      .map(type => rules.getBuilding(type))
+      .filter(building => building !== null);
 
     for (const availableObject of availableObjects) {
       const objectArt = ObjectArt.factory(

@@ -57,7 +57,8 @@ export class SidebarCredits extends UiComponent<SidebarCreditsProps> {
     if (this.targetCredits !== credits) {
       this.targetCredits = credits;
       const diff = Math.abs(credits - (this.renderedCredits ?? 0));
-      const duration = THREE.Math.lerp(300, 2000, Math.min(1, diff / 5000));
+      const t = Math.min(1, diff / 5000);
+      const duration = 300 + (2000 - 300) * t; // r177: replace THREE.Math.lerp
       this.tickSpeed = diff / duration;
     }
     const tickSpeed = this.tickSpeed ?? 0;

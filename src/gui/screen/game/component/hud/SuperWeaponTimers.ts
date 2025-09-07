@@ -55,9 +55,9 @@ type TimerLine = {
 };
 
 export class SuperWeaponTimers extends UiComponent<SuperWeaponTimersProps> {
-  ctx!: CanvasRenderingContext2D;
-  texture!: THREE.Texture;
-  mesh!: THREE.Mesh;
+  declare ctx: CanvasRenderingContext2D;
+  declare texture: THREE.Texture;
+  declare mesh: THREE.Mesh;
   lastUpdate?: number;
   lastHasTimers?: boolean;
 

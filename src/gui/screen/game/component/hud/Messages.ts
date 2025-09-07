@@ -36,15 +36,15 @@ type MessagesProps = UiComponentProps & {
 };
 
 export class Messages extends UiComponent<MessagesProps> {
-  ctx!: CanvasRenderingContext2D | null;
-  texture!: THREE.Texture;
-  mesh!: THREE.Mesh;
-  inputContainer: any;
-  inputComponent: any;
-  lastUpdate?: number;
-  lastMessageTime?: number;
-  lastMessageCount?: number;
-  lastComposing?: boolean;
+  declare ctx: CanvasRenderingContext2D | null;
+  declare texture: THREE.Texture;
+  declare mesh: THREE.Mesh;
+  declare inputContainer: any;
+  declare inputComponent: any;
+  declare lastUpdate?: number;
+  declare lastMessageTime?: number;
+  declare lastMessageCount?: number;
+  declare lastComposing?: boolean;
 
   createUiObject(): UiObject {
     const obj = new UiObject(

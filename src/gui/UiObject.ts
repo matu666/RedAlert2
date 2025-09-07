@@ -163,7 +163,8 @@ export class UiObject implements Renderable {
     console.log('[UiObject] create3DObject() called, target:', this.target);
     
     if (!this.get3DObject()) {
-      throw new Error('Expecting a THREE.Object3D to have been set by now');
+      // Fallback: create an empty Object3D to ensure container can attach children
+      this.set3DObject(new THREE.Object3D());
     }
     
     if (!this.rendered) {
@@ -201,7 +202,7 @@ export class UiObject implements Renderable {
 
   update(deltaTime: number): void {
     this.container.update(deltaTime);
-    this._onFrame.dispatch('frame', deltaTime);
+    this._onFrame.dispatch(this, deltaTime);
   }
 
   add(...children: UiObject[]): void {

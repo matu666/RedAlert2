@@ -174,7 +174,7 @@ export class InfantryTester {
       ] as any,
       this.theater.tileSets as any,
       this.rules.general as any,
-      () => 0
+      (_min: number, _max: number) => 0
     );
     const tileOccupation = new TileOccupation(tileCollection);
     const mapBounds = new MapBounds();

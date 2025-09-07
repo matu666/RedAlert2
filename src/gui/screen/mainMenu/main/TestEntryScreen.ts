@@ -37,14 +37,14 @@ export class TestEntryScreen implements Screen {
     console.log('[TestEntryScreen] Entering test entry screen');
 
     const buttons: SidebarButton[] = [
-      {
-        label: '底层文件系统',
-        tooltip: '浏览和管理本地文件系统',
-        onClick: () => {
-          console.log('[TestEntryScreen] 底层文件系统 clicked');
-          this.controller?.pushScreen(MainMenuScreenType.OptionsStorage);
-        }
-      },
+      // {
+      //   label: '底层文件系统',
+      //   tooltip: '浏览和管理本地文件系统',
+      //   onClick: () => {
+      //     console.log('[TestEntryScreen] 底层文件系统 clicked');
+      //     this.controller?.pushScreen(MainMenuScreenType.OptionsStorage);
+      //   }
+      // },
       {
         label: 'VXL测试',
         tooltip: '打开 VXL 测试工具',

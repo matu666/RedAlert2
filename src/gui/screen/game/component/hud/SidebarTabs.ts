@@ -89,7 +89,7 @@ export class SidebarTabs extends UiComponent<SidebarTabsProps> {
 
   handleFrame(
     now: number,
-    sprite: { setFrame: (frame: number) => void },
+    sprite: { setFrame?: (frame: number) => void; get3DObject?: () => any },
     tab: Tab,
     baseFrame: number,
   ) {
@@ -108,6 +108,8 @@ export class SidebarTabs extends UiComponent<SidebarTabsProps> {
     if (tab.flashing && this.flashing) {
       state = 3;
     }
-    sprite.setFrame(baseFrame + state);
+    if (sprite && typeof sprite.setFrame === 'function') {
+      sprite.setFrame(baseFrame + state);
+    }
   }
 }

@@ -19,11 +19,11 @@ export type UiTextProps = UiComponentProps & {
 };
 
 export class UiText extends UiComponent<UiTextProps> {
-  ctx!: CanvasRenderingContext2D | null;
-  texture!: THREE.Texture;
-  mesh!: THREE.Mesh;
-  value: string;
-  textAlign?: CanvasTextAlign;
+  declare ctx: CanvasRenderingContext2D | null;
+  declare texture: THREE.Texture;
+  declare mesh: THREE.Mesh;
+  declare value: string;
+  declare textAlign?: CanvasTextAlign;
 
   constructor(props: UiTextProps) {
     super(props);

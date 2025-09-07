@@ -31,7 +31,11 @@ interface TileImage {
 }
 
 interface TileSets {
-  getTileImage(tileNum: number, subTile: number, callback: () => number): TileImage;
+  getTileImage(
+    tileNum: number,
+    subTile: number,
+    randomIndexSelector: (min: number, max: number) => number
+  ): TileImage;
   isCliffTile(tileNum: number): boolean;
   isHighBridgeBoundaryTile(tileNum: number): boolean;
 }
@@ -80,7 +84,7 @@ export class TileCollection {
     tileData: TileData[],
     tileSets: TileSets,
     generalRules: GeneralRules,
-    callback: () => number
+    randomIndexSelector: (min: number, max: number) => number
   ) {
     this.tileSets = tileSets;
     this.generalRules = generalRules;
@@ -117,7 +121,7 @@ export class TileCollection {
     // Process each tile
     for (let i = 0, len = tileData.length; i < len; ++i) {
       const tileDataItem = tileData[i];
-      const tileImage = tileSets.getTileImage(tileDataItem.tileNum, tileDataItem.subTile, callback);
+      const tileImage = tileSets.getTileImage(tileDataItem.tileNum, tileDataItem.subTile, randomIndexSelector);
       const terrainType = tileImage.terrainType;
 
       if (!terrainTypes.has(terrainType)) {

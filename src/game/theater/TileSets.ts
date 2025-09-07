@@ -48,12 +48,16 @@ export class TileSets {
     return this.orderedEntries[tileNum];
   }
 
-  public getTileImage(tileNum: number, subTile: number, frame: number): unknown { // Replace 'unknown' with specific image type later
+  public getTileImage(
+    tileNum: number,
+    subTile: number,
+    randomIndexSelector: (min: number, max: number) => number
+  ): unknown { // Replace 'unknown' with specific image type later
     const tileEntry = this.getTile(tileNum);
     if (!tileEntry) {
       throw new Error(`TileNum ${tileNum} not found`);
     }
-    const tmpFile = tileEntry.getTmpFile(subTile, frame);
+    const tmpFile = tileEntry.getTmpFile(subTile, randomIndexSelector);
     if (!tmpFile || subTile >= tmpFile.images.length) { // Assuming tmpFile has an 'images' array
       throw new Error(`SubTile ${subTile} not found`);
     }
