@@ -1,13 +1,13 @@
 import { CancellationToken } from "@puzzl/core/lib/async/cancellation";
 import { WL_CHANNEL_ID_MIN } from "network/ladder/wladderConfig";
-import { CompositeDisposable } from "util/disposable/CompositeDisposable";
+import { CompositeDisposable } from "@/util/disposable/CompositeDisposable";
 import { ChatRecipientType } from "network/chat/ChatMessage";
-import { SoundKey } from "engine/sound/SoundKey";
-import { ChannelType } from "engine/sound/ChannelType";
+import { SoundKey } from "@/engine/sound/SoundKey";
+import { ChannelType } from "@/engine/sound/ChannelType";
 import { Task } from "@puzzl/core/lib/async/Task";
-import { ChatHistory } from "gui/chat/ChatHistory";
-import { formatTime } from "util/time";
-import { ChatInput } from "gui/component/ChatInput";
+import { ChatHistory } from "@/gui/chat/ChatHistory";
+import { formatTime } from "@/util/time";
+import { ChatInput } from "@/gui/component/ChatInput";
 
 export class ChatUi {
   private messages: any[];

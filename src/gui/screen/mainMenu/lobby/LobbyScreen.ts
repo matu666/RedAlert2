@@ -19,34 +19,34 @@ import {
   OBS_COUNTRY_UI_TOOLTIP,
   aiUiNames
 } from "game/gameopts/constants";
-import { LobbyForm } from "gui/screen/mainMenu/lobby/component/LobbyForm";
-import { LobbyType, SlotOccupation, SlotType as ViewModelSlotType, PlayerStatus } from "gui/screen/mainMenu/lobby/component/viewmodel/lobby";
-import { PasswordBox } from "gui/screen/mainMenu/lobby/component/PasswordBox";
-import { CreateGameBox } from "gui/screen/mainMenu/lobby/component/CreateGameBox";
-import { ScreenType } from "gui/screen/mainMenu/ScreenType";
-import { CompositeDisposable } from "util/disposable/CompositeDisposable";
-import { jsx } from "gui/jsx/jsx";
-import { HtmlView } from "gui/jsx/HtmlView";
-import { DownloadError } from "engine/ResourceLoader";
+import { LobbyForm } from "@/gui/screen/mainMenu/lobby/component/LobbyForm";
+import { LobbyType, SlotOccupation, SlotType as ViewModelSlotType, PlayerStatus } from "@/gui/screen/mainMenu/lobby/component/viewmodel/lobby";
+import { PasswordBox } from "@/gui/screen/mainMenu/lobby/component/PasswordBox";
+import { CreateGameBox } from "@/gui/screen/mainMenu/lobby/component/CreateGameBox";
+import { ScreenType } from "@/gui/screen/mainMenu/ScreenType";
+import { CompositeDisposable } from "@/util/disposable/CompositeDisposable";
+import { jsx } from "@/gui/jsx/jsx";
+import { HtmlView } from "@/gui/jsx/HtmlView";
+import { DownloadError } from "@/engine/ResourceLoader";
 import { CancellationTokenSource, OperationCanceledError } from "@puzzl/core/lib/async/cancellation";
-import { MapPreviewRenderer } from "gui/screen/mainMenu/lobby/MapPreviewRenderer";
-import { findIndexReverse } from "util/array";
-import { SoundKey } from "engine/sound/SoundKey";
-import { ChannelType } from "engine/sound/ChannelType";
+import { MapPreviewRenderer } from "@/gui/screen/mainMenu/lobby/MapPreviewRenderer";
+import { findIndexReverse } from "@/util/array";
+import { SoundKey } from "@/engine/sound/SoundKey";
+import { ChannelType } from "@/engine/sound/ChannelType";
 import { StorageKey } from "LocalPrefs";
-import { PreferredHostOpts } from "gui/screen/mainMenu/lobby/PreferredHostOpts";
-import { isNotNullOrUndefined } from "util/typeGuard";
+import { PreferredHostOpts } from "@/gui/screen/mainMenu/lobby/PreferredHostOpts";
+import { isNotNullOrUndefined } from "@/util/typeGuard";
 import { GameOptSanitizer } from "game/gameopts/GameOptSanitizer";
-import { MainMenuScreen } from "gui/screen/mainMenu/MainMenuScreen";
+import { MainMenuScreen } from "@/gui/screen/mainMenu/MainMenuScreen";
 import { MapFile } from "data/MapFile";
-import { MapDigest } from "engine/MapDigest";
+import { MapDigest } from "@/engine/MapDigest";
 import { MAX_MAP_TRANSFER_BYTES } from "network/gservConfig";
 import { WolHasMapStatus } from "network/WolConfig";
-import { MainMenuRoute } from "gui/screen/mainMenu/MainMenuRoute";
+import { MainMenuRoute } from "@/gui/screen/mainMenu/MainMenuRoute";
 import { sleep } from "@puzzl/core/lib/async/sleep";
 import { ChatRecipientType } from "network/chat/ChatMessage";
-import { ChatHistory } from "gui/chat/ChatHistory";
-import { Throttle } from "util/time";
+import { ChatHistory } from "@/gui/chat/ChatHistory";
+import { Throttle } from "@/util/time";
 
 interface GameMode {
   id: number;

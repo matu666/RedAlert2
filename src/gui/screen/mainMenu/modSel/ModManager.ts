@@ -1,7 +1,7 @@
 import { IniFile } from "data/IniFile";
 import { RouteHelper } from "RouteHelper";
-import { Mod } from "gui/screen/mainMenu/modSel/Mod";
-import { ModMeta } from "gui/screen/mainMenu/modSel/ModMeta";
+import { Mod } from "@/gui/screen/mainMenu/modSel/Mod";
+import { ModMeta } from "@/gui/screen/mainMenu/modSel/ModMeta";
 
 interface Directory {
   getEntries(): AsyncIterable<string>;

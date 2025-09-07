@@ -1,13 +1,13 @@
 import React from "react";
-import { Slider } from "gui/component/Slider";
-import { SCROLL_BASE_FACTOR, GeneralOptions } from "gui/screen/options/GeneralOptions";
-import { Select } from "gui/component/Select";
-import { Option } from "gui/component/Option";
-import { FlyerHelperMode } from "engine/renderable/entity/unit/FlyerHelperMode";
-import { ModelQuality } from "engine/renderable/entity/unit/ModelQuality";
-import { ShadowQuality } from "engine/renderable/entity/unit/ShadowQuality";
-import { Image } from "gui/component/Image";
-import { ResolutionSelect } from "gui/screen/options/component/Resolution";
+import { Slider } from "@/gui/component/Slider";
+import { SCROLL_BASE_FACTOR, GeneralOptions } from "@/gui/screen/options/GeneralOptions";
+import { Select } from "@/gui/component/Select";
+import { Option } from "@/gui/component/Option";
+import { FlyerHelperMode } from "@/engine/renderable/entity/unit/FlyerHelperMode";
+import { ModelQuality } from "@/engine/renderable/entity/unit/ModelQuality";
+import { ShadowQuality } from "@/engine/renderable/entity/unit/ShadowQuality";
+import { Image } from "@/gui/component/Image";
+import { ResolutionSelect } from "@/gui/screen/options/component/Resolution";
 
 interface Strings {
   get(key: string): string;

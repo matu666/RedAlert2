@@ -1,6 +1,6 @@
 import React from "react";
 import classnames from "classnames";
-import { Image } from "gui/component/Image";
+import { Image } from "@/gui/component/Image";
 
 enum PingQuality {
   Good = 1,

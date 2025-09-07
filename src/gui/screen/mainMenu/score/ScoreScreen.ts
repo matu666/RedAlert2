@@ -1,9 +1,9 @@
-import { jsx } from "gui/jsx/jsx";
-import { HtmlView } from "gui/jsx/HtmlView";
-import { ScoreTable } from "gui/screen/mainMenu/score/ScoreTable";
+import { jsx } from "@/gui/jsx/jsx";
+import { HtmlView } from "@/gui/jsx/HtmlView";
+import { ScoreTable } from "@/gui/screen/mainMenu/score/ScoreTable";
 import { SideType } from "game/SideType";
-import { MusicType } from "engine/sound/Music";
-import { MainMenuScreen } from "gui/screen/mainMenu/MainMenuScreen";
+import { MusicType } from "@/engine/sound/Music";
+import { MainMenuScreen } from "@/gui/screen/mainMenu/MainMenuScreen";
 import { StorageKey } from "LocalPrefs";
 import { Task } from "@puzzl/core/lib/async/Task";
 import { OperationCanceledError } from "@puzzl/core/lib/async/cancellation/OperationCanceledError";

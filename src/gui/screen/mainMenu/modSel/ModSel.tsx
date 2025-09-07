@@ -1,6 +1,6 @@
 import React, { useRef, useEffect } from "react";
-import { List, ListItem } from "gui/component/List";
-import { ModDetailsPane } from "gui/screen/mainMenu/modSel/ModDetailsPane";
+import { List, ListItem } from "@/gui/component/List";
+import { ModDetailsPane } from "@/gui/screen/mainMenu/modSel/ModDetailsPane";
 
 interface Mod {
   id: string;

@@ -1,7 +1,7 @@
-import { jsx } from "gui/jsx/jsx";
-import { HtmlView } from "gui/jsx/HtmlView";
-import { KeyOpts } from "gui/screen/options/component/KeyOpts";
-import { KeyCommandType } from "gui/screen/game/worldInteraction/keyboard/KeyCommandType";
+import { jsx } from "@/gui/jsx/jsx";
+import { HtmlView } from "@/gui/jsx/HtmlView";
+import { KeyOpts } from "@/gui/screen/options/component/KeyOpts";
+import { KeyCommandType } from "@/gui/screen/game/worldInteraction/keyboard/KeyCommandType";
 
 interface ScreenController {
   setSidebarButtons(buttons: SidebarButton[]): void;

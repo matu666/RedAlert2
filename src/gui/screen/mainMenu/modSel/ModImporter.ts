@@ -1,12 +1,12 @@
-import { sleep } from "util/time";
+import { sleep } from "@/util/time";
 import { IOError } from "data/vfs/IOError";
-import { ArchiveExtractionError } from "engine/gameRes/importError/ArchiveExtractionError";
-import { InvalidArchiveError } from "engine/gameRes/importError/InvalidArchiveError";
-import { ModManager } from "gui/screen/mainMenu/modSel/ModManager";
-import { ModMeta } from "gui/screen/mainMenu/modSel/ModMeta";
-import { BadModArchiveError } from "gui/screen/mainMenu/modSel/BadModArchiveError";
+import { ArchiveExtractionError } from "@/engine/gameRes/importError/ArchiveExtractionError";
+import { InvalidArchiveError } from "@/engine/gameRes/importError/InvalidArchiveError";
+import { ModManager } from "@/gui/screen/mainMenu/modSel/ModManager";
+import { ModMeta } from "@/gui/screen/mainMenu/modSel/ModMeta";
+import { BadModArchiveError } from "@/gui/screen/mainMenu/modSel/BadModArchiveError";
 import { IniFile } from "data/IniFile";
-import { DuplicateModError } from "gui/screen/mainMenu/modSel/DuplicateModError";
+import { DuplicateModError } from "@/gui/screen/mainMenu/modSel/DuplicateModError";
 import { VirtualFile } from "data/vfs/VirtualFile";
 
 interface MessageBoxApi {

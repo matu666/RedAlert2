@@ -1,11 +1,11 @@
-import { jsx } from "gui/jsx/jsx";
-import { NewAccountBox } from "gui/screen/mainMenu/newAccount/NewAccountBox";
-import { ScreenType } from "gui/screen/mainMenu/ScreenType";
-import { HtmlView } from "gui/jsx/HtmlView";
+import { jsx } from "@/gui/jsx/jsx";
+import { NewAccountBox } from "@/gui/screen/mainMenu/newAccount/NewAccountBox";
+import { ScreenType } from "@/gui/screen/mainMenu/ScreenType";
+import { HtmlView } from "@/gui/jsx/HtmlView";
 import { Task } from "@puzzl/core/lib/async/Task";
-import { sleep } from "util/time";
+import { sleep } from "@/util/time";
 import { StorageKey } from "LocalPrefs";
-import { MainMenuScreen } from "gui/screen/mainMenu/MainMenuScreen";
+import { MainMenuScreen } from "@/gui/screen/mainMenu/MainMenuScreen";
 import { HttpRequest } from "network/HttpRequest";
 
 interface Region {

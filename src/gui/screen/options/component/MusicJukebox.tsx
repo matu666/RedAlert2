@@ -1,6 +1,6 @@
-import { List, ListItem } from "gui/component/List";
+import { List, ListItem } from "@/gui/component/List";
 import React, { useState } from "react";
-import { pad } from "util/string";
+import { pad } from "@/util/string";
 
 interface Strings {
   get(key: string): string;

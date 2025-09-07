@@ -1,7 +1,7 @@
 import React from "react";
-import { Slider } from "gui/component/Slider";
-import { ChannelType } from "engine/sound/ChannelType";
-import { MusicJukebox } from "gui/screen/options/component/MusicJukebox";
+import { Slider } from "@/gui/component/Slider";
+import { ChannelType } from "@/engine/sound/ChannelType";
+import { MusicJukebox } from "@/gui/screen/options/component/MusicJukebox";
 
 interface Strings {
   get(key: string): string;

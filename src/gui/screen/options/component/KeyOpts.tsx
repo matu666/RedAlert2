@@ -1,10 +1,10 @@
 import React, { useState } from "react";
-import { configurableCmds } from "gui/screen/options/component/configurableCmds";
-import { List, ListItem } from "gui/component/List";
-import { PressKeyInput } from "gui/screen/options/component/PressKeyInput";
-import { getHumanReadableKey } from "gui/screen/options/component/getHumanReadableKey";
-import { KeyboardHandler } from "gui/screen/game/worldInteraction/keyboard/KeyboardHandler";
-import { KeyCommandType } from "gui/screen/game/worldInteraction/keyboard/KeyCommandType";
+import { configurableCmds } from "@/gui/screen/options/component/configurableCmds";
+import { List, ListItem } from "@/gui/component/List";
+import { PressKeyInput } from "@/gui/screen/options/component/PressKeyInput";
+import { getHumanReadableKey } from "@/gui/screen/options/component/getHumanReadableKey";
+import { KeyboardHandler } from "@/gui/screen/game/worldInteraction/keyboard/KeyboardHandler";
+import { KeyCommandType } from "@/gui/screen/game/worldInteraction/keyboard/KeyCommandType";
 
 interface Strings {
   get(key: string, ...args: any[]): string;

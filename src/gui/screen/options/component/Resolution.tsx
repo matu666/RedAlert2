@@ -1,7 +1,7 @@
-import { Select } from "gui/component/Select";
-import { Option } from "gui/component/Option";
+import { Select } from "@/gui/component/Select";
+import { Option } from "@/gui/component/Option";
 import React, { useState, useEffect } from "react";
-import { BoxedVar } from "util/BoxedVar";
+import { BoxedVar } from "@/util/BoxedVar";
 
 interface Resolution {
   width: number;

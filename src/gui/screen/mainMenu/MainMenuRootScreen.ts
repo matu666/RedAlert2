@@ -26,6 +26,11 @@ export class MainMenuRootScreen extends RootScreen {
   private sound?: any;
   private music?: any;
   private appVersion: string;
+  private generalOptions?: any;
+  private localPrefs?: any;
+  private fullScreen?: any;
+  private mixer?: any;
+  private keyBinds?: any;
 
   // Components
   private mainMenu?: MainMenu;
@@ -41,7 +46,12 @@ export class MainMenuRootScreen extends RootScreen {
     appVersion: string,
     videoSrc?: string | File,
     sound?: any,
-    music?: any
+    music?: any,
+    generalOptions?: any,
+    localPrefs?: any,
+    fullScreen?: any,
+    mixer?: any,
+    keyBinds?: any
   ) {
     super();
     this.subScreens = subScreens;
@@ -54,6 +64,11 @@ export class MainMenuRootScreen extends RootScreen {
     this.videoSrc = videoSrc;
     this.sound = sound;
     this.music = music;
+    this.generalOptions = generalOptions;
+    this.localPrefs = localPrefs;
+    this.fullScreen = fullScreen;
+    this.mixer = mixer;
+    this.keyBinds = keyBinds;
   }
 
   createView(): void {
@@ -121,6 +136,33 @@ export class MainMenuRootScreen extends RootScreen {
       } else if (screenType === MainMenuScreenType.Credits) {
         // CreditsScreen需要JsxRenderer参数
         screen = new screenClass(this.strings, this.jsxRenderer);
+      } else if (screenType === MainMenuScreenType.Options) {
+        // OptionsScreen需要特定参数
+        screen = new screenClass(
+          this.strings,
+          this.jsxRenderer,
+          this.generalOptions,
+          this.localPrefs,
+          this.fullScreen,
+          false, // inGame
+          true   // storageOptsEnabled - 启用存储选项
+        );
+      } else if (screenType === MainMenuScreenType.OptionsSound) {
+        // SoundOptsScreen需要音频相关参数
+        screen = new screenClass(
+          this.strings,
+          this.jsxRenderer,
+          this.mixer,
+          this.music,
+          this.localPrefs
+        );
+      } else if (screenType === MainMenuScreenType.OptionsKeyboard) {
+        // KeyboardScreen需要键盘绑定参数
+        screen = new screenClass(
+          this.strings,
+          this.jsxRenderer,
+          this.keyBinds
+        );
       } else {
         // 其他屏幕使用标准参数
         screen = new screenClass(

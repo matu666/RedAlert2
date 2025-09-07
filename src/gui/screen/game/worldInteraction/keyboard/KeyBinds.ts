@@ -1,40 +1,16 @@
-System.register(
-  "gui/screen/game/worldInteraction/keyboard/KeyBinds",
-  [
-    "data/DataStream",
-    "data/IniFile",
-    "data/vfs/VirtualFile",
-    "gui/screen/game/worldInteraction/keyboard/KeyCommandType",
-  ],
-  function (e, t) {
-    "use strict";
-    let DataStream: any, IniFile: any, VirtualFile: any, KeyCommandType: any, numpadArrowMap: any, KeyBinds: any;
-    t && t.id;
-    return {
-      setters: [
-        function (e: any) {
-          DataStream = e;
-        },
-        function (e: any) {
-          IniFile = e;
-        },
-        function (e: any) {
-          VirtualFile = e;
-        },
-        function (e: any) {
-          KeyCommandType = e;
-        },
-      ],
-      execute: function () {
-        (numpadArrowMap = new Map([
-          [98, 40],
-          [100, 37],
-          [102, 39],
-          [104, 38],
-        ])),
-          e(
-            "KeyBinds",
-            (KeyBinds = class KeyBinds {
+import { DataStream } from '@/data/DataStream';
+import { IniFile } from '@/data/IniFile';
+import { VirtualFile } from '@/data/vfs/VirtualFile';
+import { KeyCommandType } from './KeyCommandType';
+
+const numpadArrowMap = new Map([
+  [98, 40],
+  [100, 37],
+  [102, 39],
+  [104, 38],
+]);
+
+export class KeyBinds {
               static iniSection = "Hotkey";
               
               private configDir: any;
@@ -56,7 +32,7 @@ System.register(
                 try {
                   if (this.configDir &&
                       (await this.configDir.containsEntry(this.persistFileName))) {
-                    iniFile = new IniFile.IniFile(
+                    iniFile = new IniFile(
                       await this.configDir.openFile(this.persistFileName),
                     );
                     this.loadHotKeys(iniFile);
@@ -71,25 +47,25 @@ System.register(
                 if (useDefault) {
                   iniFile = this.defaultIni;
                   for (const [commandType, keyCode] of new Map([
-                    [KeyCommandType.KeyCommandType.PreviousObject, "M".charCodeAt(0)],
-                    [KeyCommandType.KeyCommandType.VeterancyNav, "Y".charCodeAt(0)],
-                    [KeyCommandType.KeyCommandType.HealthNav, "U".charCodeAt(0)],
-                    [KeyCommandType.KeyCommandType.FreeMoney, 582],
-                    [KeyCommandType.KeyCommandType.BuildCheat, 593],
-                    [KeyCommandType.KeyCommandType.ToggleFps, 512 + "R".charCodeAt(0)],
-                    [KeyCommandType.KeyCommandType.ToggleShroud, 1024 + "S".charCodeAt(0)],
+                    [KeyCommandType.PreviousObject, "M".charCodeAt(0)],
+                    [KeyCommandType.VeterancyNav, "Y".charCodeAt(0)],
+                    [KeyCommandType.HealthNav, "U".charCodeAt(0)],
+                    [KeyCommandType.FreeMoney, 582],
+                    [KeyCommandType.BuildCheat, 593],
+                    [KeyCommandType.ToggleFps, 512 + "R".charCodeAt(0)],
+                    [KeyCommandType.ToggleShroud, 1024 + "S".charCodeAt(0)],
                   ])) {
                     this.addHotKey(commandType, keyCode);
                   }
                   this.loadHotKeys(iniFile);
                 }
-                this.addHotKey(KeyCommandType.KeyCommandType.Scoreboard, 9);
+                this.addHotKey(KeyCommandType.Scoreboard, 9);
               }
               
               async saveIni(iniFile: any): Promise<void> {
                 await this.configDir?.writeFile(
-                  new VirtualFile.VirtualFile(
-                    new DataStream.DataStream().writeString(iniFile.toString()),
+                  new VirtualFile(
+                    new DataStream().writeString(iniFile.toString()),
                     this.persistFileName,
                   ),
                 );
@@ -107,7 +83,7 @@ System.register(
                 const section = iniFile.getSection(KeyBinds.iniSection);
                 if (!section)
                   throw new Error(`Missing [${KeyBinds.iniSection}] ini section`);
-                const commandTypes = Object.keys(KeyCommandType.KeyCommandType);
+                const commandTypes = Object.keys(KeyCommandType);
                 for (const key of section.entries.keys()) {
                   if (commandTypes.includes(key)) {
                     const keyCode = section.getNumber(key);
@@ -120,7 +96,7 @@ System.register(
               }
               
               async save(): Promise<void> {
-                const iniFile = new IniFile.IniFile();
+                const iniFile = new IniFile();
                 const section = iniFile.getOrCreateSection(KeyBinds.iniSection);
                 for (const [keyCode, commandType] of this.hotKeys) {
                   section.set(commandType, "" + keyCode);
@@ -192,9 +168,4 @@ System.register(
                   } as KeyboardEvent;
                 }
               }
-            }),
-          );
-      },
-    };
-  },
-);
+}

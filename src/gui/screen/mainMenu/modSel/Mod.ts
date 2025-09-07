@@ -1,4 +1,4 @@
-import { ModStatus } from "gui/screen/mainMenu/modSel/ModStatus";
+import { ModStatus } from "@/gui/screen/mainMenu/modSel/ModStatus";
 
 interface ModMeta {
   id: string;

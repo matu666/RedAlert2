@@ -1,7 +1,7 @@
-import { jsx } from "gui/jsx/jsx";
-import { HtmlView } from "gui/jsx/HtmlView";
-import { SoundOpts } from "gui/screen/options/component/SoundOpts";
-import { StorageKey } from "LocalPrefs";
+import { jsx } from "@/gui/jsx/jsx";
+import { HtmlView } from "@/gui/jsx/HtmlView";
+import { SoundOpts } from "@/gui/screen/options/component/SoundOpts";
+import { StorageKey } from "@/LocalPrefs";
 
 interface ScreenController {
   setSidebarButtons(buttons: SidebarButton[]): void;

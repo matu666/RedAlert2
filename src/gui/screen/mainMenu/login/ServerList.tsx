@@ -1,5 +1,5 @@
 import React from "react";
-import { List, ListItem } from "gui/component/List";
+import { List, ListItem } from "@/gui/component/List";
 
 interface Region {
   id: string;

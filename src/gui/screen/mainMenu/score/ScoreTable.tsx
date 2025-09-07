@@ -1,9 +1,9 @@
 import React from "react";
 import classnames from "classnames";
 import { RANDOM_COLOR_NAME } from "game/gameopts/constants";
-import { CountryIcon } from "gui/component/CountryIcon";
-import { formatNumber } from "util/format";
-import { RankIndicator } from "gui/screen/mainMenu/lobby/component/RankIndicator";
+import { CountryIcon } from "@/gui/component/CountryIcon";
+import { formatNumber } from "@/util/format";
+import { RankIndicator } from "@/gui/screen/mainMenu/lobby/component/RankIndicator";
 import { WolGameReportResult } from "network/WolGameReport";
 
 interface ScoreTableProps {
