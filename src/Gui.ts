@@ -12,6 +12,7 @@ import { Strings } from './data/Strings.js';
 import { Engine } from './engine/Engine.js';
 import { MusicType } from './engine/sound/Music.js';
 import { MessageBoxApi } from './gui/component/MessageBoxApi.js';
+import { ToastApi } from './gui/component/ToastApi';
 import { ShpFile } from './data/ShpFile.js';
 import { Palette } from './data/Palette.js';
 import { UiAnimationLoop } from './engine/UiAnimationLoop.js';
@@ -25,6 +26,17 @@ import { MusicSpecs } from './engine/sound/MusicSpecs.js';
 import { LocalPrefs, StorageKey } from './LocalPrefs.js';
 import { GeneralOptions } from './gui/screen/options/GeneralOptions.js';
 import { FullScreen } from './gui/FullScreen.js';
+import { Pointer } from './gui/Pointer.js';
+import { CanvasMetrics } from './gui/CanvasMetrics.js';
+import { ErrorHandler } from './ErrorHandler.js';
+import { ResourceLoader } from './engine/ResourceLoader.js';
+import { MapFileLoader } from './gui/screen/game/MapFileLoader.js';
+import { LoadingScreenApiFactory } from './gui/screen/game/loadingScreen/LoadingScreenApiFactory.js';
+import { GameLoader } from './gui/screen/game/GameLoader.js';
+import { Rules } from './game/rules/Rules.js';
+import { VxlGeometryPool } from './engine/renderable/builder/vxlGeometry/VxlGeometryPool.js';
+import { VxlGeometryCache } from './engine/gfx/geometry/VxlGeometryCache.js';
+import { GameResConfig } from './engine/gameRes/GameResConfig.js';
 
 export class Gui {
   private appVersion: string;
@@ -41,6 +53,12 @@ export class Gui {
   // Controllers
   private rootController?: RootController;
   private messageBoxApi?: MessageBoxApi;
+  private toastApi?: any;
+  private runtimeVars?: any;
+  private pointer?: Pointer;
+  private canvasMetrics?: CanvasMetrics;
+  private cdnResourceLoader?: any;
+  private gameResConfig?: GameResConfig;
   
   // 音频系统
   private mixer?: Mixer;
@@ -66,13 +84,17 @@ export class Gui {
     appVersion: string,
     strings: Strings,
     viewport: BoxedVar<{ x: number; y: number; width: number; height: number }>,
-    rootEl: HTMLElement
+    rootEl: HTMLElement,
+    cdnResourceLoader?: any,
+    gameResConfig?: GameResConfig
   ) {
     this.appVersion = appVersion;
     this.strings = strings;
     this.viewport = viewport;
     this.rootEl = rootEl;
     this.localPrefs = new LocalPrefs(localStorage);
+    this.cdnResourceLoader = cdnResourceLoader;
+    this.gameResConfig = gameResConfig;
   }
 
   async init(): Promise<void> {
@@ -92,6 +114,9 @@ export class Gui {
     
     // Initialize options system
     this.initOptionsSystem();
+    
+    // Initialize pointer before JSX renderer (align with original project)
+    this.initPointer();
     
     // Initialize JSX renderer
     this.initJsxRenderer();
@@ -141,6 +166,9 @@ export class Gui {
       
       // Rerender current screen
       this.rootController?.rerenderCurrentScreen();
+
+      // Update canvas metrics to keep pointer math in sync (align with original)
+      this.canvasMetrics?.notifyViewportChange();
     }
   }
 
@@ -160,20 +188,45 @@ export class Gui {
     this.jsxRenderer = new JsxRenderer(
       Engine.images,
       Engine.palettes,
-      this.uiScene.getCamera()
+      this.uiScene.getCamera(),
+      this.pointer?.pointerEvents
     );
     
-    // Initialize MessageBoxApi
+    // Initialize MessageBoxApi & ToastApi (align with original)
     this.messageBoxApi = new MessageBoxApi(
       this.viewport,
       this.uiScene,
       this.jsxRenderer
     );
+    this.toastApi = new ToastApi(this.viewport, this.uiScene, this.jsxRenderer);
+  }
+
+  private initPointer(): void {
+    if (!this.renderer || !this.uiScene || !this.generalOptions) return;
+    
+    // Create CanvasMetrics and Pointer (align with original project)
+    const canvasMetrics = new CanvasMetrics(this.renderer.getCanvas(), window);
+    canvasMetrics.init();
+    this.canvasMetrics = canvasMetrics;
+
+    const pointer = Pointer.factory(
+      Engine.images.get('mouse.shp'),
+      Engine.palettes.get('mousepal.pal'),
+      this.renderer,
+      document,
+      canvasMetrics,
+      this.generalOptions.mouseAcceleration
+    );
+    pointer.init();
+    this.pointer = pointer;
+    this.uiScene.add(pointer.getSprite());
   }
 
   private initRootController(): void {
     console.log('[Gui] Initializing root controller');
-    this.rootController = new RootController();
+    // 与原项目对齐：RootController 需要 serverRegions 实例
+    const serverRegions = { loaded: true } as any; // 占位，后续如果接入真实服务可替换为 ServerRegions 实例
+    this.rootController = new RootController(serverRegions);
   }
 
   private async loadGameResources(): Promise<void> {
@@ -365,6 +418,11 @@ export class Gui {
     // 添加SkirmishScreen
     const { SkirmishScreen } = await import('./gui/screen/mainMenu/lobby/SkirmishScreen.js');
     subScreens.set(MainMenuScreenType.Skirmish, SkirmishScreen);
+    
+    // 添加MapSelScreen
+    const { MapSelScreen } = await import('./gui/screen/mainMenu/mapSel/MapSelScreen.js');
+    subScreens.set(MainMenuScreenType.MapSelection, MapSelScreen);
+    
     // 底层测试入口屏幕
     const { TestEntryScreen } = await import('./gui/screen/mainMenu/main/TestEntryScreen.js');
     subScreens.set(MainMenuScreenType.TestEntry, TestEntryScreen);
@@ -405,6 +463,145 @@ export class Gui {
     
     // Add screen to root controller
     this.rootController.addScreen(ScreenType.MainMenuRoot, mainMenuRootScreen);
+    // Register Game and Replay screens like original
+    const { GameScreen } = await import('./gui/screen/game/GameScreen.js');
+    const errorHandler = new ErrorHandler(this.messageBoxApi, this.strings);
+    const mapsBaseUrl = (this as any).config?.mapsBaseUrl ?? '';
+    const mapResLoader = new ResourceLoader(mapsBaseUrl);
+    const mapFileLoader = new MapFileLoader(mapResLoader, (Engine as any).vfs);
+    const rules = new Rules(Engine.getRules(), undefined);
+    const loadingScreenApiFactory = new LoadingScreenApiFactory(
+      rules,
+      this.strings,
+      this.uiScene,
+      this.jsxRenderer!,
+      this.gameResConfig!,
+      undefined as any
+    );
+    const gameModes = Engine.getMpModes();
+    const gameMenuSubScreens = new Map<number, any>();
+    gameMenuSubScreens.set(
+      (await import('./gui/screen/game/gameMenu/ScreenType.js')).ScreenType.Home,
+      new (await import('./gui/screen/game/gameMenu/GameMenuHomeScreen.js')).GameMenuHomeScreen(this.strings, this.fullScreen!)
+    );
+    gameMenuSubScreens.set(
+      (await import('./gui/screen/game/gameMenu/ScreenType.js')).ScreenType.Diplo,
+      new (await import('./gui/screen/game/gameMenu/DiploScreen.js')).DiploScreen(
+        this.strings,
+        this.jsxRenderer!,
+        this.renderer!,
+        Engine.getMpModes() as any,
+        new BoxedVar<boolean>(this.localPrefs.getBool(StorageKey.TauntsEnabled, true)),
+        new Set<string>()
+      )
+    );
+    gameMenuSubScreens.set(
+      (await import('./gui/screen/game/gameMenu/ScreenType.js')).ScreenType.ConnectionInfo,
+      new (await import('./gui/screen/game/gameMenu/ConnectionInfoScreen.js')).ConnectionInfoScreen(
+        this.strings,
+        this.jsxRenderer!
+      )
+    );
+    gameMenuSubScreens.set(
+      (await import('./gui/screen/game/gameMenu/ScreenType.js')).ScreenType.QuitConfirm,
+      new (await import('./gui/screen/game/gameMenu/QuitConfirmScreen.js')).QuitConfirmScreen(this.strings)
+    );
+    gameMenuSubScreens.set(
+      (await import('./gui/screen/game/gameMenu/ScreenType.js')).ScreenType.Options,
+      new (await import('./gui/screen/options/OptionsScreen.js')).OptionsScreen(
+        this.strings,
+        this.jsxRenderer!,
+        this.generalOptions!,
+        this.localPrefs,
+        this.fullScreen!,
+        true,
+        false
+      )
+    );
+    gameMenuSubScreens.set(
+      (await import('./gui/screen/game/gameMenu/ScreenType.js')).ScreenType.OptionsSound,
+      new (await import('./gui/screen/options/SoundOptsScreen.js')).SoundOptsScreen(
+        this.strings,
+        this.jsxRenderer!,
+        this.mixer!,
+        this.music!,
+        this.localPrefs
+      )
+    );
+    gameMenuSubScreens.set(
+      (await import('./gui/screen/game/gameMenu/ScreenType.js')).ScreenType.OptionsKeyboard,
+      new (await import('./gui/screen/options/KeyboardScreen.js')).KeyboardScreen(
+        this.strings,
+        this.jsxRenderer!,
+        this.keyBinds!
+      )
+    );
+
+    const gameScreen = new GameScreen(
+      undefined, // workerHostApi
+      undefined, // gservCon
+      undefined, // wgameresService
+      undefined, // wolService
+      undefined, // mapTransferService
+      this.appVersion, // engineVersion
+      '', // engineModHash
+      errorHandler, // errorHandler
+      gameMenuSubScreens, // gameMenuSubScreens
+      loadingScreenApiFactory, // loadingScreenApiFactory
+      undefined, // gameOptsParser
+      undefined, // gameOptsSerializer
+      (this as any).config || {}, // config
+      this.strings, // strings
+      this.renderer, // renderer
+      this.uiScene, // uiScene
+      this.runtimeVars || {}, // runtimeVars
+      this.messageBoxApi, // messageBoxApi
+      this.toastApi, // toastApi
+      this.uiAnimationLoop, // uiAnimationLoop
+      this.viewport, // viewport
+      this.jsxRenderer, // jsxRenderer
+      this.pointer, // pointer
+      this.sound, // sound
+      this.music, // music
+      this.mixer, // mixer
+      this.keyBinds, // keyBinds
+      this.generalOptions, // generalOptions
+      this.localPrefs, // localPrefs
+      undefined, // actionLogger
+      undefined, // lockstepLogger
+      undefined, // replayManager
+      this.fullScreen, // fullScreen
+      mapFileLoader, // mapFileLoader
+      undefined, // mapDir
+      Engine.getMapList?.(), // mapList
+      new GameLoader(
+        this.appVersion,
+        undefined, // Worker disabled temporarily; see GameLoader for notes
+        mapResLoader,
+        mapResLoader,
+        rules,
+        gameModes,
+        this.sound,
+        (console as any),
+        undefined,
+        undefined,
+        this.gameResConfig!,
+        new VxlGeometryPool(new VxlGeometryCache(null, Engine.getActiveMod?.() ?? null), this.generalOptions!.graphics.models.value),
+        new Map(),
+        (this as any).runtimeVars?.debugBotIndex,
+        (this as any).config?.devMode ?? false
+      ), // gameLoader
+      undefined, // vxlGeometryPool
+      undefined, // buildingImageDataCache
+      undefined, // mutedPlayers
+      undefined, // tauntsEnabled
+      undefined, // speedCheat
+      undefined, // sentry
+      undefined // battleControlApi
+    );
+    // Ensure GameScreen has controller reference (align with original behavior)
+    (gameScreen as any).setController?.(this.rootController);
+    this.rootController.addScreen(ScreenType.Game, gameScreen as any);
     
     // Navigate to main menu
     this.rootController.goToScreen(ScreenType.MainMenuRoot);
@@ -529,13 +726,14 @@ export class Gui {
       // 创建Mixer适配器用于AudioSystem
       const mixerAdapter = {
         onVolumeChange: {
-          subscribe: (handler: (mixer: any, channel: ChannelType) => void) => {
-            mixer.onVolumeChange.subscribe((data: [any, number]) => {
-              handler(data[0], data[1]);
+          subscribe: (handler: (mixerArg: any, channel: ChannelType) => void) => {
+            // EventDispatcher dispatches as (data, source), which here are (channel, mixer)
+            mixer.onVolumeChange.subscribe((channel: number, mixerArg: any) => {
+              handler(mixerArg, channel as ChannelType);
             });
           },
-          unsubscribe: (handler: (mixer: any, channel: ChannelType) => void) => {
-            // 这里需要保存原始的handler映射，暂时简化处理
+          unsubscribe: (handler: (mixerArg: any, channel: ChannelType) => void) => {
+            // 简化实现：目前未保存原始handler映射
             console.warn('[Gui] Mixer adapter unsubscribe not fully implemented');
           }
         },
@@ -712,6 +910,11 @@ export class Gui {
     // 创建KeyBinds实例（暂时使用模拟数据）
     // TODO: 实现真正的KeyBinds加载逻辑
     this.keyBinds = null; // 暂时设为null，避免错误
+    // 初始化运行时变量（与原项目一致地提供 debugBotIndex）
+    this.runtimeVars = Object.assign(this.runtimeVars || {}, {
+      debugBotIndex: new BoxedVar<number | undefined>(undefined),
+      debugText: new BoxedVar<boolean>(false)
+    });
     
     console.log('[Gui] Options system initialized');
   }

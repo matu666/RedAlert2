@@ -19,16 +19,33 @@ export class LazyResourceCollection<T> {
   }
 
   has(key: string): boolean {
-    return !!this.resources.has(key) || (this.vfs?.fileExists(key) ?? false);
+    const inMem = this.resources.has(key);
+    const inVfs = this.vfs?.fileExists(key) ?? false;
+    if (!inMem) {
+      try { console.log('[LazyResourceCollection.has]', { key, inVfs }); } catch {}
+    }
+    return !!inMem || inVfs;
   }
 
   get(key: string): T | undefined {
     let resource = this.resources.get(key);
-    if (!resource && this.vfs?.fileExists(key)) {
-      const file = this.vfs.openFile(key);
-      if (file) { // Ensure file is not undefined if openFile can return that
-        resource = this.resourceFactory(file);
-        this.resources.set(key, resource!);
+    if (!resource) {
+      try { console.log('[LazyResourceCollection.get] miss -> probing VFS', { key }); } catch {}
+      if (this.vfs?.fileExists(key)) {
+        try {
+          const owners = (this.vfs as any).debugListFileOwners?.(key);
+          try { console.log('[LazyResourceCollection.get] owners', owners); } catch {}
+        } catch {}
+        const file = this.vfs.openFile(key);
+        if (file) {
+          resource = this.resourceFactory(file);
+          this.resources.set(key, resource!);
+          try { console.log('[LazyResourceCollection.get] loaded', { key }); } catch {}
+        }
+      } else {
+        try {
+          console.warn('[LazyResourceCollection.get] not found in VFS', { key, archives: this.vfs?.listArchives?.() });
+        } catch {}
       }
     }
     return resource;

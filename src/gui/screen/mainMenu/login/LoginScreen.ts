@@ -1,5 +1,5 @@
 import { jsx } from "@/gui/jsx/jsx";
-import { WolError } from "network/WolError";
+import { WolError } from "@/network/WolError";
 import { LoginBox } from "@/gui/screen/mainMenu/login/LoginBox";
 import { ScreenType } from "@/gui/screen/mainMenu/ScreenType";
 import { HtmlView } from "@/gui/jsx/HtmlView";

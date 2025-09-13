@@ -1,6 +1,6 @@
-import { CompositeDisposable } from 'util/disposable/CompositeDisposable';
-import { ChatRecipientType } from 'network/chat/ChatMessage';
-import { RECIPIENT_ALL, RECIPIENT_TEAM } from 'network/gservConfig';
+import { CompositeDisposable } from '@/util/disposable/CompositeDisposable';
+import { ChatRecipientType } from '@/network/chat/ChatMessage';
+import { RECIPIENT_ALL, RECIPIENT_TEAM } from '@/network/gservConfig';
 
 /**
  * Handles network chat message processing and routing

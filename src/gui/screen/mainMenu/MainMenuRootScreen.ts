@@ -2,6 +2,7 @@ import { RootScreen } from '../RootScreen';
 import { MainMenu } from './component/MainMenu';
 import { MainMenuController } from './MainMenuController';
 import { MainMenuScreenType } from '../ScreenType';
+import { ScoreScreen } from './score/ScoreScreen';
 import { Strings } from '../../../data/Strings';
 import { ShpFile } from '../../../data/ShpFile';
 import { JsxRenderer } from '../../jsx/JsxRenderer';
@@ -99,7 +100,7 @@ export class MainMenuRootScreen extends RootScreen {
     );
 
     // Subscribe to screen changes for logging/analytics
-    this.mainMenuCtrl.onScreenChange.subscribe((screenType, controller) => {
+    this.mainMenuCtrl.onScreenChange.subscribe((screenType, _controller) => {
       if (screenType !== undefined) {
         console.log(`[MainMenuRootScreen] Navigated to screen: ${screenType}`);
       } else {
@@ -128,6 +129,11 @@ export class MainMenuRootScreen extends RootScreen {
     
     const controller = this.createViewAndController();
     
+    // Ensure Score screen exists like original project
+    if (!this.subScreens.has(MainMenuScreenType.Score)) {
+      this.subScreens.set(MainMenuScreenType.Score, ScoreScreen as any);
+    }
+
     // Add all sub-screens to the controller
     for (const [screenType, screenClass] of this.subScreens) {
       const screen: any = await this.createScreen(screenType, screenClass, controller);
@@ -156,7 +162,7 @@ export class MainMenuRootScreen extends RootScreen {
     }, 0);
   }
 
-  private async createScreen(screenType: MainMenuScreenType, screenClass: any, controller: any): Promise<any> {
+  private async createScreen(screenType: MainMenuScreenType, screenClass: any, _controller: any): Promise<any> {
     let screen: any;
     
     // Create screen instances with appropriate parameters based on screen type
@@ -229,6 +235,66 @@ export class MainMenuRootScreen extends RootScreen {
           mapList,
           gameModes,
           this.localPrefs
+        );
+      } else if (screenType === MainMenuScreenType.MapSelection) {
+        // MapSelScreen需要特殊参数 - 使用真实依赖对象
+        console.log('[MainMenuRootScreen] Creating MapSelScreen with real dependencies');
+        
+        // 动态导入真实的依赖对象（与SkirmishScreen共享相同的依赖）
+        const { ErrorHandler } = await import('../../../ErrorHandler.js');
+        const { MapFileLoader } = await import('../game/MapFileLoader.js');
+        const { Engine } = await import('../../../engine/Engine.js');
+        
+        // 创建真实的依赖对象实例
+        const errorHandler = new ErrorHandler(this.messageBoxApi, this.strings);
+        
+        // MapFileLoader需要ResourceLoader和VFS
+        const { ResourceLoader } = await import('../../../engine/ResourceLoader.js');
+        const mapResourceLoader = new ResourceLoader(''); // 空URL，使用VFS
+        const mapFileLoader = new MapFileLoader(mapResourceLoader, Engine.vfs);
+        
+        // 获取Engine的地图列表和游戏模式
+        const mapList = Engine.getMapList();
+        const gameModes = Engine.getMpModes();
+        
+        // 获取真实的 mapDir、fsAccessLib、sentry（与原项目一致）
+        let mapDir: any = undefined;
+        try {
+          const mapDirHandle = await Engine.getMapDir();
+          if (mapDirHandle) {
+            const { RealFileSystemDir } = await import('../../../data/vfs/RealFileSystemDir.js');
+            mapDir = new RealFileSystemDir(mapDirHandle);
+          }
+        } catch (e) {
+          console.error("[MainMenuRootScreen] Couldn't get map dir", e);
+        }
+
+        const fsAccessLib = (window as any).FileSystemAccess;
+
+        const sentry = undefined as any;
+        
+        screen = new screenClass(
+          this.strings,
+          this.jsxRenderer,
+          mapFileLoader,
+          errorHandler,
+          this.messageBoxApi,
+          this.localPrefs,
+          mapList,
+          gameModes,
+          mapDir,
+          fsAccessLib,
+          sentry
+        );
+      } else if (screenType === MainMenuScreenType.Score) {
+        // ScoreScreen 需要特定参数（与原项目一致）
+        screen = new screenClass(
+          this.strings,
+          this.jsxRenderer,
+          this.messageBoxApi,
+          this.localPrefs,
+          (this as any).config || {},
+          (this as any).wolService
         );
       } else {
         // 其他屏幕使用标准参数

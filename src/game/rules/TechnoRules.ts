@@ -545,7 +545,6 @@ export class TechnoRules extends ObjectRules {
     this.radarInvisible = this.ini.getBool("RadarInvisible");
     this.revealToAll = this.ini.getBool("RevealToAll");
     this.selectable = !(this.type === ObjectType.Aircraft && !landable) && this.ini.getBool("Selectable", true);
-    console.log('current selectable', this.selectable);
     this.isSelectableCombatant = this.ini.getBool("IsSelectableCombatant");
     this.invisibleInGame = this.ini.getBool("InvisibleInGame");
     this.moveToShroud = this.ini.getBool("MoveToShroud", this.type !== ObjectType.Aircraft);

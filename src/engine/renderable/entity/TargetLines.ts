@@ -297,9 +297,9 @@ export class TargetLines {
 System.register(
     "engine/renderable/entity/TargetLines",
     [
-      "game/Coords",
-      "game/gameobject/task/system/TargetLinesConfig",
-      "game/gameobject/unit/ZoneType",
+      "@/game/Coords",
+      "@/game/gameobject/task/system/TargetLinesConfig",
+      "@/game/gameobject/unit/ZoneType",
     ],
     function (e, t) {
       "use strict";

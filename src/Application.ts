@@ -713,7 +713,9 @@ export class Application {
         this.getVersion(),
         this.strings,
         this.viewport,
-        this.rootEl!
+        this.rootEl!,
+        this.cdnResourceLoader,
+        this.gameResConfig
       );
       
       await this.gui.init();

@@ -1,5 +1,5 @@
-import { ChatRecipientType } from 'network/chat/ChatMessage';
-import { RECIPIENT_TEAM } from 'network/gservConfig';
+import { ChatRecipientType } from '@/network/chat/ChatMessage';
+import { RECIPIENT_TEAM } from '@/network/gservConfig';
 
 /**
  * Handles chat typing state and keyboard input during chat composition

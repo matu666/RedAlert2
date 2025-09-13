@@ -1,5 +1,5 @@
-import { Hud } from 'gui/screen/game/component/Hud';
-import { Engine } from 'engine/Engine';
+import { Hud } from '@/gui/screen/game/component/Hud';
+import { Engine } from '@/engine/Engine';
 
 /**
  * Factory for creating HUD instances with all required dependencies
@@ -7,7 +7,7 @@ import { Engine } from 'engine/Engine';
 export class HudFactory {
   constructor(
     private sideType: any,
-    private uiScene: any,
+    private viewport: any,
     private sidebarModel: any,
     private messageList: any,
     private chatHistory: any,
@@ -30,7 +30,7 @@ export class HudFactory {
   create(): Hud {
     return new Hud(
       this.sideType,
-      this.uiScene.viewport,
+      this.viewport,
       Engine.getImages(),
       Engine.getPalettes(),
       this.cameoFilenames,

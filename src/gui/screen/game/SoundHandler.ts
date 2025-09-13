@@ -1,7 +1,7 @@
-import { CompositeDisposable } from 'util/disposable/CompositeDisposable';
-import { EventType } from 'game/event/EventType';
-import { SoundKey } from 'engine/sound/SoundKey';
-import { ChannelType } from 'engine/sound/ChannelType';
+import { CompositeDisposable } from '@/util/disposable/CompositeDisposable';
+import { EventType } from '@/game/event/EventType';
+import { SoundKey } from '@/engine/sound/SoundKey';
+import { ChannelType } from '@/engine/sound/ChannelType';
 
 /**
  * Handles all game sound effects and audio feedback

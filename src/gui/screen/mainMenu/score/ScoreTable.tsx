@@ -1,10 +1,9 @@
 import React from "react";
 import classnames from "classnames";
-import { RANDOM_COLOR_NAME } from "game/gameopts/constants";
+import { RANDOM_COLOR_NAME } from "@/game/gameopts/constants";
 import { CountryIcon } from "@/gui/component/CountryIcon";
-import { formatNumber } from "@/util/format";
 import { RankIndicator } from "@/gui/screen/mainMenu/lobby/component/RankIndicator";
-import { WolGameReportResult } from "network/WolGameReport";
+import { WolGameReportResult } from "@/network/WolGameReport";
 
 interface ScoreTableProps {
   game: any;
@@ -158,17 +157,17 @@ export const ScoreTable: React.FC<ScoreTableProps> = ({
               React.createElement(
                 "td",
                 { className: "score-col" },
-                formatNumber(player.score),
+                player.score,
               ),
               React.createElement(
                 "td",
                 { className: "units-col" },
-                formatNumber(player.unitsKilled),
+                player.unitsKilled,
               ),
               React.createElement(
                 "td",
                 { className: "buildings-col" },
-                formatNumber(player.buildingsKilled),
+                player.buildingsKilled,
               ),
               showReport &&
                 React.createElement(

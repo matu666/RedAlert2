@@ -97,7 +97,8 @@ export class PaletteBasicMaterial extends THREE.MeshBasicMaterial {
     paletteOffset,
     extraLight,
     useVertexColorMult,
-    flatShading, // Remove this unsupported property
+    flatShading, // ignored to match original behavior
+    useRedIndex,
     ...options
   }: any = {}) {
     super(options);
@@ -122,9 +123,8 @@ export class PaletteBasicMaterial extends THREE.MeshBasicMaterial {
     
     this.vertexShader = PaletteBasicShader.vertexShader;
     this.fragmentShader = PaletteBasicShader.fragmentShader;
-    // When the base map is an AlphaFormat DataTexture, the value is in A channel in r94,
-    // but after migration some pipelines may store it in R. Allow switching via define.
-    if ((options as any)?.useRedIndex) {
+    // Optional define: if caller explicitly requests red-channel indexing
+    if (useRedIndex) {
       this.defines = this.defines || {};
       this.defines.USE_RED_INDEX = '';
     }

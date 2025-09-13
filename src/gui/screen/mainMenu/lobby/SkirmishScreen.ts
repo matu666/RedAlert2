@@ -105,7 +105,6 @@ interface SkirmishUnstackParams {
 }
 
 export class SkirmishScreen extends MainMenuScreen {
-  public title: string;
   public musicType: MusicType;
   private rootController: RootController;
   private errorHandler: ErrorHandler;
@@ -182,6 +181,10 @@ export class SkirmishScreen extends MainMenuScreen {
 
   onViewportChange(): void {
     // No implementation needed for skirmish
+  }
+
+  async onStack(): Promise<void> {
+    await this.unrender();
   }
 
   onUnstack(params?: SkirmishUnstackParams): void {
@@ -683,7 +686,7 @@ export class SkirmishScreen extends MainMenuScreen {
     this.controller.setSidebarButtons([
       {
         label: this.strings.get("GUI:StartGame"),
-        tooltip: this.strings.get("STT:SkirmishButtonGo"),
+        tooltip: this.strings.get("STT:SkirmishButtonStartGame"),
         onClick: () => {
           this.handleStartGame();
         },
@@ -744,8 +747,8 @@ export class SkirmishScreen extends MainMenuScreen {
   }
 
   private handleStartGame(): void {
-    if (this.gameOpts.humanPlayers.filter((p) => p.countryId !== OBS_COUNTRY_ID).length < 2) {
-      this.messageBoxApi.show(this.strings.get("TXT_ONLY_ONE"), this.strings.get("GUI:Ok"));
+    if (this.gameOpts.aiPlayers.filter(isNotNullOrUndefined).length < 1) {
+      this.messageBoxApi.show(this.strings.get("TXT_NEED_AT_LEAST_TWO_PLAYERS"), this.strings.get("GUI:Ok"));
       return;
     }
 
@@ -756,7 +759,7 @@ export class SkirmishScreen extends MainMenuScreen {
 
     const gameId = "skirmish-" + Date.now();
     const timestamp = Date.now();
-    const fallbackRoute = new MainMenuRoute(MainMenuScreenType.Home, {});
+    const fallbackRoute = new MainMenuRoute(MainMenuScreenType.Skirmish, {});
 
     this.rootController.createGame(
       gameId,

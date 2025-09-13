@@ -6,7 +6,7 @@ import { Task } from "@puzzl/core/lib/async/Task";
 import { sleep } from "@/util/time";
 import { StorageKey } from "LocalPrefs";
 import { MainMenuScreen } from "@/gui/screen/mainMenu/MainMenuScreen";
-import { HttpRequest } from "network/HttpRequest";
+import { HttpRequest } from "@/network/HttpRequest";
 
 interface Region {
   id: string;

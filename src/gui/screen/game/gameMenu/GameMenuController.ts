@@ -45,7 +45,7 @@ export class GameMenuController extends Controller {
   }
 
   async close(): Promise<void> {
-    while (this.screenStack.length) {
+    while (this.getCurrentScreen() || this.screenStack.length) {
       await this.popScreen();
     }
   }

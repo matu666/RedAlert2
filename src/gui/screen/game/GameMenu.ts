@@ -1,7 +1,7 @@
-import { CompositeDisposable } from 'util/disposable/CompositeDisposable';
-import { GameMenuController } from 'gui/screen/game/gameMenu/GameMenuController';
-import { ScreenType } from 'gui/screen/game/gameMenu/ScreenType';
-import { EventDispatcher } from 'util/event';
+import { CompositeDisposable } from '@/util/disposable/CompositeDisposable';
+import { GameMenuController } from '@/gui/screen/game/gameMenu/GameMenuController';
+import { ScreenType } from '@/gui/screen/game/gameMenu/ScreenType';
+import { EventDispatcher } from '@/util/event';
 
 /**
  * Game menu system for in-game menus and dialogs
@@ -42,7 +42,7 @@ export class GameMenu {
   }
 
   constructor(
-    private screens: any,
+    private screens: Map<number, any>,
     private game: any,
     private localPlayer: any,
     private chatHistory: any,
@@ -52,49 +52,94 @@ export class GameMenu {
   ) {}
 
   init(hud: any): void {
-    this.controller = new GameMenuController(
-      this.screens,
-      this.game,
-      this.localPlayer,
-      this.chatHistory,
-      this.gservCon,
-      this.isSinglePlayer,
-      this.isTournament
-    );
-    
-    // Wire up events
-    this.controller.onOpen.subscribe(() => this._onOpen.dispatch(this));
-    this.controller.onQuit.subscribe(() => this._onQuit.dispatch(this));
-    this.controller.onObserve.subscribe(() => this._onObserve.dispatch(this));
-    this.controller.onCancel.subscribe(() => this._onCancel.dispatch(this));
-    this.controller.onToggleAlliance.subscribe((data) => 
-      this._onToggleAlliance.dispatch(this, data)
-    );
-    this.controller.onSendMessage.subscribe((data) => 
-      this._onSendMessage.dispatch(this, data)
-    );
+    const controller = this.controller = new GameMenuController(hud);
 
-    this.disposables.add(this.controller);
+    // Register sub-screens and set controller on them (align with original project)
+    for (const [screenType, screen] of this.screens) {
+      screen.setController?.(controller);
+      controller.addScreen(screenType, screen);
+    }
+
+    this.disposables.add(controller, () => (this.controller = undefined));
+
+    this.bindHudEvents(hud);
   }
 
   open(): void {
-    this.controller?.open();
+    if (!this.controller) return;
+    this._onOpen.dispatch(this);
+    this.controller.goToScreen(ScreenType.Home, {
+      observeAllowed: !(
+        this.isTournament ||
+        this.isSinglePlayer ||
+        this.localPlayer === undefined ||
+        this.localPlayer.isObserver ||
+        this.localPlayer.defeated
+      ),
+      onQuit: async () => {
+        this.controller!.close();
+        this._onQuit.dispatch(this);
+      },
+      onObserve: () => {
+        this.controller!.close();
+        this._onObserve.dispatch(this);
+      },
+      onCancel: () => {
+        this.controller!.close();
+        this._onCancel.dispatch(this);
+      }
+    });
   }
 
   close(): void {
-    this.controller?.close();
+    if (!this.controller) return;
+    if (this.controller.getCurrentScreen()) {
+      this.controller.close();
+      this._onCancel.dispatch(this);
+    }
   }
 
   openDiplo(): void {
-    this.controller?.openDiplo();
+    if (!this.controller) return;
+    this._onOpen.dispatch(this);
+    this.controller.goToScreen(ScreenType.Diplo, {
+      game: this.game,
+      localPlayer: this.localPlayer,
+      isSinglePlayer: this.isSinglePlayer,
+      chatHistory: this.chatHistory,
+      gservCon: this.gservCon,
+      onToggleAlliance: (player: any, enabled: boolean) => {
+        this._onToggleAlliance.dispatch(player, enabled);
+      },
+      onSendMessage: (message: any) => this._onSendMessage.dispatch(this, message),
+      onCancel: () => {
+        this.controller!.close();
+        this._onCancel.dispatch(this);
+      }
+    });
   }
 
   openConnectionInfo(combatants: any, gservCon: any, chatNetHandler: any): void {
-    this.controller?.openConnectionInfo(combatants, gservCon, chatNetHandler);
+    if (!this.controller) return;
+    this._onOpen.dispatch(this);
+    this.controller.goToScreen(ScreenType.ConnectionInfo, {
+      players: combatants,
+      localPlayer: this.localPlayer,
+      chatHistory: this.chatHistory,
+      chatNetHandler: chatNetHandler,
+      gservCon: gservCon,
+      onQuit: async () => {
+        this.controller!.close();
+        this._onQuit.dispatch(this);
+      }
+    });
   }
 
   handleHudChange(hud: any): void {
-    this.controller?.handleHudChange(hud);
+    if (!this.controller) return;
+    this.controller.setHud(hud);
+    this.bindHudEvents(hud);
+    this.controller.rerenderCurrentScreen();
   }
 
   getCurrentScreen(): any {
@@ -103,5 +148,10 @@ export class GameMenu {
 
   dispose(): void {
     this.disposables.dispose();
+  }
+
+  private bindHudEvents(hud: any): void {
+    hud.onOptButtonClick.subscribe(() => this.open());
+    hud.onDiploButtonClick.subscribe(() => this.openDiplo());
   }
 }

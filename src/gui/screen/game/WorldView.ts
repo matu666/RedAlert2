@@ -1,10 +1,10 @@
-import { CompositeDisposable } from 'util/disposable/CompositeDisposable';
-import { WorldScene } from 'engine/renderable/WorldScene';
-import { WorldViewportHelper } from 'engine/util/WorldViewportHelper';
-import { MapTileIntersectHelper } from 'engine/util/MapTileIntersectHelper';
-import { WorldSound } from 'engine/sound/WorldSound';
-import { Engine } from 'engine/Engine';
-import { MapPanningHelper } from 'engine/util/MapPanningHelper';
+import { CompositeDisposable } from '@/util/disposable/CompositeDisposable';
+import { WorldScene } from '@/engine/renderable/WorldScene';
+import { WorldViewportHelper } from '@/engine/util/WorldViewportHelper';
+import { MapTileIntersectHelper } from '@/engine/util/MapTileIntersectHelper';
+import { WorldSound } from '@/engine/sound/WorldSound';
+import { Engine } from '@/engine/Engine';
+import { MapPanningHelper } from '@/engine/util/MapPanningHelper';
 
 /**
  * Manages the 3D world view and rendering for the game
@@ -27,36 +27,28 @@ export class WorldView {
   ) {}
 
   init(localPlayer: any, viewport: any, theater: any): any {
-    // Initialize world scene
-    const worldScene = new WorldScene();
-    
-    // Initialize world sound
-    const worldSound = new WorldSound(this.sound);
-    
-    // Initialize various FX handlers
+    // Align with original project: create a real WorldScene via factory
+    const worldScene = WorldScene.factory(
+      viewport,
+      this.runtimeVars?.freeCamera,
+      this.generalOptions?.graphics?.shadows
+    );
+
+    // Minimal placeholders for components not yet migrated
+    const worldSound = {};
     const superWeaponFxHandler = this.createSuperWeaponFxHandler();
     const beaconFxHandler = this.createBeaconFxHandler();
-    
-    // Initialize renderable manager
     const renderableManager = this.createRenderableManager();
-    
-    // Initialize lighting
-    const lighting = this.createLighting();
-    
-    // Initialize map rendering
-    const mapRenderable = this.createMapRenderable(theater);
-    
-    // Set up viewport and camera
+
+    // Configure viewport
     this.setupViewport(viewport);
-    
+
     return {
       worldScene,
       worldSound,
       superWeaponFxHandler,
       beaconFxHandler,
-      renderableManager,
-      lighting,
-      mapRenderable
+      renderableManager
     };
   }
 

@@ -1,9 +1,9 @@
 import React from 'react';
-import { CompositeDisposable } from 'util/disposable/CompositeDisposable';
-import { EventDispatcher } from 'util/event';
-import { SoundKey } from 'engine/sound/SoundKey';
-import { ChannelType } from 'engine/sound/ChannelType';
-import { KeyCommandType } from 'gui/screen/game/worldInteraction/keyboard/KeyCommandType';
+import { CompositeDisposable } from '@/util/disposable/CompositeDisposable';
+import { EventDispatcher } from '@/util/event';
+import { SoundKey } from '@/engine/sound/SoundKey';
+import { ChannelType } from '@/engine/sound/ChannelType';
+import { KeyCommandType } from '@/gui/screen/game/worldInteraction/keyboard/KeyCommandType';
 
 /**
  * UI controller for observer players

@@ -10,15 +10,15 @@ import {
   RANDOM_COUNTRY_ID, 
   RANDOM_COLOR_ID,
   OBS_COUNTRY_ID 
-} from "game/gameopts/constants";
+} from "@/game/gameopts/constants";
 import { SoundKey } from "@/engine/sound/SoundKey";
 import { ChannelType } from "@/engine/sound/ChannelType";
 import { MainMenuRoute } from "@/gui/screen/mainMenu/MainMenuRoute";
 import { QuickGameForm } from "@/gui/screen/mainMenu/quickGame/component/QuickGameForm";
 import { StorageKey } from "LocalPrefs";
-import { WLadderService } from "network/ladder/WLadderService";
-import { LadderQueueType } from "network/ladder/wladderConfig";
-import { WolError } from "network/WolError";
+import { WLadderService } from "@/network/ladder/WLadderService";
+import { LadderQueueType } from "@/network/ladder/wladderConfig";
+import { WolError } from "@/network/WolError";
 import { 
   RPL_QUEUE_LIST,
   RPL_WORKING,
@@ -28,7 +28,7 @@ import {
   RPL_MATCHED,
   RPL_REQUEUE,
   RPL_STATS
-} from "network/qmCodes";
+} from "@/network/qmCodes";
 import { ChatUi } from "@/gui/screen/mainMenu/quickGame/ChatUi";
 
 enum QueueState {

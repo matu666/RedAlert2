@@ -55,9 +55,9 @@ export class SidebarCard extends UiComponent<SidebarCardProps> {
   private justCreated: boolean = true;
   private lastItemCount: number = 0;
   private pagingOffset: number = 0;
-  private slotOutline!: UiObject;
-  private labelImages!: any[];
-  private quantityImages!: any[];
+  private declare slotOutline: UiObject;
+  private declare labelImages: any[];
+  private declare quantityImages: any[];
   private lastActiveTab?: any;
   private hoverSlotIndex?: number;
 

@@ -1,5 +1,5 @@
-import { IrcConnection } from 'network/IrcConnection';
-import { EventDispatcher } from 'util/event';
+import { IrcConnection } from '@/network/IrcConnection';
+import { EventDispatcher } from '@/util/event';
 
 /**
  * Monitors network ping to game server

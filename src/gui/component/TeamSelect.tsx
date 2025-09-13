@@ -3,7 +3,7 @@ import { Select } from './Select';
 import { Option } from './Option';
 import { NO_TEAM_ID } from '@/game/gameopts/constants';
 
-const formatTeamId = (id: number): string => 
+export const formatTeamId = (id: number): string => 
   String.fromCharCode('A'.charCodeAt(0) + id);
 
 interface TeamSelectProps {

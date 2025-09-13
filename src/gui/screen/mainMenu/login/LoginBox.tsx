@@ -1,8 +1,8 @@
 import React, { useRef, useState, useEffect, useImperativeHandle, forwardRef } from "react";
 import { ServerList } from "@/gui/screen/mainMenu/login/ServerList";
 import { Task } from "@puzzl/core/lib/async/Task";
-import { HttpRequest } from "network/HttpRequest";
-import { MIN_USERNAME_LEN, MAX_USERNAME_LEN, MAX_PASS_LEN } from "network/WolConfig";
+import { HttpRequest } from "@/network/HttpRequest";
+import { MIN_USERNAME_LEN, MAX_USERNAME_LEN, MAX_PASS_LEN } from "@/network/WolConfig";
 
 interface LoginBoxProps {
   regions: any[];

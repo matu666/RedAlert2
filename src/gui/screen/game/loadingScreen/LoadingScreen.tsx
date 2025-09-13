@@ -32,7 +32,7 @@ interface LoadingScreenProps {
   color: string;
   bgImageSrc?: string;
   viewport: Viewport;
-  strings: Map<string, string>;
+  strings: { get(key: string, ...args: any[]): string };
   countryUiNames: Map<string, string>;
   mapName: string;
 }
@@ -95,7 +95,7 @@ export class LoadingScreen extends React.Component<LoadingScreenProps> {
         </div>
         <div style={{ color }} className="country-name">
           {this.props.strings.get(
-            this.props.countryUiNames.get(countryName) || countryName
+            this.props.countryUiNames.get(countryName) ?? countryName
           )}
         </div>
         <div style={{ color }} className="map-name">
