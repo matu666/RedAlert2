@@ -1,4 +1,4 @@
-import { CompositeDisposable } from 'util/disposable/CompositeDisposable';
+import { CompositeDisposable } from '@/util/disposable/CompositeDisposable';
 
 /**
  * Handles taunt messages and playback in multiplayer games

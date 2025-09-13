@@ -1,7 +1,7 @@
-import { CompositeDisposable } from 'util/disposable/CompositeDisposable';
-import { GameMenuController } from 'gui/screen/game/gameMenu/GameMenuController';
-import { ScreenType } from 'gui/screen/game/gameMenu/ScreenType';
-import { EventDispatcher } from 'util/event';
+import { CompositeDisposable } from '@/util/disposable/CompositeDisposable';
+import { GameMenuController } from '@/gui/screen/game/gameMenu/GameMenuController';
+import { ScreenType } from '@/gui/screen/game/gameMenu/ScreenType';
+import { EventDispatcher } from '@/util/event';
 
 /**
  * Game menu system for in-game menus and dialogs

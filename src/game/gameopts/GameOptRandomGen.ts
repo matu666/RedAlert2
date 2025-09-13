@@ -7,7 +7,7 @@ import { RANDOM_COLOR_ID, RANDOM_COUNTRY_ID, RANDOM_START_POS, OBS_COUNTRY_ID } 
 export class GameOptRandomGen {
   private prng: Prng;
 
-  static factory(seed: number, sequence: number): GameOptRandomGen {
+  static factory(seed: string | number, sequence: number): GameOptRandomGen {
     return new GameOptRandomGen(Prng.factory(seed, sequence));
   }
 

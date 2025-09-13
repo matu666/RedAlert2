@@ -89,7 +89,7 @@ export class Rules {
 
   // System rules
   public powerups = new PowerupsRules();
-  private colors = new Map<string, Color>();
+  public colors = new Map<string, Color>();
   public general = new GeneralRules();
   public ai = new AiRules();
   public crateRules = new CrateRules();

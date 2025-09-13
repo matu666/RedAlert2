@@ -3,7 +3,7 @@ import { List, ListItem } from "@/gui/component/List";
 import { Select } from "@/gui/component/Select";
 import { Option } from "@/gui/component/Option";
 
-enum SortType {
+export enum SortType {
   None = "",
   NameAsc = "nameAsc",
   NameDesc = "nameDesc",
@@ -12,16 +12,15 @@ enum SortType {
 }
 
 interface MapData {
+  mapName: string;
   mapTitle: string;
   maxSlots: number;
-  fileName: string;
-  [key: string]: any;
 }
 
 interface GameMode {
   id: number;
   label: string;
-  [key: string]: any;
+  description?: string;
 }
 
 interface MapSelProps {
@@ -32,7 +31,7 @@ interface MapSelProps {
   selectedMapName: string;
   initialSortType: SortType;
   onSelectGameMode: (gameMode: GameMode) => void;
-  onSelectMap: (map: MapData) => void;
+  onSelectMap: (mapName: string, doubleClick: boolean) => void;
   onSelectSort: (sortType: SortType) => void;
 }
 
@@ -101,13 +100,14 @@ export const MapSel: React.FC<MapSelProps> = ({
         { className: "map-sel-game-mode" },
         React.createElement(
           List,
-          { title: strings.get("GUI:GameMode"), className: "game-mode-list" },
+          { title: strings.get("GUI:GameType"), className: "game-mode-list", tooltip: strings.get("STT:ScenarioListGameType") },
           gameModes.map((gameMode) =>
             React.createElement(
               ListItem,
               {
                 key: gameMode.id,
                 selected: selectedGameMode?.id === gameMode.id,
+                tooltip: gameMode.description ? strings.get(gameMode.description) : undefined,
                 onClick: () => onSelectGameMode(gameMode),
               },
               strings.get(gameMode.label),
@@ -117,78 +117,68 @@ export const MapSel: React.FC<MapSelProps> = ({
       ),
       React.createElement(
         "div",
-        { className: "map-sel-maps" },
-        React.createElement(
-          "div",
-          { className: "map-sel-controls" },
-          React.createElement("input", {
-            type: "text",
-            placeholder: strings.get("GUI:SearchMaps"),
-            value: searchFilter,
-            onChange: (e: React.ChangeEvent<HTMLInputElement>) => setSearchFilter(e.target.value),
-            className: "map-search-input",
-          }),
-          React.createElement(
-            Select,
-            {
-              value: sortType,
-              onChange: (value: SortType) => {
-                setSortType(value);
-                onSelectSort(value);
-              },
-            },
-            React.createElement(Option, {
-              value: SortType.None,
-              label: strings.get("GUI:SortNone"),
-            }),
-            React.createElement(Option, {
-              value: SortType.NameAsc,
-              label: strings.get("GUI:SortNameAsc"),
-            }),
-            React.createElement(Option, {
-              value: SortType.NameDesc,
-              label: strings.get("GUI:SortNameDesc"),
-            }),
-            React.createElement(Option, {
-              value: SortType.MaxSlotsAsc,
-              label: strings.get("GUI:SortSlotsAsc"),
-            }),
-            React.createElement(Option, {
-              value: SortType.MaxSlotsDesc,
-              label: strings.get("GUI:SortSlotsDesc"),
-            }),
-          ),
-        ),
+        { className: "map-sel-map" },
         React.createElement(
           List,
-          { title: strings.get("GUI:Maps"), className: "map-list" },
+          {
+            title: React.createElement(
+              "div",
+              { className: "map-list-title" },
+              React.createElement("div", null, strings.get("GUI:GameMap")),
+              React.createElement(
+                "div",
+                { className: "map-list-sort", "data-r-tooltip": strings.get("STT:SortBy") },
+                React.createElement("label", null, "⇵"),
+                React.createElement(
+                  Select,
+                  {
+                    initialValue: sortType,
+                    onSelect: (value: SortType) => {
+                      setSortType(value);
+                      onSelectSort(value);
+                    },
+                    className: "map-list-sort-select",
+                  },
+                  React.createElement(Option, { value: SortType.None, label: strings.get("TS:SortNone") }),
+                  React.createElement(Option, { value: SortType.NameAsc, label: strings.get("TS:SortName") + " ↓" }),
+                  React.createElement(Option, { value: SortType.NameDesc, label: strings.get("TS:SortName") + " ↑" }),
+                  React.createElement(Option, { value: SortType.MaxSlotsAsc, label: strings.get("TS:SortMaxSlots") + " ↓" }),
+                  React.createElement(Option, { value: SortType.MaxSlotsDesc, label: strings.get("TS:SortMaxSlots") + " ↑" }),
+                ),
+              ),
+            ),
+            className: "map-list",
+            tooltip: strings.get("STT:ScenarioListMaps"),
+          },
           filteredMaps.map((map) => {
-            const isSelected = map.fileName === selectedMapName;
+            const isSelected = map.mapName === selectedMapName;
             return React.createElement(
               ListItem,
               {
-                key: map.fileName,
+                key: map.mapName,
                 selected: isSelected,
                 innerRef: isSelected ? selectedRef : null,
-                onClick: () => onSelectMap(map),
-                onDoubleClick: () => onSelectMap(map),
+                onClick: () => onSelectMap(map.mapName, false),
+                onDoubleClick: () => onSelectMap(map.mapName, true),
               },
-              React.createElement(
-                "div",
-                { className: "map-info" },
-                React.createElement(
-                  "div",
-                  { className: "map-title" },
-                  map.mapTitle,
-                ),
-                React.createElement(
-                  "div",
-                  { className: "map-slots" },
-                  strings.get("GUI:MaxPlayers", map.maxSlots),
-                ),
-              ),
+              map.mapTitle,
             );
           }),
+        ),
+        React.createElement(
+          "div",
+          { className: "map-sel-search" },
+          React.createElement(
+            "label",
+            null,
+            React.createElement("span", null, strings.get("GUI:Search")),
+            React.createElement("input", {
+              type: "text",
+              className: "new-message",
+              value: searchFilter,
+              onChange: (e: React.ChangeEvent<HTMLInputElement>) => setSearchFilter(e.target.value),
+            }),
+          ),
         ),
       ),
     ),

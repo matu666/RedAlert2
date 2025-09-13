@@ -1,10 +1,10 @@
 import React from 'react';
-import { CompositeDisposable } from 'util/disposable/CompositeDisposable';
-import { SoundKey } from 'engine/sound/SoundKey';
-import { ChannelType } from 'engine/sound/ChannelType';
-import { ActionType } from 'game/action/ActionType';
-import { OrderType } from 'game/order/OrderType';
-import { KeyCommandType } from 'gui/screen/game/worldInteraction/keyboard/KeyCommandType';
+import { CompositeDisposable } from '@/util/disposable/CompositeDisposable';
+import { SoundKey } from '@/engine/sound/SoundKey';
+import { ChannelType } from '@/engine/sound/ChannelType';
+import { ActionType } from '@/game/action/ActionType';
+import { OrderType } from '@/game/order/OrderType';
+import { KeyCommandType } from '@/gui/screen/game/worldInteraction/keyboard/KeyCommandType';
 
 /**
  * UI controller for combatant (non-observer) players

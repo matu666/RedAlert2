@@ -1,5 +1,5 @@
 import Stats from 'stats.js';
-import { CompositeDisposable } from 'util/disposable/CompositeDisposable';
+import { CompositeDisposable } from '@/util/disposable/CompositeDisposable';
 
 /**
  * Network statistics display for game performance monitoring

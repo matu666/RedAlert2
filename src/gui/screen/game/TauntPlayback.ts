@@ -1,5 +1,5 @@
-import { ChannelType } from 'engine/sound/ChannelType';
-import { pad } from 'util/string';
+import { ChannelType } from '@/engine/sound/ChannelType';
+import { pad } from '@/util/string';
 
 /**
  * Handles playing taunt audio files for different countries

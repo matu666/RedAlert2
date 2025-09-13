@@ -1,10 +1,10 @@
-import { CompositeDisposable } from 'util/disposable/CompositeDisposable';
-import { WorldScene } from 'engine/renderable/WorldScene';
-import { WorldViewportHelper } from 'engine/util/WorldViewportHelper';
-import { MapTileIntersectHelper } from 'engine/util/MapTileIntersectHelper';
-import { WorldSound } from 'engine/sound/WorldSound';
-import { Engine } from 'engine/Engine';
-import { MapPanningHelper } from 'engine/util/MapPanningHelper';
+import { CompositeDisposable } from '@/util/disposable/CompositeDisposable';
+import { WorldScene } from '@/engine/renderable/WorldScene';
+import { WorldViewportHelper } from '@/engine/util/WorldViewportHelper';
+import { MapTileIntersectHelper } from '@/engine/util/MapTileIntersectHelper';
+import { WorldSound } from '@/engine/sound/WorldSound';
+import { Engine } from '@/engine/Engine';
+import { MapPanningHelper } from '@/engine/util/MapPanningHelper';
 
 /**
  * Manages the 3D world view and rendering for the game

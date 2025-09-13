@@ -1,4 +1,4 @@
-import { CompositeDisposable } from 'util/disposable/CompositeDisposable';
+import { CompositeDisposable } from '@/util/disposable/CompositeDisposable';
 
 /**
  * Main world interaction controller that coordinates all interaction handlers

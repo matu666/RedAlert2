@@ -387,7 +387,7 @@ export class ReplayScreen extends RootScreen {
 
     this.hudFactory = new HudFactory(
       hudSide,
-      this.uiScene,
+      this.viewport.value,
       sidebarModel,
       messageList,
       chatHistory,

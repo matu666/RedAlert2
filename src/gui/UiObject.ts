@@ -66,7 +66,6 @@ export class UiObject implements Renderable {
     
     // HTML coordinates - match original project behavior exactly
     if (this.htmlContainer) {
-      console.log(`[UiObject] Setting HTML position: (${x}, ${y}) for object:`, this.constructor.name);
       this.htmlContainer.setPosition(x, y);
     }
     

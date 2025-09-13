@@ -51,12 +51,12 @@ export class MainMenuController extends Controller {
     }
   }
 
-  async popScreen(): Promise<void> {
+  async popScreen(params?: any): Promise<void> {
     // Clear main component and sidebar title before popping
     this.setMainComponent();
     this.setSidebarTitle("");
     
-    await super.popScreen();
+    await super.popScreen(params);
     
     // Set sidebar title from the restored screen if it has one
     const currentScreen = this.getCurrentScreen();

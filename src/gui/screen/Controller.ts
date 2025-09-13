@@ -73,7 +73,7 @@ export abstract class Controller {
     this._onScreenChange.dispatch(this, screenType);
   }
 
-  async popScreen(): Promise<void> {
+  async popScreen(params?: any): Promise<void> {
     console.log('[Controller] Popping screen');
     
     // Leave current screen
@@ -85,7 +85,7 @@ export abstract class Controller {
     const previousScreenInfo = this.screenStack.pop();
     if (previousScreenInfo) {
       this.currentScreen = previousScreenInfo.screen;
-      await previousScreenInfo.screen.onUnstack?.();
+      await previousScreenInfo.screen.onUnstack?.(params);
       this._onScreenChange.dispatch(this, previousScreenInfo.screenType);
     } else {
       this.currentScreen = undefined;

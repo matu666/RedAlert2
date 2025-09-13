@@ -5,8 +5,8 @@ import { ProductionQueue, QueueStatus } from "@/game/player/production/Productio
 import { InsufficientFundsEvent } from "@/game/event/InsufficientFundsEvent";
 import { TechnoRules, FactoryType } from "@/game/rules/TechnoRules";
 import { NotifySpawn } from "@/game/trait/interface/NotifySpawn";
-import { NotifyPower, PowerLevel } from "@/game/trait/interface/NotifyPower";
-import { PowerTrait } from "@/game/player/trait/PowerTrait";
+import { NotifyPower } from "@/game/trait/interface/NotifyPower";
+import { PowerTrait, PowerLevel } from "@/game/player/trait/PowerTrait";
 import { clamp, floorTo } from "@/util/math";
 import { GameSpeed } from "@/game/GameSpeed";
 import { ObjectType } from "@/engine/type/ObjectType";

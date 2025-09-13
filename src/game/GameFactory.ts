@@ -114,8 +114,8 @@ export class GameFactory {
     botConfig: any,
     networkConfig: any,
     debugFlags: any,
-    productionDebugger?: any,
-    performanceProfiler?: any
+    debugBotIndex?: any,
+    actionLogger?: any
   ): Game {
     // 1. 合并规则文件
     const mergedRules: IniFile = baseRules.clone().mergeWith(modRules);
@@ -180,8 +180,8 @@ export class GameFactory {
     const botManager: BotManager = BotManager.factory(
       actionFactory,
       botFactory,
-      networkConfig,
-      performanceProfiler
+      debugBotIndex,
+      actionLogger
     );
 
     // 11. 创建主游戏实例
