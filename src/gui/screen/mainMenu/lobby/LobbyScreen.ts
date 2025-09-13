@@ -1,8 +1,8 @@
 import { Task } from "@puzzl/core/lib/async/Task";
-import { WolConnection } from "network/WolConnection";
-import { WolError } from "network/WolError";
-import { SlotType, SlotInfo } from "network/gameopt/SlotInfo";
-import { GameOpts } from "game/gameopts/GameOpts";
+import { WolConnection } from "@/network/WolConnection";
+import { WolError } from "@/network/WolError";
+import { SlotType, SlotInfo } from "@/network/gameopt/SlotInfo";
+import { GameOpts } from "@/game/gameopts/GameOpts";
 import { 
   RANDOM_COUNTRY_ID,
   RANDOM_COLOR_ID,
@@ -18,7 +18,7 @@ import {
   RANDOM_COUNTRY_UI_TOOLTIP,
   OBS_COUNTRY_UI_TOOLTIP,
   aiUiNames
-} from "game/gameopts/constants";
+} from "@/game/gameopts/constants";
 import { LobbyForm } from "@/gui/screen/mainMenu/lobby/component/LobbyForm";
 import { LobbyType, SlotOccupation, SlotType as ViewModelSlotType, PlayerStatus } from "@/gui/screen/mainMenu/lobby/component/viewmodel/lobby";
 import { PasswordBox } from "@/gui/screen/mainMenu/lobby/component/PasswordBox";
@@ -36,15 +36,15 @@ import { ChannelType } from "@/engine/sound/ChannelType";
 import { StorageKey } from "LocalPrefs";
 import { PreferredHostOpts } from "@/gui/screen/mainMenu/lobby/PreferredHostOpts";
 import { isNotNullOrUndefined } from "@/util/typeGuard";
-import { GameOptSanitizer } from "game/gameopts/GameOptSanitizer";
+import { GameOptSanitizer } from "@/game/gameopts/GameOptSanitizer";
 import { MainMenuScreen } from "@/gui/screen/mainMenu/MainMenuScreen";
 import { MapFile } from "data/MapFile";
 import { MapDigest } from "@/engine/MapDigest";
-import { MAX_MAP_TRANSFER_BYTES } from "network/gservConfig";
-import { WolHasMapStatus } from "network/WolConfig";
+import { MAX_MAP_TRANSFER_BYTES } from "@/network/gservConfig";
+import { WolHasMapStatus } from "@/network/WolConfig";
 import { MainMenuRoute } from "@/gui/screen/mainMenu/MainMenuRoute";
 import { sleep } from "@puzzl/core/lib/async/sleep";
-import { ChatRecipientType } from "network/chat/ChatMessage";
+import { ChatRecipientType } from "@/network/chat/ChatMessage";
 import { ChatHistory } from "@/gui/chat/ChatHistory";
 import { Throttle } from "@/util/time";
 

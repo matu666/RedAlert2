@@ -1,7 +1,7 @@
 import { RootScreen } from '@/gui/screen/RootScreen';
 import { CompositeDisposable } from '@/util/disposable/CompositeDisposable';
 import { MedianPing } from './MedianPing';
-import { ScreenType } from '@/gui/screen/ScreenType';
+import { ScreenType, MainMenuScreenType } from '@/gui/screen/ScreenType';
 import { sleep } from '@puzzl/core/lib/async/sleep';
 import { GameStatus } from '@/game/Game';
 import { GameTurnManager } from '@/game/GameTurnManager';
@@ -18,6 +18,8 @@ import { ObserverUi } from '@/gui/screen/game/ObserverUi';
 import { GameMenu } from '@/gui/screen/game/GameMenu';
 import { WorldView } from '@/gui/screen/game/WorldView';
 import { Eva } from '@/engine/sound/Eva';
+import { EvaSpecs } from '@/engine/sound/EvaSpecs';
+import { SideType } from '@/game/SideType';
 import { HudFactory } from '@/gui/screen/game/HudFactory';
 import { Minimap } from '@/gui/screen/game/component/Minimap';
 import { Replay } from '@/network/gamestate/Replay';
@@ -48,6 +50,7 @@ import { PingMonitor } from '@/gui/screen/game/PingMonitor';
 import { SidebarModel } from '@/gui/screen/game/component/hud/viewmodel/SidebarModel';
 import { Engine } from '@/engine/Engine';
 import * as A from '@/gui/screen/game/worldInteraction/WorldInteractionFactory';
+import { ChatMessageFormat } from '@/gui/chat/ChatMessageFormat';
 
 /**
  * Main game screen that orchestrates the entire game UI and logic
@@ -342,7 +345,7 @@ export class GameScreen extends RootScreen {
     const startGameHandler = () => {
       if (game.status !== GameStatus.Started) {
         try {
-          this.onGameStart(localPlayer, game, replayRecorder, actionQueue, actionFactory, replay, replayRecorder);
+          this.onGameStart(localPlayer, game, uiInitResult, actionQueue, actionFactory, replay);
         } catch (error) {
           const errorMessage = error.message?.match(/memory|allocation/i)
             ? this.strings.get('TS:GameInitOom')
@@ -669,20 +672,32 @@ export class GameScreen extends RootScreen {
     this.disposables.add(minimap, () => this.minimap = undefined);
     minimap.setPointerEvents(this.pointer.pointerEvents);
 
-    const worldView = new WorldView();
-    const worldViewInitResult = {
-      worldScene: { create3DObject: () => {} },
-      worldSound: {},
-      superWeaponFxHandler: {},
-      beaconFxHandler: {},
-      renderableManager: {}
-    };
-    
+    const hudDimensions = { width: hud.sidebarWidth, height: hud.actionBarHeight } as any;
+    const worldView = new WorldView(
+      hudDimensions,
+      game,
+      this.sound,
+      this.renderer,
+      this.runtimeVars,
+      minimap,
+      this.strings,
+      this.generalOptions,
+      this.vxlGeometryPool,
+      this.buildingImageDataCache
+    );
+
+    const worldViewInit = worldView.init(localPlayer, this.viewport.value, theater);
     this.worldView = worldView;
     this.disposables.add(worldView, () => this.worldView = undefined);
+    // Ensure WorldScene container is set before processing render queue (aligns with original behavior)
+    const ws: any = worldViewInit.worldScene;
+    if (ws?.set3DObject && ws?.scene) {
+      ws.set3DObject(ws.scene);
+    }
+    worldViewInit.worldScene.create3DObject?.();
 
     return {
-      worldViewInitResult,
+      worldViewInitResult: worldViewInit,
       messageList,
       chatHistory,
       minimap
@@ -705,28 +720,19 @@ export class GameScreen extends RootScreen {
     return lockstepManager;
   }
 
-  private onGameStart(localPlayer: any, game: any, replayRecorder: any, actionQueue: any, actionFactory: any, replay: any, recorder: any): void {
+  private onGameStart(localPlayer: any, game: any, uiInitResult: any, actionQueue: any, actionFactory: any, replay: any): void {
     this.localPrefs.removeItem(StorageKey.LastConnection);
     this.loadingScreenApi?.dispose();
     this.music?.play(MusicType.Normal);
 
-    // Simplified EVA setup
-    const eva = new Eva();
+    // EVA setup (align with ReplayScreen)
+    const evaSpecs = new EvaSpecs(SideType.GDI).readIni(Engine.getIni('eva.ini'));
+    const eva = new Eva(evaSpecs, this.sound, this.renderer);
+    eva.init();
     this.disposables.add(eva);
 
-    // Simplified UI initialization
-    this.initUi(localPlayer, game, recorder, actionQueue, actionFactory, this.hud, eva, {
-      worldViewInitResult: {
-        worldScene: {},
-        worldSound: {},
-        superWeaponFxHandler: {},
-        beaconFxHandler: {},
-        renderableManager: {}
-      },
-      messageList: new MessageList(),
-      chatHistory: new ChatHistory(),
-      minimap: this.minimap
-    });
+    // UI initialization with real world view init result
+    this.initUi(localPlayer, game, undefined, actionQueue, actionFactory, this.hud, eva, uiInitResult);
 
     this.pointer.setVisible(true);
 
@@ -762,8 +768,8 @@ export class GameScreen extends RootScreen {
   }
 
   private initNetStats(localPlayer: any): void {
-    // Simplified network stats
-    const pingMonitor = new PingMonitor();
+    const pingMonitor = new PingMonitor(this.gameTurnMgr, this.gservCon, this.avgPing);
+    pingMonitor.monitor();
     this.disposables.add(pingMonitor);
   }
 
@@ -771,20 +777,77 @@ export class GameScreen extends RootScreen {
     // Simplified UI initialization
     const { messageList, chatHistory } = uiInitResult;
 
-    // Basic sound handler
-    const soundHandler = new SoundHandler();
+    // Sound handler
+    const soundHandler = new SoundHandler(
+      game,
+      uiInitResult.worldViewInitResult.worldSound,
+      eva,
+      this.sound,
+      game.events,
+      messageList,
+      this.strings,
+      localPlayer
+    );
+    soundHandler.init?.();
     this.disposables.add(soundHandler);
 
     this.uiScene.add(hud);
 
     // Basic game menu
-    const menu = this.menu = new GameMenu();
+    const menu = this.menu = new GameMenu(
+      this.gameMenuSubScreens,
+      game,
+      localPlayer,
+      chatHistory,
+      this.gservCon,
+      this.isSinglePlayer,
+      this.isTournament
+    );
+    menu.init(hud);
     this.initGameMenuEvents(menu, eva, game, localPlayer, actionQueue, actionFactory);
     this.disposables.add(menu, () => this.menu = undefined);
 
     // Create basic player UI
     if (localPlayer.isObserver) {
-      this.playerUi = new ObserverUi();
+      const worldScene = uiInitResult.worldViewInitResult.worldScene;
+      const renderableManager = uiInitResult.worldViewInitResult.renderableManager;
+      const worldInteractionFactory = new A.WorldInteractionFactory(
+        undefined,
+        game,
+        game.unitSelection,
+        renderableManager,
+        this.uiScene,
+        worldScene,
+        this.pointer,
+        this.renderer,
+        this.keyBinds,
+        this.generalOptions,
+        this.runtimeVars.freeCamera,
+        this.runtimeVars.debugPaths,
+        this.config.devMode,
+        document,
+        this.minimap,
+        this.strings,
+        hud.getTextColor?.(),
+        this.runtimeVars.debugText,
+        this.battleControlApi
+      );
+      this.playerUi = new ObserverUi(
+        game,
+        undefined,
+        this.sidebarModel,
+        this.replay,
+        this.renderer,
+        worldScene,
+        this.sound,
+        worldInteractionFactory,
+        menu,
+        this.runtimeVars,
+        this.strings,
+        renderableManager,
+        this.messageBoxApi,
+        this.config.discordUrl
+      );
     } else {
       // Align with original constructor signature
       const worldScene = uiInitResult.worldViewInitResult.worldScene;
@@ -847,9 +910,25 @@ export class GameScreen extends RootScreen {
 
     // Basic multiplayer setup
     if (!this.isSinglePlayer) {
-      const chatNetHandler = new ChatNetHandler();
-      const chatTypingHandler = new ChatTypingHandler();
-      
+      const chatNetHandler = new ChatNetHandler(
+        this.gservCon,
+        this.wolService,
+        messageList,
+        chatHistory,
+        new ChatMessageFormat(this.strings, localPlayer.name),
+        localPlayer,
+        game,
+        this.replay,
+        this.mutedPlayers ?? new Set<string>()
+      );
+      chatNetHandler.init();
+      const worldInteraction = this.playerUi.worldInteraction;
+      const chatTypingHandler = new ChatTypingHandler(
+        worldInteraction.keyboardHandler,
+        worldInteraction.arrowScrollHandler,
+        messageList,
+        chatHistory
+      );
       this.chatTypingHandler = chatTypingHandler;
       this.chatNetHandler = chatNetHandler;
       this.disposables.add(() => {
@@ -874,6 +953,10 @@ export class GameScreen extends RootScreen {
     });
 
     menu.onQuit.subscribe(async () => {
+      console.log('[Quit] onQuit start', {
+        isSinglePlayer: this.isSinglePlayer,
+        pausedAtSpeed: this.pausedAtSpeed
+      });
       if (!this.controller) return;
 
       if (this.isSinglePlayer && this.pausedAtSpeed) {
@@ -882,6 +965,7 @@ export class GameScreen extends RootScreen {
       }
 
       if (!localPlayer.isObserver) {
+        console.log('[Quit] play EVA_BattleControlTerminated');
         eva.play('EVA_BattleControlTerminated');
       }
 
@@ -896,8 +980,12 @@ export class GameScreen extends RootScreen {
         });
       }
 
-      this.gservCon.onClose.unsubscribe(this.onGservClose);
-      this.gservCon.close();
+      try {
+        this.gservCon.onClose.unsubscribe(this.onGservClose);
+        this.gservCon.close();
+      } catch (e) {
+        console.warn('[Quit] gservCon close skipped', e);
+      }
       this.gameTurnMgr.dispose();
 
       if (this.replay) {
@@ -918,15 +1006,17 @@ export class GameScreen extends RootScreen {
         this.logGame(game, false);
       }
 
+      console.log('[Quit] waiting before navigate');
       await sleep(2000);
 
+      console.log('[Quit] navigating to Score');
       this.controller?.goToScreen(ScreenType.MainMenuRoot, {
-        route: new MainMenuRoute('Score', {
+        route: new MainMenuRoute(MainMenuScreenType.Score, {
           game,
           localPlayer,
           singlePlayer: this.isSinglePlayer,
           tournament: this.isTournament,
-          returnTo: this.returnTo ?? new MainMenuRoute('Home')
+          returnTo: this.returnTo ?? new MainMenuRoute(MainMenuScreenType.Home)
         })
       });
     });
@@ -997,12 +1087,12 @@ export class GameScreen extends RootScreen {
     gameResultPopup.destroy();
 
     this.controller?.goToScreen(ScreenType.MainMenuRoot, {
-      route: new MainMenuRoute('Score', {
+      route: new MainMenuRoute(MainMenuScreenType.Score, {
         game,
         localPlayer,
         singlePlayer: this.isSinglePlayer,
         tournament: this.isTournament,
-        returnTo: this.returnTo ?? new MainMenuRoute('Home')
+        returnTo: this.returnTo ?? new MainMenuRoute(MainMenuScreenType.Home)
       })
     });
   }

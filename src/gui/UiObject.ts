@@ -163,14 +163,14 @@ export class UiObject implements Renderable {
   }
 
   create3DObject(): void {
-    console.log('[UiObject] create3DObject() called, target:', this.target);
+    //console.log('[UiObject] create3DObject() called, target:', this.target);
     
     if (!this.get3DObject()) {
       throw new Error('Expecting a THREE.Object3D to have been set by now');
     }
     
     if (!this.rendered) {
-      console.log('[UiObject] First time rendering, setting up object');
+      //console.log('[UiObject] First time rendering, setting up object');
       this.rendered = true;
       
       // Apply position and visibility
@@ -179,7 +179,7 @@ export class UiObject implements Renderable {
         this.target.position.set(x, y, z);
         this.target.visible = this.withVisibility;
         this.target.updateMatrix();
-        console.log('[UiObject] Applied position and visibility:', { x, y, z, visible: this.withVisibility });
+        //console.log('[UiObject] Applied position and visibility:', { x, y, z, visible: this.withVisibility });
       }
       
       // Render HTML container
@@ -198,7 +198,7 @@ export class UiObject implements Renderable {
         this.setupEventListener(e.eventName, e.handler)
       );
     } else {
-      console.log('[UiObject] Already rendered, skipping setup');
+      //console.log('[UiObject] Already rendered, skipping setup');
     }
   }
 
@@ -208,14 +208,14 @@ export class UiObject implements Renderable {
   }
 
   add(...children: UiObject[]): void {
-    console.log(`[UiObject] add() called with ${children.length} children`);
+    //console.log(`[UiObject] add() called with ${children.length} children`);
     this.container.add(...children);
     
     // Add HTML containers
     children
       .map((child) => child.getHtmlContainer())
       .forEach((htmlContainer, index) => {
-        console.log(`[UiObject] Child ${index} HTML container:`, htmlContainer ? 'exists' : 'null');
+        //console.log(`[UiObject] Child ${index} HTML container:`, htmlContainer ? 'exists' : 'null');
         if (htmlContainer) {
           if (!this.htmlContainer) {
             console.error(`[UiObject] Parent has no HTML container but child has one!`);
@@ -223,11 +223,11 @@ export class UiObject implements Renderable {
               "Can't add an UiObject that defines an HTMLContainer to a parent that doesn't provide an HTML container."
             );
           }
-          console.log(`[UiObject] Adding child HTML container to parent`);
+          //console.log(`[UiObject] Adding child HTML container to parent`);
           this.htmlContainer.add(htmlContainer);
         }
       });
-    console.log(`[UiObject] Parent HTML container:`, this.htmlContainer ? 'exists' : 'null');
+    //console.log(`[UiObject] Parent HTML container:`, this.htmlContainer ? 'exists' : 'null');
   }
 
   remove(...children: UiObject[]): void {

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useImperativeHandle, forwardRef } from "react";
-import { MIN_USERNAME_LEN, MAX_USERNAME_LEN, MAX_PASS_LEN } from "network/WolConfig";
+import { MIN_USERNAME_LEN, MAX_USERNAME_LEN, MAX_PASS_LEN } from "@/network/WolConfig";
 
 interface Region {
   id: string;

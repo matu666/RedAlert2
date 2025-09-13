@@ -479,6 +479,64 @@ export class Gui {
       undefined as any
     );
     const gameModes = Engine.getMpModes();
+    const gameMenuSubScreens = new Map<number, any>();
+    gameMenuSubScreens.set(
+      (await import('./gui/screen/game/gameMenu/ScreenType.js')).ScreenType.Home,
+      new (await import('./gui/screen/game/gameMenu/GameMenuHomeScreen.js')).GameMenuHomeScreen(this.strings, this.fullScreen!)
+    );
+    gameMenuSubScreens.set(
+      (await import('./gui/screen/game/gameMenu/ScreenType.js')).ScreenType.Diplo,
+      new (await import('./gui/screen/game/gameMenu/DiploScreen.js')).DiploScreen(
+        this.strings,
+        this.jsxRenderer!,
+        this.renderer!,
+        Engine.getMpModes() as any,
+        new BoxedVar<boolean>(this.localPrefs.getBool(StorageKey.TauntsEnabled, true)),
+        new Set<string>()
+      )
+    );
+    gameMenuSubScreens.set(
+      (await import('./gui/screen/game/gameMenu/ScreenType.js')).ScreenType.ConnectionInfo,
+      new (await import('./gui/screen/game/gameMenu/ConnectionInfoScreen.js')).ConnectionInfoScreen(
+        this.strings,
+        this.jsxRenderer!
+      )
+    );
+    gameMenuSubScreens.set(
+      (await import('./gui/screen/game/gameMenu/ScreenType.js')).ScreenType.QuitConfirm,
+      new (await import('./gui/screen/game/gameMenu/QuitConfirmScreen.js')).QuitConfirmScreen(this.strings)
+    );
+    gameMenuSubScreens.set(
+      (await import('./gui/screen/game/gameMenu/ScreenType.js')).ScreenType.Options,
+      new (await import('./gui/screen/options/OptionsScreen.js')).OptionsScreen(
+        this.strings,
+        this.jsxRenderer!,
+        this.generalOptions!,
+        this.localPrefs,
+        this.fullScreen!,
+        true,
+        false
+      )
+    );
+    gameMenuSubScreens.set(
+      (await import('./gui/screen/game/gameMenu/ScreenType.js')).ScreenType.OptionsSound,
+      new (await import('./gui/screen/options/SoundOptsScreen.js')).SoundOptsScreen(
+        this.strings,
+        this.jsxRenderer!,
+        this.mixer!,
+        this.music!,
+        this.localPrefs
+      )
+    );
+    gameMenuSubScreens.set(
+      (await import('./gui/screen/game/gameMenu/ScreenType.js')).ScreenType.OptionsKeyboard,
+      new (await import('./gui/screen/options/KeyboardScreen.js')).KeyboardScreen(
+        this.strings,
+        this.jsxRenderer!,
+        this.keyBinds!
+      )
+    );
+
     const gameScreen = new GameScreen(
       undefined, // workerHostApi
       undefined, // gservCon
@@ -488,7 +546,7 @@ export class Gui {
       this.appVersion, // engineVersion
       '', // engineModHash
       errorHandler, // errorHandler
-      undefined, // gameMenuSubScreens
+      gameMenuSubScreens, // gameMenuSubScreens
       loadingScreenApiFactory, // loadingScreenApiFactory
       undefined, // gameOptsParser
       undefined, // gameOptsSerializer
@@ -541,6 +599,8 @@ export class Gui {
       undefined, // sentry
       undefined // battleControlApi
     );
+    // Ensure GameScreen has controller reference (align with original behavior)
+    (gameScreen as any).setController?.(this.rootController);
     this.rootController.addScreen(ScreenType.Game, gameScreen as any);
     
     // Navigate to main menu
@@ -666,13 +726,14 @@ export class Gui {
       // 创建Mixer适配器用于AudioSystem
       const mixerAdapter = {
         onVolumeChange: {
-          subscribe: (handler: (mixer: any, channel: ChannelType) => void) => {
-            mixer.onVolumeChange.subscribe((data: [any, number]) => {
-              handler(data[0], data[1]);
+          subscribe: (handler: (mixerArg: any, channel: ChannelType) => void) => {
+            // EventDispatcher dispatches as (data, source), which here are (channel, mixer)
+            mixer.onVolumeChange.subscribe((channel: number, mixerArg: any) => {
+              handler(mixerArg, channel as ChannelType);
             });
           },
-          unsubscribe: (handler: (mixer: any, channel: ChannelType) => void) => {
-            // 这里需要保存原始的handler映射，暂时简化处理
+          unsubscribe: (handler: (mixerArg: any, channel: ChannelType) => void) => {
+            // 简化实现：目前未保存原始handler映射
             console.warn('[Gui] Mixer adapter unsubscribe not fully implemented');
           }
         },

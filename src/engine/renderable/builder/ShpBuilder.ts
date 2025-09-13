@@ -328,52 +328,52 @@ export class ShpBuilder {
   }
 
   build() {
-    console.log('[ShpBuilder] build() called');
+    //console.log('[ShpBuilder] build() called');
     
     if (this.mesh) {
-      console.log('[ShpBuilder] Returning existing mesh');
+      //console.log('[ShpBuilder] Returning existing mesh');
       return this.mesh;
     }
     
-    console.log('[ShpBuilder] Creating new mesh, useMeshBatching:', this.useMeshBatching);
+    //console.log('[ShpBuilder] Creating new mesh, useMeshBatching:', this.useMeshBatching);
     
     this.initTexture();
     const texture = this.atlas.getTexture();
     const cacheKey = this.getGeometryCacheKey(this.frameNo);
     
-    console.log('[ShpBuilder] Texture:', texture);
-    console.log('[ShpBuilder] Cache key:', cacheKey);
+    //console.log('[ShpBuilder] Texture:', texture);
+    //console.log('[ShpBuilder] Cache key:', cacheKey);
     
     let geometryCache = this.getGeometryCache();
     let geometry = geometryCache.get(cacheKey);
     
     if (!geometry) {
-      console.log('[ShpBuilder] Creating new geometry');
+      //console.log('[ShpBuilder] Creating new geometry');
       const options = this.getSpriteGeometryOptions(this.frameNo);
-      console.log('[ShpBuilder] Geometry options:', options);
+      //console.log('[ShpBuilder] Geometry options:', options);
       geometry = SpriteUtils.createSpriteGeometry(options);
-      console.log('[ShpBuilder] Created geometry:', geometry);
+      //console.log('[ShpBuilder] Created geometry:', geometry);
       geometryCache.set(cacheKey, geometry);
     } else {
-      console.log('[ShpBuilder] Using cached geometry');
+      //console.log('[ShpBuilder] Using cached geometry');
     }
 
     let mesh;
     const transparent = this.opacity < 1 || this.forceTransparent;
     
-    console.log('[ShpBuilder] Creating mesh, transparent:', transparent);
+    //console.log('[ShpBuilder] Creating mesh, transparent:', transparent);
     
     if (this.useMeshBatching) {
-      console.log('[ShpBuilder] Using batched mesh');
+      //console.log('[ShpBuilder] Using batched mesh');
       const paletteTexture = TextureUtils.textureFromPalettes(this.batchPalettes);
       const material = this.useMaterial(texture, paletteTexture, transparent);
-      console.log('[ShpBuilder] Batched material:', material);
+      //console.log('[ShpBuilder] Batched material:', material);
       mesh = new BatchedMesh(geometry, material, BatchMode.Merging);
       mesh.castShadow = false;
     } else {
-      console.log('[ShpBuilder] Using regular mesh');
+      //console.log('[ShpBuilder] Using regular mesh');
       const paletteTexture = TextureUtils.textureFromPalette(this.palette);
-      console.log('[ShpBuilder] Palette texture:', paletteTexture);
+      //console.log('[ShpBuilder] Palette texture:', paletteTexture);
       const material = new PaletteBasicMaterial({
         map: texture,
         palette: paletteTexture,
@@ -381,16 +381,16 @@ export class ShpBuilder {
         flatShading: true,
         transparent: transparent,
       });
-      console.log('[ShpBuilder] Regular material:', material);
+      //console.log('[ShpBuilder] Regular material:', material);
       mesh = new THREE.Mesh(geometry, material);
     }
     
-    console.log('[ShpBuilder] Created mesh:', mesh);
-    console.log('[ShpBuilder] Mesh material:', mesh.material);
-    console.log('[ShpBuilder] Material map (texture):', mesh.material.map);
-    console.log('[ShpBuilder] Material palette:', mesh.material.palette);
-    console.log('[ShpBuilder] Mesh geometry:', mesh.geometry);
-    console.log('[ShpBuilder] Geometry attributes:', mesh.geometry.attributes);
+    //console.log('[ShpBuilder] Created mesh:', mesh);
+    //console.log('[ShpBuilder] Mesh material:', mesh.material);
+    //console.log('[ShpBuilder] Material map (texture):', mesh.material.map);
+    //console.log('[ShpBuilder] Material palette:', mesh.material.palette);
+    //console.log('[ShpBuilder] Mesh geometry:', mesh.geometry);
+    //console.log('[ShpBuilder] Geometry attributes:', mesh.geometry.attributes);
     
     mesh.matrixAutoUpdate = false;
     this.mesh = mesh;
@@ -401,7 +401,7 @@ export class ShpBuilder {
       this.setExtraLight(this.extraLight);
     }
     
-    console.log('[ShpBuilder] Returning final mesh:', mesh);
+    //console.log('[ShpBuilder] Returning final mesh:', mesh);
     return mesh;
   }
 

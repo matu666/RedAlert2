@@ -2,6 +2,7 @@ import { RootScreen } from '../RootScreen';
 import { MainMenu } from './component/MainMenu';
 import { MainMenuController } from './MainMenuController';
 import { MainMenuScreenType } from '../ScreenType';
+import { ScoreScreen } from './score/ScoreScreen';
 import { Strings } from '../../../data/Strings';
 import { ShpFile } from '../../../data/ShpFile';
 import { JsxRenderer } from '../../jsx/JsxRenderer';
@@ -128,6 +129,11 @@ export class MainMenuRootScreen extends RootScreen {
     
     const controller = this.createViewAndController();
     
+    // Ensure Score screen exists like original project
+    if (!this.subScreens.has(MainMenuScreenType.Score)) {
+      this.subScreens.set(MainMenuScreenType.Score, ScoreScreen as any);
+    }
+
     // Add all sub-screens to the controller
     for (const [screenType, screenClass] of this.subScreens) {
       const screen: any = await this.createScreen(screenType, screenClass, controller);
@@ -279,6 +285,16 @@ export class MainMenuRootScreen extends RootScreen {
           mapDir,
           fsAccessLib,
           sentry
+        );
+      } else if (screenType === MainMenuScreenType.Score) {
+        // ScoreScreen 需要特定参数（与原项目一致）
+        screen = new screenClass(
+          this.strings,
+          this.jsxRenderer,
+          this.messageBoxApi,
+          this.localPrefs,
+          (this as any).config || {},
+          (this as any).wolService
         );
       } else {
         // 其他屏幕使用标准参数

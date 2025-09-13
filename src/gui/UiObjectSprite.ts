@@ -88,14 +88,14 @@ export class UiObjectSprite extends UiObject {
   }
 
   create3DObject(): void {
-    console.log('[UiObjectSprite] create3DObject() called');
-    console.log('[UiObjectSprite] Builder:', this.builder);
+    //console.log('[UiObjectSprite] create3DObject() called');
+    //console.log('[UiObjectSprite] Builder:', this.builder);
     
     const mesh = this.builder.build();
-    console.log('[UiObjectSprite] Builder.build() returned:', mesh);
+    //console.log('[UiObjectSprite] Builder.build() returned:', mesh);
     
     this.set3DObject(mesh);
-    console.log('[UiObjectSprite] Set 3D object, calling super.create3DObject()');
+    //console.log('[UiObjectSprite] Set 3D object, calling super.create3DObject()');
     
     super.create3DObject();
     
@@ -109,7 +109,7 @@ export class UiObjectSprite extends UiObject {
       this.builder.setExtraLight(new THREE.Vector3().addScalar(this.initialLightMult));
     }
     
-    console.log('[UiObjectSprite] create3DObject() completed');
+    //console.log('[UiObjectSprite] create3DObject() completed');
   }
 
   destroy(): void {

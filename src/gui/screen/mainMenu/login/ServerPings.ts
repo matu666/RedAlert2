@@ -1,5 +1,5 @@
 import { OperationCanceledError, CancellationToken } from "@puzzl/core/lib/async/cancellation";
-import { WolConnection } from "network/WolConnection";
+import { WolConnection } from "@/network/WolConnection";
 
 interface Region {
   wolUrl: string;
