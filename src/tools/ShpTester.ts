@@ -27,6 +27,7 @@ import { TheaterType } from "@/engine/TheaterType";
 import { GameMap } from "@/game/GameMap";
 import { RadarTrait } from "@/game/player/trait/RadarTrait";
 import { Minimap } from "@/gui/screen/game/component/Minimap";
+import { Production } from "@/game/player/production/Production";
 import { CombatantSidebarModel } from "@/gui/screen/game/component/hud/viewmodel/CombatantSidebarModel";
 import { MessageList } from "@/gui/screen/game/component/hud/viewmodel/MessageList";
 import { MapShroudTrait } from "@/game/trait/MapShroudTrait";
@@ -44,8 +45,6 @@ import {
   SidebarCategory, 
   SidebarItemStatus 
 } from "@/gui/screen/game/component/hud/viewmodel/SidebarModel";
-import { SideType } from "@/game/SideType";
-import { QueueType } from "@/game/player/production/ProductionQueue";
 import { PlayerFactory } from "@/game/player/PlayerFactory";
 
 declare const THREE: any;
@@ -132,6 +131,13 @@ export class ShpTester {
     // Create country - use direct factory method with rules
     const country = Country.factory("Americans", rules as any);
     const player = playerFactory.createCombatant("Player", country, 0, "Red", false, undefined);
+    
+    // Set up player production - exactly like original project
+    (player as any).radarTrait = new RadarTrait();
+    (player as any).production = new Production(player, 10, gameOptions, rules, [
+      ...(rules as any).buildingRules.values(),
+      ...(rules as any).infantryRules.values(),
+    ]);
     this.disposables.add(player);
 
     // Create world and related objects
@@ -178,23 +184,17 @@ export class ShpTester {
     game.sellTrait = new SellTrait(game, game.rules.general);
     game.traits.add(game.sellTrait);
 
-    // Add buildings to player
+    // Add buildings to player - exactly like original project
     const buildingTypes = [
-      "GACNST", // Allied Construction Yard
-      "GAPOWR", // Allied Power Plant
-      "GAREFN", // Allied Ore Refinery
-      "GAPILE", // Allied Barracks
-      "GAAIRC", // Allied Airfield
-      "GAWEAP", // Allied War Factory
-      "GATECH", // Allied Battle Lab
-      "GAYARD", // Allied Naval Yard
-      "NAPOWR", // Soviet Power Plant
-      "NAREFN", // Soviet Ore Refinery
-      "NAHAND", // Soviet Barracks
-      "NAWEAP", // Soviet War Factory
-      "NATECH", // Soviet Battle Lab
-      "NARADR", // Soviet Radar
-      "NAYARD", // Soviet Naval Yard
+      "GACNST",
+      "GAPOWR", 
+      "GAREFN",
+      "GAPILE",
+      "GAAIRC", 
+      "GAWEAP",
+      "GATECH",
+      "NACNST",
+      "NAPOWR",
     ];
 
     buildingTypes.forEach((buildingType) => {
@@ -207,10 +207,7 @@ export class ShpTester {
     const combatantSidebarModel = new CombatantSidebarModel(player, game);
     combatantSidebarModel.powerDrained = 150;
     combatantSidebarModel.powerGenerated = 300;
-    const radarTrait = player.traits.get(RadarTrait);
-    if (radarTrait) {
-      radarTrait.setDisabled(false);
-    }
+    (player as any).radarTrait.setDisabled(false);
 
     // Set up power updates
     const powerUpdateInterval = setInterval(() => {
@@ -234,21 +231,19 @@ export class ShpTester {
     }, 5000);
     this.disposables.add(() => clearInterval(creditsUpdateInterval));
 
-    // Populate sidebar items - use all building types
-    const availableObjects = buildingTypes
-      .map(type => rules.getBuilding(type))
-      .filter(building => building !== null);
-
-    for (const availableObject of availableObjects) {
+    // Exactly replicate original project logic - iterate through production.getAvailableObjects()
+    for (const availableObject of (player as any).production.getAvailableObjects()) {
       const objectArt = ObjectArt.factory(
-        ObjectType.Building,
+        (availableObject as any).type,
         availableObject as any,
         Engine.getArt(),
         Engine.getArt().getSection((availableObject as any).imageName) ??
           new IniSection((availableObject as any).imageName),
       );
 
-      const tab = combatantSidebarModel.getTabForQueueType(QueueType.Structures);
+      const tab = combatantSidebarModel.getTabForQueueType(
+        (player as any).production.getQueueTypeForObject(availableObject)
+      );
 
       const sidebarItem: SidebarItem = {
         target: { 
@@ -256,7 +251,7 @@ export class ShpTester {
           rules: availableObject 
         },
         cameo: objectArt.cameo,
-        disabled: tab.id === SidebarCategory.Structures,
+        disabled: tab.id === SidebarCategory.Structures, // Original logic
         progress: 0,
         quantity: 0,
         status: SidebarItemStatus.Idle,
@@ -265,7 +260,7 @@ export class ShpTester {
       tab.items.push(sidebarItem);
     }
 
-    // Configure specific sidebar items
+    // Configure specific sidebar items - exactly like original
     const firstActiveTabItem = combatantSidebarModel.activeTab.items[1];
     if (firstActiveTabItem) {
       firstActiveTabItem.disabled = false;
@@ -344,7 +339,7 @@ export class ShpTester {
 
     // Create HUD
     const hud = new Hud(
-      SideType.GDI,
+      (player.country as any).side,
       uiScene.viewport,
       Engine.getImages() as any,
       Engine.getPalettes() as any,
@@ -408,10 +403,7 @@ export class ShpTester {
     });
 
     hud.onRepairButtonClick.subscribe(() => {
-      const radarTrait = player.traits.get(RadarTrait);
-      if (radarTrait) {
-        radarTrait.setDisabled(!radarTrait.isDisabled());
-      }
+      (player as any).radarTrait.setDisabled(!(player as any).radarTrait.isDisabled());
     });
 
     hud.onCommandBarButtonClick.subscribe((buttonType: CommandBarButtonType) => {
@@ -480,13 +472,17 @@ export class ShpTester {
 
     // Clear global caches to avoid stale resources on next entry
     try {
-      const { PipOverlay } = require("@/engine/renderable/entity/PipOverlay");
-      const { TextureUtils } = require("@/engine/gfx/TextureUtils");
-      PipOverlay?.clearCaches?.();
-      if (TextureUtils?.cache) {
-        TextureUtils.cache.forEach((tex: any) => tex.dispose?.());
-        TextureUtils.cache.clear();
-      }
+      // Dynamic imports to avoid require() issues
+      import("@/engine/renderable/entity/PipOverlay").then(({ PipOverlay }) => {
+        (PipOverlay as any)?.clearCaches?.();
+      }).catch(() => {});
+      
+      import("@/engine/gfx/TextureUtils").then(({ TextureUtils }) => {
+        if ((TextureUtils as any)?.cache) {
+          (TextureUtils as any).cache.forEach((tex: any) => tex.dispose?.());
+          (TextureUtils as any).cache.clear();
+        }
+      }).catch(() => {});
     } catch (err) {
       console.warn('[ShpTester] Failed to clear caches during destroy:', err);
     }

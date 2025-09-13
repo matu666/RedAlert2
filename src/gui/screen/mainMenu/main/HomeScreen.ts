@@ -69,7 +69,18 @@ export class HomeScreen implements Screen {
         tooltip: '与AI进行单人遭遇战',
         onClick: async () => {
           console.log('[HomeScreen] 遭遇战 clicked');
-          await this.messageBoxApi.alert('遭遇战 - 功能开发中\n\n需要遭遇战系统和AI', this.strings.get('GUI:OK') || 'OK');
+          // 先尝试导航到SkirmishScreen，如果失败则显示开发中消息
+          try {
+            if (this.controller) {
+              this.controller.goToScreen(MainMenuScreenType.Skirmish);
+            }
+          } catch (error) {
+            console.error('[HomeScreen] Failed to navigate to Skirmish:', error);
+            await this.messageBoxApi.alert(
+              '遭遇战 - 功能开发中\n\n基本框架已配置，但仍需完善以下组件：\n• 游戏规则系统\n• 地图加载器\n• AI对手系统\n• 游戏模式管理器', 
+              this.strings.get('GUI:OK') || 'OK'
+            );
+          }
         }
       },
       // {

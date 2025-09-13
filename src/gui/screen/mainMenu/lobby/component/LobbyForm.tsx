@@ -198,7 +198,7 @@ export class LobbyForm extends React.Component<LobbyFormProps> {
                 <span>{strings.get("GUI:SuperWeaponsAllowed")}</span>
               </label>
             </div>
-            {props.hostTeams !== undefined && (
+            {props.lobbyType !== LobbyType.Singleplayer && props.hostTeams !== undefined && (
               <div data-r-tooltip={strings.get("STT:HostCBoxHostTeams")}>
                 <label>
                   <input

@@ -31,6 +31,7 @@ export class MainMenuRootScreen extends RootScreen {
   private fullScreen?: any;
   private mixer?: any;
   private keyBinds?: any;
+  private rootController?: any;
 
   // Components
   private mainMenu?: MainMenu;
@@ -51,7 +52,8 @@ export class MainMenuRootScreen extends RootScreen {
     localPrefs?: any,
     fullScreen?: any,
     mixer?: any,
-    keyBinds?: any
+    keyBinds?: any,
+    rootController?: any
   ) {
     super();
     this.subScreens = subScreens;
@@ -69,6 +71,7 @@ export class MainMenuRootScreen extends RootScreen {
     this.fullScreen = fullScreen;
     this.mixer = mixer;
     this.keyBinds = keyBinds;
+    this.rootController = rootController;
   }
 
   createView(): void {
@@ -120,17 +123,44 @@ export class MainMenuRootScreen extends RootScreen {
     }
   }
 
-  onEnter(params?: any): void {
+  async onEnter(params?: any): Promise<void> {
     console.log('[MainMenuRootScreen] Entering main menu root screen');
     
     const controller = this.createViewAndController();
     
     // Add all sub-screens to the controller
     for (const [screenType, screenClass] of this.subScreens) {
-      let screen: any;
-      
-      // Create screen instances with appropriate parameters based on screen type
-      if (screenType === MainMenuScreenType.InfoAndCredits) {
+      const screen: any = await this.createScreen(screenType, screenClass, controller);
+      // Set the controller for the screen if it has a setController method and screen was created
+      if (screen) {
+        if (screen.setController) {
+          screen.setController(controller);
+        }
+        
+        controller.addScreen(screenType, screen);
+      }
+    }
+
+    // Add the main menu to the UI scene
+    if (this.mainMenu) {
+      this.uiScene.add(this.mainMenu);
+    }
+
+    // Navigate to initial screen after a short delay to ensure everything is set up
+    setTimeout(() => {
+      if (params?.route) {
+        controller.goToScreen(params.route.screenType, params.route.params);
+      } else {
+        controller.goToScreen(MainMenuScreenType.Home);
+      }
+    }, 0);
+  }
+
+  private async createScreen(screenType: MainMenuScreenType, screenClass: any, controller: any): Promise<any> {
+    let screen: any;
+    
+    // Create screen instances with appropriate parameters based on screen type
+    if (screenType === MainMenuScreenType.InfoAndCredits) {
         // InfoAndCreditsScreen使用简化的构造函数
         screen = new screenClass(this.strings, this.messageBoxApi);
       } else if (screenType === MainMenuScreenType.Credits) {
@@ -163,6 +193,43 @@ export class MainMenuRootScreen extends RootScreen {
           this.jsxRenderer,
           this.keyBinds
         );
+      } else if (screenType === MainMenuScreenType.Skirmish) {
+        // SkirmishScreen需要特殊参数 - 使用真实依赖对象
+        console.log('[MainMenuRootScreen] Creating SkirmishScreen with real dependencies');
+        
+        // 动态导入真实的依赖对象
+        const { ErrorHandler } = await import('../../../ErrorHandler.js');
+        const { Rules } = await import('../../../game/rules/Rules.js');
+        const { MapFileLoader } = await import('../game/MapFileLoader.js');
+        const { Engine } = await import('../../../engine/Engine.js');
+        
+        // 创建真实的依赖对象实例
+        const errorHandler = new ErrorHandler(this.messageBoxApi, this.strings);
+        
+        // Rules需要Engine的规则数据
+        const rules = new Rules(Engine.getRules());
+        
+        // MapFileLoader需要ResourceLoader和VFS
+        const { ResourceLoader } = await import('../../../engine/ResourceLoader.js');
+        const mapResourceLoader = new ResourceLoader(''); // 空URL，使用VFS
+        const mapFileLoader = new MapFileLoader(mapResourceLoader, Engine.vfs);
+        
+        // 获取Engine的地图列表和游戏模式
+        const mapList = Engine.getMapList();
+        const gameModes = Engine.getMpModes();
+        
+        screen = new screenClass(
+          this.rootController, // 使用真实的rootController
+          errorHandler,
+          this.messageBoxApi,
+          this.strings,
+          rules,
+          this.jsxRenderer,
+          mapFileLoader,
+          mapList,
+          gameModes,
+          this.localPrefs
+        );
       } else {
         // 其他屏幕使用标准参数
         screen = new screenClass(
@@ -173,28 +240,8 @@ export class MainMenuRootScreen extends RootScreen {
           false  // quickMatchEnabled - TODO: get from config
         );
       }
-      
-      // Set the controller for the screen if it has a setController method
-      if (screen.setController) {
-        screen.setController(controller);
-      }
-      
-      controller.addScreen(screenType, screen);
-    }
-
-    // Add the main menu to the UI scene
-    if (this.mainMenu) {
-      this.uiScene.add(this.mainMenu);
-    }
-
-    // Navigate to initial screen after a short delay to ensure everything is set up
-    setTimeout(() => {
-      if (params?.route) {
-        controller.goToScreen(params.route.screenType, params.route.params);
-      } else {
-        controller.goToScreen(MainMenuScreenType.Home);
-      }
-    }, 0);
+    
+    return screen;
   }
 
   async onLeave(): Promise<void> {

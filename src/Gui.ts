@@ -361,6 +361,10 @@ export class Gui {
     const subScreens = new Map<MainMenuScreenType, any>();
     subScreens.set(MainMenuScreenType.Home, HomeScreen);
     subScreens.set(MainMenuScreenType.OptionsStorage, StorageScreen);
+    
+    // 添加SkirmishScreen
+    const { SkirmishScreen } = await import('./gui/screen/mainMenu/lobby/SkirmishScreen.js');
+    subScreens.set(MainMenuScreenType.Skirmish, SkirmishScreen);
     // 底层测试入口屏幕
     const { TestEntryScreen } = await import('./gui/screen/mainMenu/main/TestEntryScreen.js');
     subScreens.set(MainMenuScreenType.TestEntry, TestEntryScreen);
@@ -395,7 +399,8 @@ export class Gui {
       this.localPrefs,      // Pass local preferences
       this.fullScreen,      // Pass fullscreen system
       this.mixer,           // Pass audio mixer
-      this.keyBinds         // Pass key bindings
+      this.keyBinds,        // Pass key bindings
+      this.rootController   // Pass real root controller
     );
     
     // Add screen to root controller

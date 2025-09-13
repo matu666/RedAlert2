@@ -2,14 +2,15 @@ import { CanvasUtils } from "@/engine/gfx/CanvasUtils";
 import { HtmlContainer } from "@/gui/HtmlContainer";
 import { UiObject } from "@/gui/UiObject";
 import { LobbyType } from "@/gui/screen/mainMenu/lobby/component/viewmodel/lobby";
-import { Coords } from "game/Coords";
+import { Coords } from "@/game/Coords";
 import { IsoCoords } from "@/engine/IsoCoords";
+import { THREE } from "@/setupThreeGlobal";
 
 interface MapFile {
   decodePreviewImage(): { data: Uint8Array; width: number; height: number };
   fullSize: { width: number; height: number };
   localSize: { width: number; height: number; x: number; y: number };
-  startingLocations: Map<number, { x: number; y: number }>;
+  startingLocations: { x: number; y: number }[];
 }
 
 interface Size {

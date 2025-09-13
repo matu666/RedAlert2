@@ -1,45 +1,27 @@
-interface GameOpts {
-  gameSpeed: number;
-  credits: number;
-  unitCount: number;
-  shortGame: boolean;
-  superWeapons: boolean;
-  buildOffAlly: boolean;
-  mcvRepacks: boolean;
-  cratesAppear: boolean;
-  hostTeams?: boolean;
-  destroyableBridges: boolean;
-  multiEngineer: boolean;
-  noDogEngiKills: boolean;
-}
+import { GameOpts } from '@/game/gameopts/GameOpts';
 
-interface MpDialogSettings {
-  gameSpeed: number;
-  money: number;
-  unitCount: number;
-  shortGame: boolean;
-  mcvRedeploys: boolean;
-  crates: boolean;
-  superWeapons: boolean;
-  bridgeDestruction: boolean;
-  multiEngineer: boolean;
-}
-
+/**
+ * 首选主机选项类
+ * 用于保存和管理用户的游戏偏好设置
+ */
 export class PreferredHostOpts {
-  public gameSpeed: number = 6;
-  public credits: number = 10000;
-  public unitCount: number = 10;
-  public shortGame: boolean = true;
-  public superWeapons: boolean = false;
-  public buildOffAlly: boolean = true;
-  public mcvRepacks: boolean = true;
-  public cratesAppear: boolean = false;
-  public hostTeams: boolean = false;
-  public destroyableBridges: boolean = true;
-  public multiEngineer: boolean = false;
-  public noDogEngiKills: boolean = false;
-  public slotsClosed: Set<number> = new Set();
+  gameSpeed: number = 6;
+  credits: number = 10000;
+  unitCount: number = 10;
+  shortGame: boolean = true;
+  superWeapons: boolean = false;
+  buildOffAlly: boolean = true;
+  mcvRepacks: boolean = true;
+  cratesAppear: boolean = false;
+  hostTeams: boolean = false;
+  destroyableBridges: boolean = true;
+  multiEngineer: boolean = false;
+  noDogEngiKills: boolean = false;
+  slotsClosed: Set<number> = new Set();
 
+  /**
+   * 序列化偏好选项为字符串
+   */
   serialize(): string {
     return [
       this.gameSpeed,
@@ -50,30 +32,23 @@ export class PreferredHostOpts {
       Number(this.buildOffAlly),
       Number(this.mcvRepacks),
       Number(this.cratesAppear),
-      [...this.slotsClosed].join(","),
+      [...this.slotsClosed].join(','),
       Number(this.hostTeams),
       Number(this.destroyableBridges),
       Number(this.multiEngineer),
       Number(this.noDogEngiKills),
-    ].join(";");
+    ].join(';');
   }
 
+  /**
+   * 从字符串反序列化偏好选项
+   */
   unserialize(data: string): this {
     const [
-      gameSpeed,
-      credits,
-      unitCount,
-      shortGame,
-      superWeapons,
-      buildOffAlly,
-      mcvRepacks,
-      cratesAppear,
-      slotsClosed,
-      hostTeams,
-      destroyableBridges = "1",
-      multiEngineer,
-      noDogEngiKills,
-    ] = data.split(";");
+      gameSpeed, credits, unitCount, shortGame, superWeapons,
+      buildOffAlly, mcvRepacks, cratesAppear, slotsClosed,
+      hostTeams = '0', destroyableBridges = '1', multiEngineer, noDogEngiKills
+    ] = data.split(';');
 
     this.gameSpeed = Number(gameSpeed);
     this.credits = Number(credits);
@@ -87,13 +62,39 @@ export class PreferredHostOpts {
     this.destroyableBridges = Boolean(Number(destroyableBridges));
     this.multiEngineer = Boolean(Number(multiEngineer));
     this.noDogEngiKills = Boolean(Number(noDogEngiKills));
+
     this.slotsClosed = new Set(
-      slotsClosed ? slotsClosed.split(",").map((slot) => Number(slot)) : [],
+      slotsClosed && slotsClosed.length > 0
+        ? slotsClosed.split(',').map(Number)
+        : []
     );
 
     return this;
   }
 
+  /**
+   * 应用多人游戏对话框设置
+   */
+  applyMpDialogSettings(mpDialogSettings: any): this {
+    this.gameSpeed = mpDialogSettings.gameSpeed ?? this.gameSpeed;
+    this.credits = mpDialogSettings.money ?? this.credits;
+    this.unitCount = mpDialogSettings.unitCount ?? this.unitCount;
+    this.shortGame = mpDialogSettings.shortGame ?? this.shortGame;
+    this.superWeapons = mpDialogSettings.superWeapons ?? this.superWeapons;
+    this.buildOffAlly = mpDialogSettings.buildOffAlly ?? this.buildOffAlly;
+    // Align keys with MpDialogSettings.readIni()
+    this.mcvRepacks = mpDialogSettings.mcvRedeploys ?? this.mcvRepacks;
+    this.cratesAppear = mpDialogSettings.crates ?? this.cratesAppear;
+    this.destroyableBridges = mpDialogSettings.bridgeDestruction ?? this.destroyableBridges;
+    this.multiEngineer = mpDialogSettings.multiEngineer ?? this.multiEngineer;
+    this.noDogEngiKills = mpDialogSettings.noDogEngiKills ?? this.noDogEngiKills;
+    
+    return this;
+  }
+
+  /**
+   * 从游戏选项应用设置
+   */
   applyGameOpts(gameOpts: GameOpts): this {
     this.gameSpeed = gameOpts.gameSpeed;
     this.credits = gameOpts.credits;
@@ -103,25 +104,11 @@ export class PreferredHostOpts {
     this.buildOffAlly = gameOpts.buildOffAlly;
     this.mcvRepacks = gameOpts.mcvRepacks;
     this.cratesAppear = gameOpts.cratesAppear;
-    this.hostTeams = !!gameOpts.hostTeams;
+    this.hostTeams = gameOpts.hostTeams ?? false;
     this.destroyableBridges = gameOpts.destroyableBridges;
     this.multiEngineer = gameOpts.multiEngineer;
     this.noDogEngiKills = gameOpts.noDogEngiKills;
-
-    return this;
-  }
-
-  applyMpDialogSettings(settings: MpDialogSettings): this {
-    this.gameSpeed = 6 - settings.gameSpeed;
-    this.credits = settings.money;
-    this.unitCount = settings.unitCount;
-    this.shortGame = settings.shortGame;
-    this.mcvRepacks = settings.mcvRedeploys;
-    this.cratesAppear = settings.crates;
-    this.superWeapons = settings.superWeapons;
-    this.destroyableBridges = settings.bridgeDestruction;
-    this.multiEngineer = settings.multiEngineer;
-
+    
     return this;
   }
 }

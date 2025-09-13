@@ -66,10 +66,10 @@ export class MainMenuController extends Controller {
   }
 
   // Main menu specific methods
-  setSidebarButtons(buttons: any[]): void {
+  setSidebarButtons(buttons: any[], mpSlotEnabled?: boolean): void {
     console.log(`[MainMenuController] Setting ${buttons.length} sidebar buttons`);
     if (this.mainMenu && this.mainMenu.setButtons) {
-      this.mainMenu.setButtons(buttons);
+      this.mainMenu.setButtons(buttons, !!mpSlotEnabled);
     }
   }
 
@@ -146,6 +146,29 @@ export class MainMenuController extends Controller {
     if (this.mainMenu && this.mainMenu.setContentComponent) {
       this.mainMenu.setContentComponent(component);
     }
+  }
+
+  setSidebarMpContent(content: any): void {
+    if (this.mainMenu && this.mainMenu.setSidebarMpContent) {
+      this.mainMenu.setSidebarMpContent(content);
+    }
+  }
+
+  toggleSidebarPreview(show: boolean): void {
+    console.log(`[MainMenuController] ${show ? 'Showing' : 'Hiding'} sidebar preview`);
+    if (this.mainMenu && this.mainMenu.toggleSidebarPreview) {
+      this.mainMenu.toggleSidebarPreview(show);
+    }
+  }
+
+  setSidebarPreview(preview?: any): void {
+    if (this.mainMenu && this.mainMenu.setSidebarPreview) {
+      this.mainMenu.setSidebarPreview(preview);
+    }
+  }
+
+  getSidebarPreviewSize(): any {
+    return this.mainMenu.getSidebarPreviewSize();
   }
 
   rerenderCurrentScreen(): void {

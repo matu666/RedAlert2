@@ -47,10 +47,9 @@ export class MenuVideo extends React.Component<MenuVideoProps, MenuVideoState> {
       ref: (ref) => (this.el = ref as HTMLDivElement),
       dangerouslySetInnerHTML: {
         __html: `
-          <video style="outline: none;" loop playsinline muted autoPlay>
+          <video style="outline: none;" loop playsinline muted autoplay>
               <source src="${url}" type="${mimeType}" />
           </video>
-          <!--<div class="logo" style="opacity: 0;" />-->
         `,
       },
     });

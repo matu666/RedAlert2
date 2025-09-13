@@ -1,5 +1,5 @@
-import { FileNotFoundError } from 'data/vfs/FileNotFoundError';
-import { VirtualFile } from 'data/vfs/VirtualFile';
+import { FileNotFoundError } from '@/data/vfs/FileNotFoundError';
+import { VirtualFile } from '@/data/vfs/VirtualFile';
 
 /**
  * Loads map files from various sources (VFS, resources)

@@ -1,5 +1,6 @@
 import * as jsx from "@/gui/jsx/jsx";
 import * as SidebarModel from "@/gui/screen/game/component/hud/viewmodel/SidebarModel";
+import { SidebarItemStatus } from "@/gui/screen/game/component/hud/viewmodel/SidebarModel";
 import { UiObject } from "@/gui/UiObject";
 import { UiComponent, UiComponentProps } from "@/gui/jsx/UiComponent";
 import { OverlayUtils } from "@/engine/gfx/OverlayUtils";
@@ -82,21 +83,21 @@ export class SidebarCard extends UiComponent<SidebarCardProps> {
     this.slotOutline.setVisible(false);
     this.slotOutline.setZIndex((this.props.zIndex ?? 0) + 1);
     uiObject.add(this.slotOutline);
-    
+
     let labelImages = SidebarCard.labelImageCache.get(this.props.textColor);
     if (!labelImages) {
       labelImages = this.createLabelImages(this.props.textColor);
       SidebarCard.labelImageCache.set(this.props.textColor, labelImages);
     }
     this.labelImages = labelImages;
-    
+
     let quantityImages = SidebarCard.quantityImageCache.get(this.props.textColor);
     if (!quantityImages) {
       quantityImages = this.createQuantityImages(this.props.textColor);
       SidebarCard.quantityImageCache.set(this.props.textColor, quantityImages);
     }
     this.quantityImages = quantityImages;
-    
+
     return uiObject;
   }
 
@@ -113,13 +114,15 @@ export class SidebarCard extends UiComponent<SidebarCardProps> {
     const horizontalSpacing = 3;
     const verticalSpacing = 2;
     const children = [];
-    
+
     for (let slotIndex = 0; slotIndex < slots; slotIndex++) {
       const position = {
-        x: (horizontalSpacing + cameoSize.width) * (slotIndex % 2),
-        y: (verticalSpacing + cameoSize.height) * Math.floor(slotIndex / 2),
+        x: (horizontalSpacing + cameoSize.width - 16) * (slotIndex % 2), // 这里的补偿很奇怪，暂时设置为16和4，保证cameo对齐。之后需要优化
+        y: (verticalSpacing + cameoSize.height - 4) * Math.floor(slotIndex / 2),
       };
-      
+
+      console.log("当前渲染的cameo", position, slotIndex, cameoSize.width, cameoSize.height);
+
       children.push(
         jsx.jsx(
           "container",
@@ -205,21 +208,21 @@ export class SidebarCard extends UiComponent<SidebarCardProps> {
     const { sidebarModel, slots } = this.props;
     const obj3D = this.getUiObject().get3DObject();
     obj3D.visible = this.visible;
-    
+
     if (this.justCreated ||
-        sidebarModel.activeTab.needsUpdate ||
-        this.lastActiveTab !== sidebarModel.activeTab) {
+      sidebarModel.activeTab.needsUpdate ||
+      this.lastActiveTab !== sidebarModel.activeTab) {
       this.justCreated = false;
       const itemCount = sidebarModel.activeTab.items.length;
-      
+
       if (this.lastActiveTab !== sidebarModel.activeTab ||
-          this.lastItemCount !== itemCount) {
+        this.lastItemCount !== itemCount) {
         if (this.lastItemCount > itemCount) {
           this.pagingOffset = 0;
         }
         this.lastItemCount = itemCount;
       }
-      
+
       this.lastActiveTab = sidebarModel.activeTab;
       sidebarModel.activeTab.needsUpdate = false;
       this.updateSlots(sidebarModel.activeTab.items, slots);
@@ -233,7 +236,7 @@ export class SidebarCard extends UiComponent<SidebarCardProps> {
       const progressOverlay = this.progressOverlays[slotIndex];
       const labelObject = this.labelObjects[slotIndex];
       const quantityObject = this.quantityObjects[slotIndex];
-      
+
       if (items.length - this.pagingOffset <= slotIndex) {
         slotObject.get3DObject().visible = false;
         progressOverlay.get3DObject().visible = false;
@@ -253,18 +256,18 @@ export class SidebarCard extends UiComponent<SidebarCardProps> {
     const cameoNameToIdMap = this.props.cameoNameToIdMap;
     let cameoName = item.cameo + ".shp";
     let frameId = cameoNameToIdMap.get(cameoName);
-    
+
     if (frameId === undefined) {
       cameoName = (ObjectArt as any).MISSING_CAMEO + ".shp";
       frameId = cameoNameToIdMap.get(cameoName);
     }
-    
+
     if (frameId === undefined) {
       throw new Error(
         `Missing cameo placeholder image "${(ObjectArt as any).MISSING_CAMEO}.shp"`,
       );
     }
-    
+
     slotObject.setFrame(frameId);
     slotObject.get3DObject().visible = true;
     slotObject.setLightMult(item.disabled ? 0.5 : 1);
@@ -272,31 +275,31 @@ export class SidebarCard extends UiComponent<SidebarCardProps> {
 
   updateProgressOverlay(item: any, progressOverlay: any): void {
     let frame = 0;
-    
-    if ([SidebarModel.SidebarItemStatus.Started, SidebarModel.SidebarItemStatus.OnHold].includes(item.status)) {
+
+    if ([SidebarItemStatus.Started, SidebarItemStatus.OnHold].includes(item.status)) {
       const frameCount = progressOverlay.getFrameCount();
       frame = Math.max(1, Math.ceil(item.progress * (frameCount - 1))) % frameCount;
     }
-    
+
     progressOverlay.setFrame(frame);
     progressOverlay.get3DObject().visible = frame > 0;
   }
 
   updateStatusText(item: any, labelObject: any): void {
-    const isVisible = [SidebarModel.SidebarItemStatus.Ready, SidebarModel.SidebarItemStatus.OnHold].includes(item.status);
+    const isVisible = [SidebarItemStatus.Ready, SidebarItemStatus.OnHold].includes(item.status);
     if (!labelObject || !labelObject.get3DObject) return;
     labelObject.get3DObject().visible = isVisible;
-    
+
     if (typeof labelObject.setFrame !== 'function' || typeof labelObject.setPosition !== 'function') return;
     const labelAlign = (labelObject as any).builder?.setAlign ? (labelObject as any).builder.setAlign.bind((labelObject as any).builder) : undefined;
-    if (item.status === SidebarModel.SidebarItemStatus.Ready) {
+    if (item.status === SidebarItemStatus.Ready) {
       labelObject.setFrame(LabelType.Ready);
       labelObject.setPosition(
         this.getCameoSize().width / 2,
         labelObject.getPosition().y,
       );
       if (labelAlign) labelAlign(0, -1);
-    } else if (item.status === SidebarModel.SidebarItemStatus.OnHold) {
+    } else if (item.status === SidebarItemStatus.OnHold) {
       labelObject.setFrame(LabelType.OnHold);
       const xPos = item.quantity > 1 ? 0 : this.getCameoSize().width / 2;
       labelObject.setPosition(xPos, labelObject.getPosition().y);
@@ -305,8 +308,8 @@ export class SidebarCard extends UiComponent<SidebarCardProps> {
   }
 
   updateQuantities(item: any, quantityObject: any): void {
-    const threshold = item.status === SidebarModel.SidebarItemStatus.InQueue ? 0 : 1;
-    
+    const threshold = item.status === SidebarItemStatus.InQueue ? 0 : 1;
+
     if (item.quantity > threshold) {
       const frame = item.quantity > SidebarCard.MAX_QUANTITY
         ? SidebarCard.MAX_QUANTITY
@@ -330,7 +333,7 @@ export class SidebarCard extends UiComponent<SidebarCardProps> {
 
   updateTooltip(item: any, container: any): void {
     let tooltip: string;
-    
+
     if (item.target.type === SidebarModel.SidebarItemTargetType.Techno) {
       let cost = item.target.rules.cost;
       if (this.props.sidebarModel instanceof CombatantSidebarModel) {
@@ -342,7 +345,7 @@ export class SidebarCard extends UiComponent<SidebarCardProps> {
     } else {
       throw new Error(`Type "${item.target.type}" not implemented`);
     }
-    
+
     container.setTooltip(tooltip);
   }
 
@@ -361,7 +364,7 @@ export class SidebarCard extends UiComponent<SidebarCardProps> {
     const cameoSize = this.getCameoSize();
     const width = cameoSize.width;
     const height = cameoSize.height;
-    
+
     const geometry = new THREE.BufferGeometry();
     const positions = new Float32Array([
       0, 0, 0,
@@ -371,13 +374,13 @@ export class SidebarCard extends UiComponent<SidebarCardProps> {
       0, 0, 0,
     ]);
     geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-    
+
     const material = new THREE.LineBasicMaterial({
       color: this.props.textColor,
       transparent: true,
       side: THREE.DoubleSide,
     });
-    
+
     return new THREE.Line(geometry, material);
   }
 
@@ -395,19 +398,19 @@ export class SidebarCard extends UiComponent<SidebarCardProps> {
       0,
       this.props.sidebarModel.activeTab.items.length - this.props.slots,
     );
-    
+
     this.pagingOffset = clamp(offset, 0, maxOffset);
-    
+
     // Ensure even offset for proper 2-column layout
     if (this.pagingOffset % 2) {
       this.pagingOffset++;
     }
-    
+
     this.updateSlots(
       this.props.sidebarModel.activeTab.items,
       this.props.slots,
     );
-    
+
     return oldOffset !== this.pagingOffset;
   }
 

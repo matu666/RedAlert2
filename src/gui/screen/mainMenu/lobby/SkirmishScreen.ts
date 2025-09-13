@@ -1,33 +1,41 @@
-import { Task } from "@puzzl/core/lib/async/Task";
-import { SlotType, SlotInfo } from "network/gameopt/SlotInfo";
-import { GameOpts } from "game/gameopts/GameOpts";
+// import { Task } from "@puzzl/core/lib/async/Task"; // 未使用
+import { SlotType as NetSlotType, SlotInfo } from "@/network/gameopt/SlotInfo";
+import { GameOpts, AiDifficulty } from "@/game/gameopts/GameOpts";
 import { 
   RANDOM_COUNTRY_ID,
   RANDOM_COLOR_ID, 
   RANDOM_START_POS,
   NO_TEAM_ID,
-  aiUiNames
-} from "game/gameopts/constants";
+  aiUiNames,
+  OBS_COUNTRY_ID,
+  RANDOM_COUNTRY_NAME,
+  OBS_COUNTRY_NAME,
+  RANDOM_COUNTRY_UI_NAME,
+  RANDOM_COUNTRY_UI_TOOLTIP,
+  OBS_COUNTRY_UI_NAME,
+  OBS_COUNTRY_UI_TOOLTIP,
+  RANDOM_COLOR_NAME,
+} from "@/game/gameopts/constants";
 import { LobbyForm } from "@/gui/screen/mainMenu/lobby/component/LobbyForm";
-import { LobbyType, SlotOccupation } from "@/gui/screen/mainMenu/lobby/component/viewmodel/lobby";
-import { ScreenType } from "@/gui/screen/mainMenu/ScreenType";
+import { LobbyType, SlotOccupation, PlayerStatus, SlotType as UiSlotType } from "@/gui/screen/mainMenu/lobby/component/viewmodel/lobby";
+import { MainMenuScreenType } from "../../ScreenType";
 import { CompositeDisposable } from "@/util/disposable/CompositeDisposable";
 import { jsx } from "@/gui/jsx/jsx";
 import { HtmlView } from "@/gui/jsx/HtmlView";
-import { DownloadError } from "@/engine/ResourceLoader";
-import { CancellationTokenSource, OperationCanceledError } from "@puzzl/core/lib/async/cancellation";
+// DownloadError - 暂时注释，使用any类型替代
+// import { CancellationTokenSource, OperationCanceledError } from "@puzzl/core/lib/async/cancellation"; // 未使用
 import { MapPreviewRenderer } from "@/gui/screen/mainMenu/lobby/MapPreviewRenderer";
-import { findIndexReverse } from "@/util/array";
-import { StorageKey } from "LocalPrefs";
+import { findIndexReverse } from "@/util/Array";
+import { StorageKey } from "@/LocalPrefs";
 import { isNotNullOrUndefined } from "@/util/typeGuard";
-import { PreferredHostOpts } from "@/gui/screen/mainMenu/lobby/PreferredHostOpts";
+import { PreferredHostOpts } from "./PreferredHostOpts";
 import { MainMenuScreen } from "@/gui/screen/mainMenu/MainMenuScreen";
-import { MapFile } from "data/MapFile";
+import { MapFile } from "@/data/MapFile";
 import { MapDigest } from "@/engine/MapDigest";
 import { MainMenuRoute } from "@/gui/screen/mainMenu/MainMenuRoute";
 import { MusicType } from "@/engine/sound/Music";
-import { Parser } from "network/gameopt/Parser";
-import { Serializer } from "network/gameopt/Serializer";
+// import { Parser } from "../../../../network/gameopt/Parser.js"; // 未使用
+// import { Serializer } from "../../../../network/gameopt/Serializer.js"; // 未使用
 
 interface GameMode {
   id: number;
@@ -97,6 +105,8 @@ interface SkirmishUnstackParams {
 }
 
 export class SkirmishScreen extends MainMenuScreen {
+  public title: string;
+  public musicType: MusicType;
   private rootController: RootController;
   private errorHandler: ErrorHandler;
   private messageBoxApi: MessageBoxApi;
@@ -157,7 +167,7 @@ export class SkirmishScreen extends MainMenuScreen {
     } catch (error) {
       this.handleError(
         error,
-        error instanceof DownloadError
+        (error as any)?.name === 'DownloadError'
           ? this.strings.get("TXT_DOWNLOAD_FAILED")
           : this.strings.get("WOL:MatchErrorCreatingGame"),
       );
@@ -186,14 +196,14 @@ export class SkirmishScreen extends MainMenuScreen {
       const lastUsedSlotIndex = findIndexReverse(
         this.slotsInfo,
         (slot) =>
-          slot.type === SlotType.Ai ||
-          slot.type === SlotType.Player ||
-          slot.type === SlotType.Open,
+          slot.type === NetSlotType.Ai ||
+          slot.type === NetSlotType.Player ||
+          slot.type === NetSlotType.Open,
       );
 
       const slotsToClose = Math.max(0, lastUsedSlotIndex + 1 - mapEntry.maxSlots);
       for (let i = 0; i < slotsToClose; i++) {
-        this.slotsInfo[lastUsedSlotIndex - i].type = SlotType.Closed;
+        this.slotsInfo[lastUsedSlotIndex - i].type = NetSlotType.Closed;
         this.gameOpts.aiPlayers[lastUsedSlotIndex - i] = undefined;
       }
 
@@ -216,7 +226,7 @@ export class SkirmishScreen extends MainMenuScreen {
         opts.mapSizeBytes = mapFile.getSize();
         opts.mapTitle = mapEntry.getFullMapTitle(this.strings);
         opts.maxSlots = mapEntry.maxSlots;
-        opts.mapOfficial = mapEntry.official;
+        opts.mapOfficial = (mapEntry as any).official ?? false;
       });
 
       this.localPrefs.setItem(StorageKey.LastMap, mapEntry.fileName);
@@ -239,13 +249,13 @@ export class SkirmishScreen extends MainMenuScreen {
     let selectedMode = this.gameModes.getById(selectedModeId);
 
     // Find compatible map if current map doesn't support the mode
-    if (!selectedMap?.gameModes.find((mode) => mode.mapFilter === selectedMode.mapFilter)) {
+    if (!selectedMap || !(selectedMap as any)?.gameModes?.find((mode: any) => mode.mapFilter === (selectedMode as any).mapFilter)) {
       selectedModeId = 1;
       selectedMode = this.gameModes.getById(selectedModeId);
       selectedMap = this.mapList
         .getAll()
         .find((map) =>
-          map.gameModes.find((mode) => selectedMode.mapFilter === mode.mapFilter),
+          (map as any).gameModes?.find((mode: any) => (selectedMode as any).mapFilter === mode.mapFilter),
         );
     }
 
@@ -270,7 +280,8 @@ export class SkirmishScreen extends MainMenuScreen {
       credits: preferredOpts.credits,
       unitCount: preferredOpts.unitCount,
       buildOffAlly: preferredOpts.buildOffAlly,
-      hostTeams: preferredOpts.hostTeams,
+      // Skirmish does not show HostTeams; keep false
+      hostTeams: false,
       destroyableBridges: preferredOpts.destroyableBridges,
       multiEngineer: preferredOpts.multiEngineer,
       noDogEngiKills: preferredOpts.noDogEngiKills,
@@ -295,36 +306,58 @@ export class SkirmishScreen extends MainMenuScreen {
       mapSizeBytes: this.currentMapFile.getSize(),
       mapTitle: selectedMap!.getFullMapTitle(this.strings),
       maxSlots: selectedMap!.maxSlots,
-      mapOfficial: selectedMap!.official,
+      mapOfficial: (selectedMap! as any).official ?? false,
     };
 
-    this.slotsInfo = [{ type: SlotType.Player, name: this.playerName }];
+    // Align with original: default one AI with Medium difficulty if slot available
+    if (selectedMap!.maxSlots > 1) {
+      this.gameOpts.aiPlayers[1] = {
+        difficulty: AiDifficulty.Medium,
+        countryId: RANDOM_COUNTRY_ID,
+        colorId: RANDOM_COLOR_ID,
+        startPos: RANDOM_START_POS,
+        teamId: this.gameModes.getById(selectedModeId).mpDialogSettings.mustAlly ? 3 : NO_TEAM_ID,
+      } as any;
+    }
+
+    this.slotsInfo = [{ type: NetSlotType.Player, name: this.playerName }];
     for (let i = 1; i < 8; ++i) {
-      this.slotsInfo.push({
-        type: preferredOpts.slotsClosed.has(i)
-          ? SlotType.Closed
-          : i < selectedMap!.maxSlots
-            ? SlotType.Open
-            : SlotType.Closed,
-      });
+      if (i < selectedMap!.maxSlots && this.gameOpts.aiPlayers[i]) {
+        this.slotsInfo.push({ type: NetSlotType.Ai, difficulty: (this.gameOpts.aiPlayers[i] as any).difficulty });
+      } else {
+        const type = i < selectedMap!.maxSlots
+          ? (preferredOpts.slotsClosed.has(i) ? NetSlotType.Closed : NetSlotType.Open)
+          : NetSlotType.Closed;
+        this.slotsInfo.push({ type });
+      }
     }
   }
 
   private initFormModel(): void {
     const mpDialogSettings = this.rules.mpDialogSettings;
-    
+
+    const countryUiNameEntries: [string, string][] = [
+      [RANDOM_COUNTRY_NAME, RANDOM_COUNTRY_UI_NAME],
+      [OBS_COUNTRY_NAME, OBS_COUNTRY_UI_NAME],
+      ...this.getAvailablePlayerCountryRules().map((c: any) => [c.name, c.uiName] as [string, string]),
+    ];
+
+    const countryUiTooltipEntries: [string, string][] = [
+      [RANDOM_COUNTRY_NAME, RANDOM_COUNTRY_UI_TOOLTIP],
+      [OBS_COUNTRY_NAME, OBS_COUNTRY_UI_TOOLTIP],
+      ...this.getAvailablePlayerCountryRules()
+        .filter((c: any) => c.uiTooltip)
+        .map((c: any) => [c.name, c.uiTooltip] as [string, string]),
+    ];
+
     this.formModel = {
       strings: this.strings,
-      countryUiNames: new Map([
-        // Country name mappings would go here
-      ]),
-      countryUiTooltips: new Map([
-        // Country tooltip mappings would go here
-      ]),
-      availablePlayerCountries: this.getAvailablePlayerCountries(),
-      availablePlayerColors: this.getAvailablePlayerColors(),
+      countryUiNames: new Map<string, string>(countryUiNameEntries),
+      countryUiTooltips: new Map<string, string>(countryUiTooltipEntries),
+      availablePlayerCountries: [RANDOM_COUNTRY_NAME].concat(this.getAvailablePlayerCountries()),
+      availablePlayerColors: [],
       availableAiNames: new Map([...aiUiNames.entries()]),
-      availableStartPositions: this.getAvailableStartPositions(),
+      availableStartPositions: [],
       maxTeams: 4,
       lobbyType: LobbyType.Singleplayer,
       mpDialogSettings: mpDialogSettings,
@@ -333,18 +366,18 @@ export class SkirmishScreen extends MainMenuScreen {
       onStartPosSelect: this.handleStartPosSelect.bind(this),
       onTeamSelect: this.handleTeamSelect.bind(this),
       onSlotChange: this.handleSlotChange.bind(this),
-      onToggleShortGame: (value: boolean) => this.applyGameOption((opts) => opts.shortGame = value),
-      onToggleMcvRepacks: (value: boolean) => this.applyGameOption((opts) => opts.mcvRepacks = value),
-      onToggleCratesAppear: (value: boolean) => this.applyGameOption((opts) => opts.cratesAppear = value),
-      onToggleSuperWeapons: (value: boolean) => this.applyGameOption((opts) => opts.superWeapons = value),
-      onToggleBuildOffAlly: (value: boolean) => this.applyGameOption((opts) => opts.buildOffAlly = value),
-      onToggleHostTeams: (value: boolean) => this.applyGameOption((opts) => opts.hostTeams = value),
-      onToggleDestroyableBridges: (value: boolean) => this.applyGameOption((opts) => opts.destroyableBridges = value),
-      onToggleMultiEngineer: (value: boolean) => this.applyGameOption((opts) => opts.multiEngineer = value),
-      onToggleNoDogEngiKills: (value: boolean) => this.applyGameOption((opts) => opts.noDogEngiKills = value),
-      onChangeGameSpeed: (value: number) => this.applyGameOption((opts) => opts.gameSpeed = value),
-      onChangeCredits: (value: number) => this.applyGameOption((opts) => opts.credits = value),
-      onChangeUnitCount: (value: number) => this.applyGameOption((opts) => opts.unitCount = value),
+      onToggleShortGame: (value: boolean) => this.applyGameOption((opts) => (opts.shortGame = value)),
+      onToggleMcvRepacks: (value: boolean) => this.applyGameOption((opts) => (opts.mcvRepacks = value)),
+      onToggleCratesAppear: (value: boolean) => this.applyGameOption((opts) => (opts.cratesAppear = value)),
+      onToggleSuperWeapons: (value: boolean) => this.applyGameOption((opts) => (opts.superWeapons = value)),
+      onToggleBuildOffAlly: (value: boolean) => this.applyGameOption((opts) => (opts.buildOffAlly = value)),
+      onToggleHostTeams: (value: boolean) => this.applyGameOption((opts) => (opts.hostTeams = value)),
+      onToggleDestroyableBridges: (value: boolean) => this.applyGameOption((opts) => (opts.destroyableBridges = value)),
+      onToggleMultiEngineer: (value: boolean) => this.applyGameOption((opts) => (opts.multiEngineer = value)),
+      onToggleNoDogEngiKills: (value: boolean) => this.applyGameOption((opts) => (opts.noDogEngiKills = value)),
+      onChangeGameSpeed: (value: number) => this.applyGameOption((opts) => (opts.gameSpeed = value)),
+      onChangeCredits: (value: number) => this.applyGameOption((opts) => (opts.credits = value)),
+      onChangeUnitCount: (value: number) => this.applyGameOption((opts) => (opts.unitCount = value)),
       activeSlotIndex: 0,
       teamsAllowed: true,
       teamsRequired: false,
@@ -357,7 +390,11 @@ export class SkirmishScreen extends MainMenuScreen {
       hostTeams: false,
       destroyableBridges: true,
       multiEngineer: false,
-      multiEngineerCount: Math.ceil((1 - this.rules.general.engineerCaptureLevel) / this.rules.general.engineerDamage) + 1,
+      multiEngineerCount:
+        Math.ceil(
+          (1 - ((this.rules as any).general?.engineerCaptureLevel || 0.5)) /
+            ((this.rules as any).general?.engineerDamage || 0.25),
+        ) + 1,
       noDogEngiKills: false,
       gameSpeed: 6,
       credits: mpDialogSettings.money,
@@ -373,8 +410,12 @@ export class SkirmishScreen extends MainMenuScreen {
     return [...this.rules.getMultiplayerColors().values()].map((color: any) => color.asHexString());
   }
 
-  private getAvailableStartPositions(): number[] {
-    return new Array(this.gameOpts?.maxSlots ?? 8).fill(0).map((_, index) => index);
+  private getAvailableStartPositionsForMax(maxSlots: number): number[] {
+    return new Array(maxSlots).fill(0).map((_, index) => index);
+  }
+
+  private getAvailablePlayerCountryRules(): any[] {
+    return this.rules.getMultiplayerCountries();
   }
 
   private applyGameOption(modifier: (opts: GameOpts) => void): void {
@@ -384,27 +425,233 @@ export class SkirmishScreen extends MainMenuScreen {
   }
 
   private handleCountrySelect(countryName: string, slotIndex: number): void {
-    // Implementation for country selection
+    this.updatePlayerInfo(
+      this.getCountryIdByName(countryName),
+      this.getColorIdByName(this.formModel.playerSlots[slotIndex].color),
+      this.formModel.playerSlots[slotIndex].startPos,
+      this.formModel.playerSlots[slotIndex].team,
+      slotIndex,
+    );
+    this.updateFormModel();
   }
 
   private handleColorSelect(colorName: string, slotIndex: number): void {
-    // Implementation for color selection
+    this.updatePlayerInfo(
+      this.getCountryIdByName(this.formModel.playerSlots[slotIndex].country),
+      this.getColorIdByName(colorName),
+      this.formModel.playerSlots[slotIndex].startPos,
+      this.formModel.playerSlots[slotIndex].team,
+      slotIndex,
+    );
+    this.updateFormModel();
   }
 
   private handleStartPosSelect(startPos: number, slotIndex: number): void {
-    // Implementation for start position selection
+    this.updatePlayerInfo(
+      this.getCountryIdByName(this.formModel.playerSlots[slotIndex].country),
+      this.getColorIdByName(this.formModel.playerSlots[slotIndex].color),
+      startPos,
+      this.formModel.playerSlots[slotIndex].team,
+      slotIndex,
+    );
   }
 
   private handleTeamSelect(teamId: number, slotIndex: number): void {
-    // Implementation for team selection
+    this.updatePlayerInfo(
+      this.getCountryIdByName(this.formModel.playerSlots[slotIndex].country),
+      this.getColorIdByName(this.formModel.playerSlots[slotIndex].color),
+      this.formModel.playerSlots[slotIndex].startPos,
+      teamId,
+      slotIndex,
+    );
   }
 
   private handleSlotChange(occupation: SlotOccupation, slotIndex: number, aiDifficulty?: any): void {
-    // Implementation for slot changes
+    if (slotIndex === 0) {
+      throw new Error("Change slot type of host");
+    }
+
+    if (occupation === SlotOccupation.Occupied && aiDifficulty !== undefined) {
+      const mpDialogSettings = this.gameModes.getById(this.gameOpts.gameMode).mpDialogSettings;
+      const slot = this.slotsInfo[slotIndex];
+      slot.type = NetSlotType.Ai;
+      slot.difficulty = aiDifficulty;
+      if (!this.gameOpts.aiPlayers[slotIndex]) {
+        this.gameOpts.aiPlayers[slotIndex] = {
+          difficulty: aiDifficulty,
+          countryId: RANDOM_COUNTRY_ID,
+          colorId: RANDOM_COLOR_ID,
+          startPos: RANDOM_START_POS,
+          teamId: mpDialogSettings.mustAlly ? 3 : NO_TEAM_ID,
+        } as any;
+      }
+      this.gameOpts.aiPlayers[slotIndex]!.difficulty = aiDifficulty;
+    }
+
+    if (occupation === SlotOccupation.Closed) {
+      this.slotsInfo[slotIndex].type = NetSlotType.Closed;
+      this.gameOpts.aiPlayers[slotIndex] = undefined as any;
+    }
+
+    this.updateFormModel();
+  }
+
+  private getCountryNameById(countryId: number): string {
+    if (countryId === RANDOM_COUNTRY_ID) return RANDOM_COUNTRY_NAME;
+    if (countryId === OBS_COUNTRY_ID) return OBS_COUNTRY_NAME;
+    return this.getAvailablePlayerCountries()[countryId];
+  }
+
+  private getCountryIdByName(name: string): number {
+    if (name === RANDOM_COUNTRY_NAME) return RANDOM_COUNTRY_ID;
+    if (name === OBS_COUNTRY_NAME) return OBS_COUNTRY_ID;
+    const idx = this.getAvailablePlayerCountries().indexOf(name);
+    return idx;
+  }
+
+  private getColorNameById(colorId: number): string {
+    return colorId === RANDOM_COLOR_ID ? RANDOM_COLOR_NAME : this.getAvailablePlayerColors()[colorId];
+  }
+
+  private getColorIdByName(name: string): number {
+    if (name === RANDOM_COLOR_NAME) return RANDOM_COLOR_ID;
+    const idx = this.getAvailablePlayerColors().indexOf(name);
+    if (idx === -1) throw new Error(`Color ${name} not found in available player colors`);
+    return idx;
+  }
+
+  private getSelectablePlayerColors(playerSlots: any[]): string[] {
+    const usedColors: string[] = [];
+    playerSlots.forEach((slot) => {
+      if (slot) usedColors.push(slot.color);
+    });
+    const available = this.getAvailablePlayerColors();
+    return [RANDOM_COLOR_NAME].concat(available.filter((c) => c && !usedColors.includes(c)));
+  }
+
+  private getSelectableStartPositions(playerSlots: any[], maxSlots: number): number[] {
+    const used: number[] = [];
+    playerSlots.forEach((slot) => {
+      if (slot) used.push(slot.startPos);
+    });
+    const positions = this.getAvailableStartPositionsForMax(maxSlots);
+    return [RANDOM_START_POS].concat(positions.filter((p) => !used.includes(p)));
+  }
+
+  private updatePlayerInfo(countryId: number, colorId: number, startPos: number, teamId: number, slotIndex: number): void {
+    const slot = this.slotsInfo[slotIndex];
+    if (slot.type === NetSlotType.Ai) {
+      const ai = this.gameOpts.aiPlayers[slotIndex];
+      if (!ai) throw new Error("No AI found on slot " + slotIndex);
+      ai.countryId = countryId;
+      ai.colorId = colorId;
+      ai.startPos = startPos;
+      ai.teamId = teamId;
+    } else if (slot.type === NetSlotType.Player) {
+      const human = this.gameOpts.humanPlayers.find((p) => p.name === slot.name);
+      if (!human) throw new Error("No player found on slot " + slotIndex);
+      human.countryId = countryId;
+      human.colorId = colorId;
+      human.startPos = startPos;
+      human.teamId = teamId;
+      if (countryId !== RANDOM_COUNTRY_ID) {
+        this.localPrefs.setItem(StorageKey.LastPlayerCountry, String(countryId));
+      }
+      if (colorId !== RANDOM_COLOR_ID) {
+        this.localPrefs.setItem(StorageKey.LastPlayerColor, String(colorId));
+      }
+      if (startPos !== RANDOM_START_POS) {
+        this.localPrefs.setItem(StorageKey.LastPlayerStartPos, String(startPos));
+      }
+      if (teamId !== NO_TEAM_ID) {
+        this.localPrefs.setItem(StorageKey.LastPlayerTeam, String(teamId));
+      }
+    } else {
+      throw new Error("Unexpected slot type " + slot.type);
+    }
+    this.updateFormModel();
   }
 
   private updateFormModel(): void {
-    // Implementation for updating form model
+    const e = this.gameOpts;
+    this.formModel.gameSpeed = e.gameSpeed;
+    this.formModel.credits = e.credits;
+    this.formModel.unitCount = e.unitCount;
+    this.formModel.shortGame = e.shortGame;
+    this.formModel.superWeapons = e.superWeapons;
+    this.formModel.buildOffAlly = e.buildOffAlly;
+    this.formModel.mcvRepacks = e.mcvRepacks;
+    this.formModel.cratesAppear = e.cratesAppear;
+    this.formModel.destroyableBridges = e.destroyableBridges;
+    this.formModel.multiEngineer = e.multiEngineer;
+    this.formModel.noDogEngiKills = e.noDogEngiKills;
+
+    let remaining = e.maxSlots;
+    this.slotsInfo.forEach((_, t) => {
+      if (remaining) {
+        remaining--;
+        this.formModel.playerSlots[t] = {
+          country: RANDOM_COUNTRY_NAME,
+          color: RANDOM_COLOR_NAME,
+          startPos: RANDOM_START_POS,
+          team: NO_TEAM_ID,
+        };
+      } else {
+        this.formModel.playerSlots[t] = undefined;
+      }
+    });
+
+    this.slotsInfo.forEach((slot, i) => {
+      if (!this.formModel.playerSlots[i]) return;
+      const s = this.formModel.playerSlots[i];
+      if (slot.type === NetSlotType.Closed) s.occupation = SlotOccupation.Closed;
+      else if (slot.type === NetSlotType.Open || (slot as any).type === NetSlotType.OpenObserver) s.occupation = SlotOccupation.Open;
+      else s.occupation = SlotOccupation.Occupied;
+
+      if (slot.type === NetSlotType.Ai) {
+        s.aiDifficulty = slot.difficulty;
+        s.type = UiSlotType.Ai;
+      } else if (slot.type === NetSlotType.Player) {
+        s.name = slot.name;
+        s.type = UiSlotType.Player;
+      }
+      s.status = PlayerStatus.NotReady;
+    });
+
+    const humans = this.gameOpts ? this.gameOpts.humanPlayers : [];
+    const ais = this.gameOpts ? this.gameOpts.aiPlayers : [];
+    const mp = this.gameModes.getById(this.gameOpts.gameMode).mpDialogSettings;
+
+    this.formModel.playerSlots.forEach((ps: any, idx: number) => {
+      if (!ps) return;
+      if (ps.occupation === SlotOccupation.Occupied) {
+        let h = humans.find((p: any) => p.name === ps.name);
+        if (h) {
+          ps.country = this.getCountryNameById(h.countryId);
+          ps.color = this.getColorNameById(h.colorId);
+          ps.startPos = h.startPos;
+          ps.team = h.teamId;
+          return;
+        }
+        const a = ais[idx];
+        if (a) {
+          ps.country = this.getCountryNameById(a.countryId);
+          ps.color = this.getColorNameById(a.colorId);
+          ps.startPos = a.startPos;
+          ps.team = a.teamId;
+        }
+      } else {
+        ps.country = RANDOM_COUNTRY_NAME;
+        ps.team = mp.mustAlly ? 0 : NO_TEAM_ID;
+      }
+    });
+
+    this.formModel.availablePlayerColors = this.getSelectablePlayerColors(this.formModel.playerSlots);
+    this.formModel.availableStartPositions = this.getSelectableStartPositions(this.formModel.playerSlots, e.maxSlots);
+    this.formModel.teamsAllowed = this.gameModes.getById(e.gameMode).mpDialogSettings.alliesAllowed;
+    this.formModel.teamsRequired = this.gameModes.getById(e.gameMode).mpDialogSettings.mustAlly;
+
+    this.lobbyForm && this.lobbyForm.refresh();
   }
 
   private savePreferences(): void {
@@ -445,11 +692,11 @@ export class SkirmishScreen extends MainMenuScreen {
         label: this.strings.get("GUI:ChooseMap"),
         tooltip: this.strings.get("STT:SkirmishButtonChooseMap"),
         onClick: () => {
-          this.controller?.pushScreen(ScreenType.MapSelection, {
+          this.controller?.pushScreen(MainMenuScreenType.MapSelection, {
             lobbyType: LobbyType.Singleplayer,
             gameOpts: this.gameOpts,
             usedSlots: () => 1 + findIndexReverse(this.slotsInfo, (slot) => 
-              slot.type === SlotType.Ai || slot.type === SlotType.Player),
+              slot.type === NetSlotType.Ai || slot.type === NetSlotType.Player),
           });
         },
       },
@@ -458,10 +705,10 @@ export class SkirmishScreen extends MainMenuScreen {
         tooltip: this.strings.get("STT:SkirmishButtonBack"),
         isBottom: true,
         onClick: () => {
-          this.controller?.goToScreen(ScreenType.Home);
+          this.controller?.goToScreen(MainMenuScreenType.Home);
         },
       },
-    ]);
+    ], true);
   }
 
   private refreshSidebarMpText(): void {
@@ -509,7 +756,7 @@ export class SkirmishScreen extends MainMenuScreen {
 
     const gameId = "skirmish-" + Date.now();
     const timestamp = Date.now();
-    const fallbackRoute = new MainMenuRoute(ScreenType.Home, {});
+    const fallbackRoute = new MainMenuRoute(MainMenuScreenType.Home, {});
 
     this.rootController.createGame(
       gameId,
@@ -539,7 +786,7 @@ export class SkirmishScreen extends MainMenuScreen {
 
   private handleError(error: any, message: string): void {
     this.errorHandler.handle(error, message, () => {
-      this.controller?.goToScreen(ScreenType.Home);
+      this.controller?.goToScreen(MainMenuScreenType.Home);
     });
   }
 
