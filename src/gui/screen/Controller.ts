@@ -28,8 +28,8 @@ export abstract class Controller {
   async goToScreenBlocking(screenType: number, params?: any): Promise<void> {
     console.log(`[Controller] Going to screen: ${screenType}`);
     
-    // Clear screen stack by leaving all current screens (like original)
-    while (this.screenStack.length) {
+    // Clear current screen and stack by leaving all screens (align with original)
+    while (this.currentScreen || this.screenStack.length) {
       await this.leaveCurrentScreen();
     }
     

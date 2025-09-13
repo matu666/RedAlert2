@@ -15,11 +15,11 @@ export class UiObjectSprite extends UiObject {
     const builder = new ShpBuilder(shpFile, palette, camera);
     builder.setBatched(true);
     builder.setBatchPalettes([palette]);
+    // Match original project: center the sprite by default for UI geometry.
     builder.setOffset({
       x: Math.floor(shpFile.width / 2),
       y: Math.floor(shpFile.height / 2)
     });
-    // Do NOT force global UI alignment here; allow caller to choose via setAlign
     return new UiObjectSprite(builder);
   }
 

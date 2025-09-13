@@ -851,7 +851,8 @@ export class Gui {
     this.keyBinds = null; // 暂时设为null，避免错误
     // 初始化运行时变量（与原项目一致地提供 debugBotIndex）
     this.runtimeVars = Object.assign(this.runtimeVars || {}, {
-      debugBotIndex: new BoxedVar<number | undefined>(undefined)
+      debugBotIndex: new BoxedVar<number | undefined>(undefined),
+      debugText: new BoxedVar<boolean>(false)
     });
     
     console.log('[Gui] Options system initialized');

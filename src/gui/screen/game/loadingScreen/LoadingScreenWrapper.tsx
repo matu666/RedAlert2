@@ -7,6 +7,7 @@ import { LoadingScreen } from './LoadingScreen';
 import { OBS_COUNTRY_NAME, OBS_COUNTRY_UI_NAME } from '@/game/gameopts/constants';
 import * as THREE from 'three';
 import { SideType } from '@/game/SideType';
+import { Engine } from '@/engine/Engine';
 
 interface Country {
   name: string;
@@ -39,7 +40,7 @@ interface GameResConfig {
 
 interface LoadingScreenWrapperProps {
   playerInfos: PlayerInfo[];
-  strings: Map<string, string>;
+  strings: { get(key: string, ...args: any[]): string };
   rules: Rules;
   viewport: Viewport;
   playerName?: string;
@@ -60,13 +61,13 @@ const countryBackgrounds = new Map<string, string>()
   .set(OBS_COUNTRY_NAME, "ls800obs.png");
 
 export class LoadingScreenWrapper extends UiComponent<LoadingScreenWrapperProps> {
-  private countryName!: string;
-  private color!: string;
-  private bgHtmlImg?: string;
-  private bgSpriteImg?: string;
-  private bgSpritePal?: string;
-  private htmlEl?: any;
-  private sprite?: any;
+  private declare countryName: string;
+  private declare color: string;
+  private declare bgHtmlImg?: string;
+  private declare bgSpriteImg?: string;
+  private declare bgSpritePal?: string;
+  private declare htmlEl?: any;
+  private declare sprite?: any;
 
   createUiObject({ playerName, gameResConfig }: { playerName?: string; gameResConfig: GameResConfig }): UiObject {
     const uiObject = new UiObject(
@@ -101,12 +102,42 @@ export class LoadingScreenWrapper extends UiComponent<LoadingScreenWrapperProps>
       console.warn("Missing loading image for country " + countryName);
     }
 
+    try {
+      console.log('[LoadingScreenWrapper] createUiObject:', {
+        isCdn: gameResConfig.isCdn(),
+        countryName,
+        bgSpriteImg: this.bgSpriteImg,
+        bgSpritePal: this.bgSpritePal,
+        bgHtmlImg: this.bgHtmlImg,
+      });
+      if (!gameResConfig.isCdn() && Engine.vfs) {
+        const imgName = this.bgSpriteImg!;
+        const palName = this.bgSpritePal!;
+        const imgExists = Engine.vfs.fileExists(imgName);
+        const palExists = Engine.vfs.fileExists(palName);
+        console.log('[LoadingScreenWrapper] VFS existence:', { imgName, imgExists, palName, palExists });
+        try {
+          (Engine.vfs as any).debugListFileOwners?.(imgName);
+          (Engine.vfs as any).debugListFileOwners?.(palName);
+          console.log('[LoadingScreenWrapper] VFS archives:', Engine.vfs.listArchives());
+        } catch {}
+      }
+    } catch {}
+
     return uiObject;
   }
 
   defineChildren(): any {
     const countries = this.props.rules.getMultiplayerCountries();
     const viewport = this.props.viewport;
+
+    try {
+      console.log('[LoadingScreenWrapper] defineChildren: willRenderSprite=', !this.props.gameResConfig.isCdn(), {
+        bgSpriteImg: this.bgSpriteImg,
+        bgSpritePal: this.bgSpritePal,
+        viewport,
+      });
+    } catch {}
 
     return jsx(
       "fragment",

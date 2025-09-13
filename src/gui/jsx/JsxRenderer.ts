@@ -64,33 +64,49 @@ export class JsxRenderer {
     
     this.jsxIntrinsicRenderers = {
       sprite: (props: SpriteProps) => {
-        console.log('[JsxRenderer] Creating sprite with props:', props);
+        try {
+          const imageName = typeof props.image === "string" ? props.image : (props.image?.filename ?? props.image?.name);
+          const paletteName = typeof props.palette === "string" ? props.palette : (props.palette?.filename ?? props.palette?.name);
+          const hasImage = typeof props.image === "string" ? this.images.has?.(props.image as string) : props.image !== undefined;
+          const hasPalette = typeof props.palette === "string" ? this.palettes.has?.(props.palette as string) : props.palette !== undefined;
+          console.log('[JsxRenderer] <sprite> request', { image: imageName, palette: paletteName, hasImage, hasPalette, x: props.x, y: props.y });
+          if (!hasImage || !hasPalette) {
+            console.warn('[JsxRenderer] Missing sprite props (image/palette). Full props:', props);
+            // 打印堆栈用于定位调用方
+            try { console.trace('[JsxRenderer] sprite trace'); } catch {}
+          }
+        } catch {}
         let sprite: UiObjectSprite;
         
         if (hasImages(props)) {
-          console.log('[JsxRenderer] Using CanvasSpriteBuilder');
-          // Fallback: render a simple container when CanvasSpriteBuilder is requested in UI layer
-          // to keep typings consistent with UiObjectSprite which expects a ShpBuilder.
+          // CanvasSpriteBuilder path not used by loading screen; keep unchanged here.
           const placeholder = new UiObject(new THREE.Object3D(), new HtmlContainer());
           return { obj: placeholder };
         } else {
-          console.log('[JsxRenderer] Using UiObjectSprite.fromShpFile');
-          const image = props.image
-            ? (typeof props.image === "string" ? this.getImage(props.image) : props.image)
-            : undefined;
-          const palette = props.palette
-            ? (typeof props.palette === "string" ? this.getPalette(props.palette) : props.palette)
-            : undefined;
-          console.log('[JsxRenderer] Image:', image);
-          console.log('[JsxRenderer] Palette:', palette);
-          console.log('[JsxRenderer] Camera:', this.camera);
-
-          if (!image || !palette) {
-            // Fallback to an empty container sprite to avoid runtime crash
-            const placeholder = new UiObject(new THREE.Object3D(), new HtmlContainer());
-            return { obj: placeholder };
+          let image: any;
+          let palette: any;
+          try {
+            console.log('[JsxRenderer] Resolving SHP resources...');
+            console.log('[JsxRenderer] props.image:', props.image, 'props.palette:', props.palette);
+            const imgName = props.image && typeof props.image === "string" ? props.image : (props.image?.filename ?? props.image?.name);
+            const palName = props.palette && typeof props.palette === "string" ? props.palette : (props.palette?.filename ?? props.palette?.name);
+            console.log('[JsxRenderer] names ->', { imgName, palName });
+            image = props.image
+              ? (typeof props.image === "string" ? this.getImage(props.image) : props.image)
+              : undefined;
+            palette = props.palette
+              ? (typeof props.palette === "string" ? this.getPalette(props.palette) : props.palette)
+              : undefined;
+            console.log('[JsxRenderer] resolved ->', { image, palette, camera: this.camera });
+            if (!image || !palette) {
+              console.warn('[JsxRenderer] SHP resources unresolved (image/palette undefined).', { image, palette, props });
+              try { console.trace('[JsxRenderer] unresolved trace'); } catch {}
+            }
+          } catch (e) {
+            console.error('[JsxRenderer] Failed resolving SHP resources', e);
+            throw e;
           }
-
+          // Align with original: rely on getImage/getPalette throwing if missing
           sprite = UiObjectSprite.fromShpFile(image, palette, this.camera);
           // If UI asks for center anchor, setAlign(0,-1) at builder-level before first build
           if ((sprite as any).builder && (props.alignX !== undefined || props.alignY !== undefined)) {
@@ -98,8 +114,6 @@ export class JsxRenderer {
               (sprite as any).builder.setAlign?.(props.alignX ?? 0, props.alignY ?? 0);
             } catch {}
           }
-          console.log('[JsxRenderer] Created sprite:', sprite);
-          console.log('[JsxRenderer] Sprite constructor name:', sprite.constructor.name);
         }
         
         if (pointerEvents) {
@@ -142,7 +156,6 @@ export class JsxRenderer {
           sprite.setTooltip(props.tooltip);
         }
         
-        console.log('[JsxRenderer] Returning sprite object:', sprite);
         return { obj: sprite };
       },
       

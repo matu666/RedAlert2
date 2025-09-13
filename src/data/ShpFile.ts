@@ -116,12 +116,14 @@ export class ShpFile {
             s.seek(0); // Ensure relative to file start if byteLength is absolute
             nextOffset = s.byteLength; 
         }
-        
-        let imageDataLength = nextOffset - imageDataStartOffset;
-        if (imageDataLength < 0) { // Offset sanity check
-            console.warn(`ShpFile ${this.filename}, frame ${i}: Negative image data length. Using end of file.`);
-            imageDataLength = s.byteLength - imageDataStartOffset;
+
+        // Align with original behavior: if the next frame's offset is before the current one,
+        // treat the end of file as the end of this frame's data.
+        if (nextOffset < imageDataStartOffset) {
+            nextOffset = s.byteLength;
         }
+
+        let imageDataLength = nextOffset - imageDataStartOffset;
         if (imageDataStartOffset + imageDataLength > s.byteLength) {
             // console.warn(`ShpFile ${this.filename}, frame ${i}: Image data exceeds file bounds. Clamping.`);
             imageDataLength = s.byteLength - imageDataStartOffset;
