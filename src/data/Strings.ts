@@ -43,7 +43,8 @@ export class Strings {
   }
 
   public get(key: string, ...args: any[]): string {
-    const upperKey = key.toUpperCase();
+    const rawKey = String(key);
+    const upperKey = rawKey.toUpperCase();
     const value = this.data[upperKey];
 
     if (value !== undefined) {
@@ -60,12 +61,12 @@ export class Strings {
     }
 
     // Handle "NOSTR:" prefix: if a key starts with this, strip it and return the rest.
-    if (key.toUpperCase().startsWith('NOSTR:')) {
-      return key.substring(6);
+    if (upperKey.startsWith('NOSTR:')) {
+      return rawKey.substring(6);
     }
     
-    console.warn(`[Strings] String with key "${key}" not found. Returning key.`);
-    return key;
+    console.warn(`[Strings] String with key "${rawKey}" not found. Returning key.`);
+    return rawKey;
   }
 
   public getKeys(): string[] {

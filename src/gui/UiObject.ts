@@ -37,6 +37,10 @@ export class UiObject implements Renderable {
     if (target) this.set3DObject(target);
     if (htmlContainer) this.setHtmlContainer(htmlContainer);
     this.container = new RenderableContainer();
+    // Ensure container is wired to a 3D object when target is provided
+    if (this.target) {
+      this.container.set3DObject(this.target);
+    }
   }
 
   get3DObject(): THREE.Object3D | undefined {
@@ -162,8 +166,7 @@ export class UiObject implements Renderable {
     console.log('[UiObject] create3DObject() called, target:', this.target);
     
     if (!this.get3DObject()) {
-      // Fallback: create an empty Object3D to ensure container can attach children
-      this.set3DObject(new THREE.Object3D());
+      throw new Error('Expecting a THREE.Object3D to have been set by now');
     }
     
     if (!this.rendered) {

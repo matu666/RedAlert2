@@ -4,7 +4,8 @@ import { UiComponent } from '@/gui/jsx/UiComponent';
 import { UiObject } from '@/gui/UiObject';
 import { HtmlView } from '@/gui/jsx/HtmlView';
 import { LoadingScreen } from './LoadingScreen';
-import { OBS_COUNTRY_NAME } from '@/game/gameopts/constants';
+import { OBS_COUNTRY_NAME, OBS_COUNTRY_UI_NAME } from '@/game/gameopts/constants';
+import * as THREE from 'three';
 import { SideType } from '@/game/SideType';
 
 interface Country {
@@ -103,7 +104,7 @@ export class LoadingScreenWrapper extends UiComponent<LoadingScreenWrapperProps>
     return uiObject;
   }
 
-  defineChildren(): React.ReactElement {
+  defineChildren(): any {
     const countries = this.props.rules.getMultiplayerCountries();
     const viewport = this.props.viewport;
 
@@ -125,7 +126,7 @@ export class LoadingScreenWrapper extends UiComponent<LoadingScreenWrapperProps>
         props: {
           viewport: this.props.viewport,
           countryUiNames: new Map([
-            [OBS_COUNTRY_NAME, "GUI:Observer"],
+            [OBS_COUNTRY_NAME, OBS_COUNTRY_UI_NAME],
             ...countries.map(country => [country.name, country.uiName] as [string, string])
           ]),
           strings: this.props.strings,
