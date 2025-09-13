@@ -138,10 +138,7 @@ export const ScoreTable: React.FC<ScoreTableProps> = ({
               React.createElement(
                 "td",
                 { className: "country-col" },
-                React.createElement(CountryIcon, {
-                  country: player.country,
-                  strings: strings,
-                }),
+                React.createElement(CountryIcon, { country: player.country }),
               ),
               React.createElement(
                 "td",
@@ -175,8 +172,10 @@ export const ScoreTable: React.FC<ScoreTableProps> = ({
                   { className: "rank-col" },
                   playerReport &&
                     React.createElement(RankIndicator, {
-                      rank: playerReport.rank,
-                      points: playerReport.points,
+                      playerProfile: {
+                        name: player.name,
+                        rankType: playerReport.rank,
+                      },
                       strings: strings,
                     }),
                 ),

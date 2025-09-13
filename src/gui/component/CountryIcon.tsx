@@ -16,11 +16,12 @@ const countryIcons = new Map<string, string>()
   .set(OBS_COUNTRY_NAME, "obsi.pcx");
 
 interface CountryIconProps {
-  country: string;
+  country: any;
 }
 
 export const CountryIcon: React.FC<CountryIconProps> = ({ country }) => {
-  const iconSrc = countryIcons.get(country);
+  const countryName = typeof country === 'string' ? country : country?.name;
+  const iconSrc = countryIcons.get(countryName);
   
   return (
     <div className="player-country-icon">
