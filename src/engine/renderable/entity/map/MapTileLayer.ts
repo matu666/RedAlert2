@@ -72,6 +72,7 @@ export class MapTileLayer {
   }
 
   createTileObjects(parent: any): void {
+    try { console.log('[MapTileLayer] createTileObjects start'); } catch {}
     const tmpImageMap = new Map();
     const tileImageMap = new Map();
     
@@ -83,10 +84,10 @@ export class MapTileLayer {
     for (const tile of this.allTiles) {
       const tileNum = tile.tileNum;
       const tileData = tileSets.getTile(tileNum);
-      if (!tileData) return;
+      if (!tileData) { try { console.warn('[MapTileLayer] missing tileData for tile', tile); } catch {} ; return; }
 
       const tmpFile = tileData.getTmpFile(tile.subTile, getRandomInt);
-      if (!tmpFile || tile.subTile >= tmpFile.images.length) return;
+      if (!tmpFile || tile.subTile >= tmpFile.images.length) { try { console.warn('[MapTileLayer] bad tmpFile or subTile', { tile, tmpFileExists: !!tmpFile }); } catch {} ; return; }
 
       const tmpImage = tmpFile.images[tile.subTile];
       tileImageMap.set(tile, tmpImage);
@@ -108,6 +109,7 @@ export class MapTileLayer {
       drawables.push(drawable);
     });
     textureAtlas.pack(drawables);
+    try { console.log('[MapTileLayer] textureAtlas packed', { drawables: drawables.length }); } catch {}
     this.disposables.add(textureAtlas);
 
     // Create geometries and lighting data
@@ -119,6 +121,7 @@ export class MapTileLayer {
       const tmpImage = tileImageMap.get(tile);
       
       if (!tmpImage) {
+        try { console.error('[MapTileLayer] Missing tmp image', { rx: tile.rx, ry: tile.ry }); } catch {}
         throw new Error(`Missing tmp image for tile rx,ry=${tile.rx},${tile.ry}`);
       }
 
@@ -141,7 +144,7 @@ export class MapTileLayer {
         scale: Coords.ISO_WORLD_SCALE,
       });
 
-      spriteGeometry.applyMatrix(
+      spriteGeometry.applyMatrix4(
         new (THREE as any).Matrix4().makeTranslation(worldPos.x, worldPos.y, worldPos.z)
       );
       geometries.push(spriteGeometry);
@@ -161,6 +164,7 @@ export class MapTileLayer {
     });
 
     const mergedGeometry = BufferGeometryUtils.mergeBufferGeometries(geometries);
+    try { console.log('[MapTileLayer] mergedGeometry', { geometries: geometries.length, vertexCount: mergedGeometry.getAttribute("position").count }); } catch {}
     const vertexCount = mergedGeometry.getAttribute("position").count;
 
     if (vertexCount !== (SpriteUtils.VERTICES_PER_SPRITE * lightingData.length) / 3) {

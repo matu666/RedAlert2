@@ -86,7 +86,7 @@ export class VirtualFileSystem {
         // ignore
       }
     });
-    this.logger.info(`[Diag] VFS owners for ${filename}: ${owners.join(', ')}`);
+    //this.logger.info(`[Diag] VFS owners for ${filename}: ${owners.join(', ')}`);
     return owners;
   }
 

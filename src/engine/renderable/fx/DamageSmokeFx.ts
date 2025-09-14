@@ -1,5 +1,5 @@
-import * as AnimProps from '@/engine/AnimProps';
-import * as ImageUtils from '@/engine/gfx/ImageUtils';
+import { AnimProps } from '@/engine/AnimProps';
+import { ImageUtils } from '@/engine/gfx/ImageUtils';
 import * as THREE from 'three';
 import SPE from 'shader-particle-engine';
 

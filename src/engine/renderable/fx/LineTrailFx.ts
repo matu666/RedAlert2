@@ -103,7 +103,7 @@ export class LineTrailFx {
     const geometry = new THREE.PlaneGeometry(size, size);
     const quaternion = new THREE.Quaternion().setFromEuler(this.camera.rotation);
     
-    geometry.applyMatrix(
+    geometry.applyMatrix4(
       new THREE.Matrix4().makeRotationFromQuaternion(quaternion)
     );
 

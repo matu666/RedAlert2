@@ -50,7 +50,7 @@ export class MapSurface {
     tiles.forEach((tile: any) => {
       const pos = Coords.Coords.tile3dToWorld(tile.rx, tile.ry, tile.z);
       const geometry = this.createRectGeometry(tile.rampType);
-      geometry.applyMatrix(
+      geometry.applyMatrix4(
         new THREE.Matrix4().makeTranslation(pos.x, pos.y + MAGIC_OFFSET, pos.z)
       );
       geometries.push(geometry);

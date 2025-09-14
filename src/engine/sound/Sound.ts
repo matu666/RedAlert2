@@ -32,7 +32,17 @@ interface AudioSystem {
   dispose(): void;
   playWavFile(file: any, channel: ChannelType, volume?: number, pan?: number, delay?: number, rate?: number, loop?: boolean): any;
   playWavSequence(files: any[], channel: ChannelType, volume?: number, pan?: number, delay?: number, rate?: number): any;
-  playWavLoop(files: any[], channel: ChannelType, volume?: number, pan?: number, delay?: number, rate?: number, attack?: boolean, decay?: boolean, loops?: number): any;
+  playWavLoop(
+    files: any[],
+    channel: ChannelType,
+    volume?: number,
+    pan?: number,
+    delayMs?: { min: number; max: number },
+    rate?: number,
+    attack?: boolean,
+    decay?: boolean,
+    loops?: number
+  ): any;
 }
 
 interface PlaybackHandle {

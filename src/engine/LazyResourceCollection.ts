@@ -22,7 +22,9 @@ export class LazyResourceCollection<T> {
     const inMem = this.resources.has(key);
     const inVfs = this.vfs?.fileExists(key) ?? false;
     if (!inMem) {
-      try { console.log('[LazyResourceCollection.has]', { key, inVfs }); } catch {}
+      try { 
+        //console.log('[LazyResourceCollection.has]', { key, inVfs }); 
+      } catch {}
     }
     return !!inMem || inVfs;
   }
@@ -30,17 +32,21 @@ export class LazyResourceCollection<T> {
   get(key: string): T | undefined {
     let resource = this.resources.get(key);
     if (!resource) {
-      try { console.log('[LazyResourceCollection.get] miss -> probing VFS', { key }); } catch {}
+      try { //console.log('[LazyResourceCollection.get] miss -> probing VFS', { key }); 
+      } catch {}
       if (this.vfs?.fileExists(key)) {
         try {
           const owners = (this.vfs as any).debugListFileOwners?.(key);
-          try { console.log('[LazyResourceCollection.get] owners', owners); } catch {}
+          try { 
+            //console.log('[LazyResourceCollection.get] owners', owners); 
+          } catch {}
         } catch {}
         const file = this.vfs.openFile(key);
         if (file) {
           resource = this.resourceFactory(file);
           this.resources.set(key, resource!);
-          try { console.log('[LazyResourceCollection.get] loaded', { key }); } catch {}
+          try { //console.log('[LazyResourceCollection.get] loaded', { key }); 
+          } catch {}
         }
       } else {
         try {
