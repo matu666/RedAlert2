@@ -106,7 +106,7 @@ export class WorldView {
     const lighting = new Lighting(this.game.mapLightingTrait);
     this.disposables.add(lighting);
     worldScene.applyLighting(lighting);
-    const lightingDirector = new LightingDirector(lighting.mapLighting, this.renderer, this.game.speed);
+    const lightingDirector = new LightingDirector(lighting, this.renderer, this.game.speed);
     lightingDirector.init();
     this.disposables.add(lightingDirector);
 
@@ -230,11 +230,18 @@ export class WorldView {
   }
 
   private computeWorldViewport(viewport: any, mapScreenBounds: { x: number; y: number; width: number; height: number }) {
+    // 计算可用区域并做下限保护，避免出现非正尺寸导致视口无效（黑屏）
+    const availWidth = Math.max(1, viewport.width - this.hudDimensions.width);
+    const availHeight = Math.max(1, viewport.height - this.hudDimensions.height);
+
+    const width = Math.max(1, Math.min(mapScreenBounds.width, availWidth));
+    const height = Math.max(1, Math.min(mapScreenBounds.height, availHeight));
+
     return {
       x: viewport.x,
       y: viewport.y,
-      width: Math.min(mapScreenBounds.width, viewport.width - this.hudDimensions.width),
-      height: Math.min(mapScreenBounds.height, viewport.height - this.hudDimensions.height)
+      width,
+      height,
     };
   }
 

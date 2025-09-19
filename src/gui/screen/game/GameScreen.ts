@@ -687,14 +687,12 @@ export class GameScreen extends RootScreen {
     );
 
     const worldViewInit = worldView.init(localPlayer, this.viewport.value, theater);
-    try {
-      console.log('[GameScreen.loadUi] hudDimensions', {
-        sidebarWidth: hud.sidebarWidth,
-        actionBarHeight: hud.actionBarHeight,
-        viewport: this.viewport.value
-      });
-      console.log('[GameScreen.loadUi] worldViewInit keys', Object.keys(worldViewInit || {}));
-    } catch {}
+    console.log('[GameScreen.loadUi] hudDimensions', {
+      sidebarWidth: hud.sidebarWidth,
+      actionBarHeight: hud.actionBarHeight,
+      viewport: this.viewport.value
+    });
+    console.log('[GameScreen.loadUi] worldViewInit keys', Object.keys(worldViewInit || {}));
     this.worldView = worldView;
     this.disposables.add(worldView, () => this.worldView = undefined);
     // Ensure WorldScene container is set before processing render queue (aligns with original behavior)
@@ -745,10 +743,16 @@ export class GameScreen extends RootScreen {
     // Add world scene to renderer (align with original project behavior)
     const worldScene = uiInitResult.worldViewInitResult?.worldScene;
     if (worldScene) {
-      try { console.log('[GameScreen.onGameStart] adding worldScene to renderer'); } catch {}
+      console.log('[GameScreen.onGameStart] adding worldScene to renderer');
       this.renderer.removeScene(this.uiScene);
       this.renderer.addScene(worldScene);
       this.renderer.addScene(this.uiScene);
+      const scenes = this.renderer.getScenes?.() ?? [];
+      console.log('[GameScreen.onGameStart] scenes after add', scenes.map((s: any) => ({
+        type: s.constructor?.name,
+        viewport: s.viewport,
+      })));
+      console.log('[GameScreen.onGameStart] worldScene.scene children', worldScene.scene?.children?.length);
     }
 
     this.pointer.setVisible(true);

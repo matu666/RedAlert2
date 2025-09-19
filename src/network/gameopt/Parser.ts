@@ -192,21 +192,9 @@ export class Parser {
         slot.type = SlotType.Open;
       } else if (slotPart === '@OpenObserver@') {
         slot.type = SlotType.OpenObserver;
-      } else if (['@EasyAI@', '@MediumAI@', '@HardAI@'].includes(slotPart)) {
+      } else if (slotPart === '@EasyAI@') {
         slot.type = SlotType.Ai;
-        
-        let difficulty: AiDifficulty;
-        if (slotPart === '@EasyAI@') {
-          difficulty = AiDifficulty.Easy;
-        } else if (slotPart === '@MediumAI@') {
-          difficulty = AiDifficulty.Medium;
-        } else if (slotPart === '@HardAI@') {
-          difficulty = AiDifficulty.Brutal;
-        } else {
-          throw new Error(`Couldn't parse gameopt: unknown slot type ${slotPart}`);
-        }
-        
-        slot.difficulty = difficulty;
+        slot.difficulty = AiDifficulty.Easy;
       } else {
         slot.type = SlotType.Player;
         slot.name = slotPart;

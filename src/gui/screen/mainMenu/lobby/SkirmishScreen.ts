@@ -312,10 +312,10 @@ export class SkirmishScreen extends MainMenuScreen {
       mapOfficial: (selectedMap! as any).official ?? false,
     };
 
-    // Align with original: default one AI with Medium difficulty if slot available
+    // Align with original: default one AI with Easy difficulty if slot available
     if (selectedMap!.maxSlots > 1) {
       this.gameOpts.aiPlayers[1] = {
-        difficulty: AiDifficulty.Medium,
+        difficulty: AiDifficulty.Easy,
         countryId: RANDOM_COUNTRY_ID,
         colorId: RANDOM_COLOR_ID,
         startPos: RANDOM_START_POS,

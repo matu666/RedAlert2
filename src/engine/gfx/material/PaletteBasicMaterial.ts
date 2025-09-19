@@ -35,9 +35,8 @@ const PaletteBasicShader = {
         ].join("\n"),
     )
     .replace(
-      "#include <map_fragment>",
-      "#include <map_fragment>\n" +
-        "vec4 texelColor = sampledDiffuseColor;\n" +
+      "#include <color_fragment>",
+      "#include <color_fragment>\n" +
         [
           paletteShaderLib.paletteColorFrag,
           paletteShaderLib.paletteBasicLightFragment,
@@ -129,6 +128,19 @@ export class PaletteBasicMaterial extends THREE.MeshBasicMaterial {
       this.defines.USE_RED_INDEX = '';
     }
     this.type = "PaletteBasicMaterial";
+
+    // Inject palette shader code at compile-time to match original project behavior
+    this.onBeforeCompile = (shader: any) => {
+      try { console.log('[PBM] onBeforeCompile hit'); } catch {}
+      shader.uniforms = THREE.UniformsUtils.merge([ shader.uniforms, this.uniforms ]);
+      shader.vertexShader = this.vertexShader;
+      shader.fragmentShader = this.fragmentShader;
+      try {
+        console.log('[PBM] has <color_fragment>?', shader.fragmentShader.includes('#include <color_fragment>'));
+        console.log('[PBM] has paletteColorIndex?', shader.fragmentShader.includes('paletteColorIndex'));
+      } catch {}
+    };
+    this.needsUpdate = true;
   }
 
   copy(source) {
