@@ -814,6 +814,20 @@ export class Application {
       currentHandler = ShpTester;
     });
 
+    this.routing.addRoute("/worldscenetest", async () => {
+      if (!Engine.vfs) {
+        throw new Error("Original game files must be provided.");
+      }
+      console.log('[Application] Initializing WorldSceneTester');
+
+      const { MapFile } = await import('./data/MapFile');
+      const gameMap = new MapFile(Engine.vfs.openFile("mp03t4.map"));
+
+      const { WorldSceneTester } = await import('./tools/WorldSceneTester');
+      await WorldSceneTester.main(Engine.vfs, gameMap, this.rootEl!, this.strings);
+      currentHandler = WorldSceneTester;
+    });
+
     // Initialize routing
     this.routing.init();
   }

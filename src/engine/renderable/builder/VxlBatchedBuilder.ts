@@ -47,7 +47,7 @@ export class VxlBatchedBuilder extends VxlBuilder {
         matrix = section.scaleHvaMatrix(hvaSection.getMatrix(0));
       }
       
-      mesh.applyMatrix(matrix);
+      mesh.applyMatrix4(matrix);
       meshes.set(section.name, mesh);
       mesh.castShadow = this.castShadow;
       mesh.setPaletteIndex(paletteIndex);

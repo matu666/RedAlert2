@@ -101,15 +101,7 @@ export class Serializer {
         return '@OpenObserver@';
       }
       if (slot.type === SlotType.Ai) {
-        if (slot.difficulty === AiDifficulty.Easy) {
-          return '@EasyAI@';
-        }
-        if (slot.difficulty === AiDifficulty.Medium) {
-          return '@MediumAI@';
-        }
-        if (slot.difficulty === AiDifficulty.Brutal) {
-          return '@HardAI@';
-        }
+        return '@EasyAI@';
       } else if (slot.type === SlotType.Player) {
         return slot.name;
       }

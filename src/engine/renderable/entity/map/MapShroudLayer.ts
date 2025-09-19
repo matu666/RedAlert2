@@ -204,7 +204,7 @@ export class MapShroudLayer {
       this.getTileGeometryOptions(textureAtlas, frameNo),
     );
     
-    spriteGeometry.applyMatrix(
+    spriteGeometry.applyMatrix4(
       new (THREE as any).Matrix4().makeTranslation(worldPos.x, worldPos.y, worldPos.z),
     );
     

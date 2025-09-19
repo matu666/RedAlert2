@@ -1,6 +1,6 @@
 import React from "react";
 import classnames from "classnames";
-import { RANDOM_COLOR_NAME } from "@/game/gameopts/constants";
+import { aiUiNames } from "@/game/gameopts/constants";
 import { CountryIcon } from "@/gui/component/CountryIcon";
 import { RankIndicator } from "@/gui/screen/mainMenu/lobby/component/RankIndicator";
 import { WolGameReportResult } from "@/network/WolGameReport";
@@ -102,11 +102,11 @@ export const ScoreTable: React.FC<ScoreTableProps> = ({
             React.createElement("th", { className: "country-col" }, strings.get("GUI:Country")),
             React.createElement("th", { className: "color-col" }, strings.get("GUI:Color")),
             React.createElement("th", { className: "score-col" }, strings.get("GUI:Score")),
-            React.createElement("th", { className: "units-col" }, strings.get("GUI:UnitsKilled")),
+            React.createElement("th", { className: "units-col" }, strings.get("GUI:Kills")),
             React.createElement(
               "th",
               { className: "buildings-col" },
-              strings.get("GUI:BuildingsKilled"),
+              strings.get("GUI:Losses"),
             ),
             showReport && React.createElement("th", { className: "rank-col" }, "Rank"),
           ),
@@ -114,13 +114,15 @@ export const ScoreTable: React.FC<ScoreTableProps> = ({
         React.createElement(
           "tbody",
           null,
-          players.map((player: any, index: number) => {
+          players.map((player: any) => {
             const isLocalPlayer = player === localPlayer;
             const playerReport = gameReport?.players.find(
               (p: any) => p.name.toLowerCase() === player.name.toLowerCase(),
             );
 
-            return React.createElement(
+              const rowColor = (typeof player.color === "string" ? player.color : player.color?.asHexString?.());
+
+              return React.createElement(
               "tr",
               {
                 key: player.name,
@@ -128,12 +130,14 @@ export const ScoreTable: React.FC<ScoreTableProps> = ({
                   "local-player": isLocalPlayer,
                   defeated: player.defeated,
                 }),
+                  style: { color: rowColor },
               },
               React.createElement(
                 "td",
                 { className: "player-col" },
-                player.name,
-                player.isAi && " (AI)",
+                player.isAi
+                  ? strings.get(aiUiNames.get(player.aiDifficulty) || "GUI:AIDummy")
+                  : player.name,
               ),
               React.createElement(
                 "td",
@@ -146,8 +150,11 @@ export const ScoreTable: React.FC<ScoreTableProps> = ({
                 React.createElement("div", {
                   className: "color-indicator",
                   style: {
-                    backgroundColor:
-                      player.color?.name === RANDOM_COLOR_NAME ? "#808080" : player.color?.asHexString(),
+                    backgroundColor: (typeof player.color === "string" ? player.color : player.color?.asHexString?.()),
+                    width: 14,
+                    height: 14,
+                    border: "1px solid #000",
+                    borderRadius: 2,
                   },
                 }),
               ),
@@ -159,12 +166,12 @@ export const ScoreTable: React.FC<ScoreTableProps> = ({
               React.createElement(
                 "td",
                 { className: "units-col" },
-                player.unitsKilled,
+                player.getUnitsKilled ? player.getUnitsKilled() : player.unitsKilled,
               ),
               React.createElement(
                 "td",
                 { className: "buildings-col" },
-                player.buildingsKilled,
+                player.getUnitsLost ? player.getUnitsLost() : (player.unitsLost ?? player.buildingsKilled),
               ),
               showReport &&
                 React.createElement(

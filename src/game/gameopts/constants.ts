@@ -10,8 +10,7 @@ export const RANDOM_COUNTRY_NAME = "Random";
 export const OBS_COUNTRY_NAME = "Observer";
 
 export const aiUiNames = new Map<AiDifficulty, string>()
-  .set(AiDifficulty.Easy, "GUI:AIDummy")
-  .set(AiDifficulty.Medium, "GUI:AIEasyBeta");
+  .set(AiDifficulty.Easy, "GUI:AIDummy");
 
 export const aiUiTooltips = new Map<AiDifficulty, string>();
 

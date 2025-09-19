@@ -537,6 +537,9 @@ export class Gui {
       )
     );
 
+    const sharedVxlGeometryPool = new VxlGeometryPool(new VxlGeometryCache(null, Engine.getActiveMod?.() ?? null), this.generalOptions!.graphics.models.value);
+    const buildingImageDataCache = new Map();
+
     const gameScreen = new GameScreen(
       undefined, // workerHostApi
       undefined, // gservCon
@@ -586,13 +589,13 @@ export class Gui {
         undefined,
         undefined,
         this.gameResConfig!,
-        new VxlGeometryPool(new VxlGeometryCache(null, Engine.getActiveMod?.() ?? null), this.generalOptions!.graphics.models.value),
-        new Map(),
+        sharedVxlGeometryPool,
+        buildingImageDataCache,
         (this as any).runtimeVars?.debugBotIndex,
         (this as any).config?.devMode ?? false
       ), // gameLoader
-      undefined, // vxlGeometryPool
-      undefined, // buildingImageDataCache
+      sharedVxlGeometryPool, // vxlGeometryPool
+      buildingImageDataCache, // buildingImageDataCache
       undefined, // mutedPlayers
       undefined, // tauntsEnabled
       undefined, // speedCheat
@@ -779,11 +782,10 @@ export class Gui {
           playWavSequence: (files: any[], channel: ChannelType, volume?: number, pan?: number, delay?: number, rate?: number) => {
             return this.audioSystem!.playWavSequence(files, channel, volume, pan, delay, rate);
           },
-          playWavLoop: (files: any[], channel: ChannelType, volume?: number, pan?: number, delay?: number, rate?: number, attack?: boolean, decay?: boolean, loops?: number) => {
-            // 适配delay参数的差异
-            const delayMs = delay ? { min: delay, max: delay } : undefined;
+          playWavLoop: (files: any[], channel: ChannelType, volume?: number, pan?: number, delayMs?: { min: number; max: number }, rate?: number, attack?: boolean, decay?: boolean, loops?: number) => {
             return this.audioSystem!.playWavLoop(files, channel, volume, pan, delayMs, rate, attack, decay, loops);
-          }
+          },
+          setMuted: (muted: boolean) => this.audioSystem!.setMuted(muted)
         };
         
         this.sound = new Sound(
@@ -913,7 +915,10 @@ export class Gui {
     // 初始化运行时变量（与原项目一致地提供 debugBotIndex）
     this.runtimeVars = Object.assign(this.runtimeVars || {}, {
       debugBotIndex: new BoxedVar<number | undefined>(undefined),
-      debugText: new BoxedVar<boolean>(false)
+      debugText: new BoxedVar<boolean>(false),
+      freeCamera: new BoxedVar<boolean>(false),
+      debugPaths: new BoxedVar<boolean>(false),
+      debugWireframes: new BoxedVar<boolean>(false)
     });
     
     console.log('[Gui] Options system initialized');

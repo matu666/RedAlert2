@@ -49,9 +49,9 @@ varying vec3 vInstanceExtraLight;
 
   #ifdef USE_MAP
   #ifdef USE_RED_INDEX
-  paletteColorIndex = texelColor.r;
+  paletteColorIndex = diffuseColor.r;
   #else
-  paletteColorIndex = texelColor.a;
+  paletteColorIndex = diffuseColor.a;
   #endif
   #endif
 
