@@ -828,6 +828,20 @@ export class Application {
       currentHandler = WorldSceneTester;
     });
 
+    this.routing.addRoute("/unitmovementtest", async () => {
+      if (!Engine.vfs) {
+        throw new Error("Original game files must be provided.");
+      }
+      console.log('[Application] Initializing UnitMovementTester');
+
+      const { MapFile } = await import('./data/MapFile');
+      const gameMap = new MapFile(Engine.vfs.openFile("mp03t4.map"));
+
+      const { UnitMovementTester } = await import('./tools/UnitMovementTester');
+      await UnitMovementTester.main(Engine.vfs, gameMap, this.rootEl!, this.strings);
+      currentHandler = UnitMovementTester;
+    });
+
     // Initialize routing
     this.routing.init();
   }

@@ -564,10 +564,12 @@ export class Infantry {
   }
 
   computeFacingNumber(direction: number): number {
+    // Match extracted_modules_simple: Infantry always maps to 8 facings with (direction - 45)
     return Math.round((((direction - 45 + 360) % 360) / 360) * 8) % 8;
   }
 
   directionFromFacingNo(facingNumber: number): number {
+    // Match extracted_modules_simple
     return 45 + (360 * facingNumber) / 8;
   }
 
