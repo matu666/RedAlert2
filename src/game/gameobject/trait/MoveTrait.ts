@@ -202,11 +202,11 @@ export class MoveTrait {
     const oldTile = gameObject.tile;
 
     // Notify before teleport
-    gameObject.traits.filter((trait): trait is typeof NotifyTeleport => 
-      'onBeforeTeleport' in trait
-    ).forEach(trait => {
-      trait[NotifyTeleport.onBeforeTeleport](gameObject, gameState, fromTile, preserveMovement);
-    });
+    gameObject.traits
+      .filter(NotifyTeleport)
+      .forEach((trait: any) => {
+        trait[NotifyTeleport.onBeforeTeleport](gameObject, gameState, fromTile, preserveMovement);
+      });
 
     gameObject.position.tileElevation = gameObject.tileElevation;
     gameObject.position.tile = targetTile;
@@ -328,31 +328,31 @@ export class MoveTrait {
     }
 
     // Notify tile change
-    gameState.traits.filter((trait): trait is typeof GlobalNotifyTileChange => 
-      'onTileChange' in trait
-    ).forEach(trait => {
-      trait[GlobalNotifyTileChange.onTileChange](gameObject, gameState, oldTile, isTeleport);
-    });
+    gameState.traits
+      .filter(GlobalNotifyTileChange)
+      .forEach((trait: any) => {
+        trait[GlobalNotifyTileChange.onTileChange](gameObject, gameState, oldTile, isTeleport);
+      });
 
-    gameObject.traits.filter((trait): trait is typeof NotifyTileChange => 
-      'onTileChange' in trait
-    ).forEach(trait => {
-      trait[NotifyTileChange.onTileChange](gameObject, gameState, oldTile, isTeleport);
-    });
+    gameObject.traits
+      .filter(NotifyTileChange)
+      .forEach((trait: any) => {
+        trait[NotifyTileChange.onTileChange](gameObject, gameState, oldTile, isTeleport);
+      });
 
     gameState.events.dispatch(new EnterTileEvent(gameObject.tile, gameObject));
   }
 
   handleElevationChange(oldElevation: number, gameState: GameState): void {
-    gameState.traits.filter((trait): trait is typeof NotifyElevationChange => 
-      'onElevationChange' in trait
-    ).forEach(trait => {
-      trait[NotifyElevationChange.onElevationChange](
-        this.gameObject,
-        gameState,
-        oldElevation
-      );
-    });
+    gameState.traits
+      .filter(NotifyElevationChange)
+      .forEach((trait: any) => {
+        trait[NotifyElevationChange.onElevationChange](
+          this.gameObject,
+          gameState,
+          oldElevation
+        );
+      });
   }
 
   unreservePathNodes(): void {
