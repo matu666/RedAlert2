@@ -1,6 +1,7 @@
 export class MissingImageError extends Error {}
 
 export class ImageFinder {
+  static MissingImageError = MissingImageError;
   private images: Map<string, any>;
   private theater: any;
 

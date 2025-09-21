@@ -136,7 +136,7 @@ export class MapTileLayerDebug {
         scale: Coords.ISO_WORLD_SCALE,
       });
       
-      geometry.applyMatrix(
+      geometry.applyMatrix4(
         new (THREE as any).Matrix4().makeTranslation(worldPos.x, worldPos.y, worldPos.z)
       );
       geometries.push(geometry);

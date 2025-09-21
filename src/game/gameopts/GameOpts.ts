@@ -3,9 +3,7 @@ export function isHumanPlayerInfo(info: any): boolean {
 }
 
 export enum AiDifficulty {
-  Brutal = 0,
-  Medium = 1,
-  Easy = 2
+  Easy = 0
 }
 
 /**

@@ -13,7 +13,8 @@ export class BoxIntersectObject3D extends THREE.Object3D {
 
   raycast(raycaster: THREE.Raycaster, intersects: THREE.Intersection[]): void {
     if (this.parent) {
-      BoxIntersectObject3D.matrix.getInverse(this.parent.matrixWorld);
+      // three.js r125+ 移除了 Matrix4.getInverse，改用 copy(...).invert()
+      BoxIntersectObject3D.matrix.copy(this.parent.matrixWorld).invert();
       BoxIntersectObject3D.ray.copy(raycaster.ray).applyMatrix4(BoxIntersectObject3D.matrix);
       BoxIntersectObject3D.center.copy(this.position);
 

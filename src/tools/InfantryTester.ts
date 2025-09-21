@@ -61,6 +61,7 @@ export class InfantryTester {
   private static listEl: HTMLDivElement;
   private static controlsEl: HTMLDivElement | undefined;
   private static vxlBuilderFactory: VxlBuilderFactory;
+  private static autoRotate: boolean = false;
 
   static async main(_args: any): Promise<void> {
     const renderer = (this.renderer = new Renderer(800, 600));
@@ -153,7 +154,7 @@ export class InfantryTester {
       this.theater as any,
       this.worldScene.camera as any,
       new Lighting(),
-      new LightingDirector(new Lighting().mapLighting, this.renderer as any, new BoxedVar(1) as any) as any,
+      new LightingDirector(new Lighting().mapLighting as any, this.renderer as any, new BoxedVar(1) as any) as any,
       new BoxedVar(false) as any,
       new BoxedVar(false) as any,
       new BoxedVar(2) as any,
@@ -318,6 +319,57 @@ export class InfantryTester {
 
     this.createDeathSelect(controls);
 
+    // Facing controls
+    controls.appendChild(document.createElement("hr"));
+    controls.appendChild(document.createTextNode("Facing (0-7):"));
+    const facingSelect = document.createElement("select");
+    facingSelect.style.display = "block";
+    const facingLabels = ["0 上", "1 左上", "2 左", "3 左下", "4 下", "5 右下", "6 右", "7 右上"];
+    for (let i = 0; i < 8; i++) {
+      const opt = document.createElement("option");
+      opt.value = String(i);
+      opt.innerHTML = facingLabels[i];
+      facingSelect.appendChild(opt);
+    }
+    facingSelect.addEventListener("change", () => {
+      const n = Number(facingSelect.value) % 8;
+      const dir = (45 + (360 * n) / 8) % 360;
+      this.currentInfantry.direction = dir;
+    });
+    controls.appendChild(facingSelect);
+
+    // Direction controls
+    controls.appendChild(document.createTextNode("Direction (0-359):"));
+    const dirWrap = document.createElement("div");
+    const dirInput = document.createElement("input");
+    dirInput.type = "number";
+    dirInput.min = "0";
+    dirInput.max = "359";
+    dirInput.style.width = "80px";
+    dirInput.value = String(this.currentInfantry?.direction ?? 0);
+    const dirBtn = document.createElement("button");
+    dirBtn.innerHTML = "Apply";
+    dirBtn.addEventListener("click", () => {
+      let v = Number(dirInput.value);
+      if (isNaN(v)) v = 0;
+      v = ((Math.floor(v) % 360) + 360) % 360;
+      this.currentInfantry.direction = v;
+    });
+    dirWrap.appendChild(dirInput);
+    dirWrap.appendChild(dirBtn);
+    controls.appendChild(dirWrap);
+
+    // Auto rotate toggle
+    controls.appendChild(document.createTextNode("Auto rotate:"));
+    const autoRot = document.createElement("input");
+    autoRot.type = "checkbox";
+    autoRot.style.display = "block";
+    autoRot.checked = this.autoRotate;
+    autoRot.addEventListener("change", (e) => {
+      this.autoRotate = (e.target as HTMLInputElement).checked;
+    });
+    controls.appendChild(autoRot);
+
     document.body.appendChild(controls);
   }
 
@@ -478,7 +530,7 @@ export class InfantryTester {
   }
 
   private static animateInfantry(): void {
-    if (!this.currentInfantry?.isDisposed) {
+    if (!this.currentInfantry?.isDisposed && this.autoRotate) {
       this.currentInfantry.direction = (this.currentInfantry.direction + 1) % 360;
     }
     setTimeout(() => this.animateInfantry(), 50);

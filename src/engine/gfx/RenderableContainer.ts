@@ -3,7 +3,7 @@ import * as THREE from 'three';
 export interface Renderable {
   create3DObject(): void;
   get3DObject(): THREE.Object3D | undefined;
-  update(deltaTime: number): void;
+  update(deltaTime: number, ...args: any[]): void;
   destroy?(): void;
 }
 
@@ -82,7 +82,7 @@ export class RenderableContainer {
     this.processRenderQueue();
   }
 
-  update(deltaTime: number): void {
+  update(deltaTime: number, ...args: any[]): void {
     if (this.renderQueue.length) {
       this.processRenderQueue();
     }
@@ -91,7 +91,7 @@ export class RenderableContainer {
       if (this.renderQueue.length) {
         this.processRenderQueue();
       }
-      child.update(deltaTime);
+      child.update(deltaTime, ...args);
     }
   }
 } 

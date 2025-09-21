@@ -33,9 +33,9 @@ export class MapRenderable {
   private mapSurface: any;
   private mapBounds: any;
   private shroudLayer: any;
-  private terrainLayer: any;
-  private overlayLayer: any;
-  private smudgeLayer: any;
+  public terrainLayer: any;
+  public overlayLayer: any;
+  public smudgeLayer: any;
 
   private handleRadChange = (tiles: any) => {
     for (const tile of tiles) {
@@ -237,7 +237,8 @@ export class MapRenderable {
     }
   }
 
-  update(deltaTime: number, gameTime: number) {
+  update(deltaTime: number, ...args: any[]) {
+    const gameTime = args[0];
     this.create3DObject();
     
     if (this.debugWireframe.value !== this.lastDebugValue) {

@@ -14,15 +14,11 @@ export class BotFactory {
       throw new Error(`Player "${player.name}" is not an AI`);
     }
 
-    switch (player.aiDifficulty) {
-      case AiDifficulty.Easy:
-        return new DummyBot(player.name, player.country.name);
-      case AiDifficulty.Medium:
-        if (this.botsLib.SupalosaBot) {
-          return new this.botsLib.SupalosaBot(player.name, player.country.name);
-        }
-      default:
-        throw new Error(`Unsupported AI difficulty "${player.aiDifficulty}"`);
+    // 只支持Easy难度的AI
+    if (player.aiDifficulty === AiDifficulty.Easy) {
+      return new DummyBot(player.name, player.country.name);
     }
+    
+    throw new Error(`Unsupported AI difficulty "${player.aiDifficulty}"`);
   }
 }

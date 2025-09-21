@@ -72,6 +72,7 @@ export class MapTileLayer {
   }
 
   createTileObjects(parent: any): void {
+    try { console.log('[MapTileLayer] createTileObjects start'); } catch {}
     const tmpImageMap = new Map();
     const tileImageMap = new Map();
     
@@ -79,17 +80,19 @@ export class MapTileLayer {
     const paletteTexture = TextureUtils.textureFromPalette(isoPalette);
     const tileSets = this.theater.tileSets;
 
-    // Process all tiles to get TMP images
+    // Process all tiles to get TMP images; skip invalid ones instead of aborting the whole layer
+    const validTiles: any[] = [];
     for (const tile of this.allTiles) {
       const tileNum = tile.tileNum;
       const tileData = tileSets.getTile(tileNum);
-      if (!tileData) return;
+      if (!tileData) { try { console.warn('[MapTileLayer] missing tileData for tile', tile); } catch {}; continue; }
 
       const tmpFile = tileData.getTmpFile(tile.subTile, getRandomInt);
-      if (!tmpFile || tile.subTile >= tmpFile.images.length) return;
+      if (!tmpFile || tile.subTile >= tmpFile.images.length) { try { console.warn('[MapTileLayer] bad tmpFile or subTile', { tile, tmpFileExists: !!tmpFile }); } catch {}; continue; }
 
       const tmpImage = tmpFile.images[tile.subTile];
       tileImageMap.set(tile, tmpImage);
+      validTiles.push(tile);
 
       if (!tmpImageMap.get(tmpImage)) {
         const drawable = new TmpDrawable().draw(
@@ -108,19 +111,16 @@ export class MapTileLayer {
       drawables.push(drawable);
     });
     textureAtlas.pack(drawables);
+    try { console.log('[MapTileLayer] textureAtlas packed', { drawables: drawables.length }); } catch {}
     this.disposables.add(textureAtlas);
 
     // Create geometries and lighting data
     const geometries: any[] = [];
     const lightingData: number[] = [];
 
-    for (let i = 0; i < this.allTiles.length; i++) {
-      const tile = this.allTiles[i];
-      const tmpImage = tileImageMap.get(tile);
-      
-      if (!tmpImage) {
-        throw new Error(`Missing tmp image for tile rx,ry=${tile.rx},${tile.ry}`);
-      }
+    for (let i = 0; i < validTiles.length; i++) {
+      const tile = validTiles[i];
+      const tmpImage = tileImageMap.get(tile)!;
 
       let offsetX = 0;
       let offsetY = 0;
@@ -141,7 +141,7 @@ export class MapTileLayer {
         scale: Coords.ISO_WORLD_SCALE,
       });
 
-      spriteGeometry.applyMatrix(
+      spriteGeometry.applyMatrix4(
         new (THREE as any).Matrix4().makeTranslation(worldPos.x, worldPos.y, worldPos.z)
       );
       geometries.push(spriteGeometry);
@@ -161,6 +161,7 @@ export class MapTileLayer {
     });
 
     const mergedGeometry = BufferGeometryUtils.mergeBufferGeometries(geometries);
+    try { console.log('[MapTileLayer] mergedGeometry', { geometries: geometries.length, vertexCount: mergedGeometry.getAttribute("position").count }); } catch {}
     const vertexCount = mergedGeometry.getAttribute("position").count;
 
     if (vertexCount !== (SpriteUtils.VERTICES_PER_SPRITE * lightingData.length) / 3) {
@@ -181,12 +182,29 @@ export class MapTileLayer {
     const mesh = new (THREE as any).Mesh(mergedGeometry, material);
     mesh.matrixAutoUpdate = false;
     mesh.frustumCulled = false;
+    try {
+      const mapTex: any = (material as any).map;
+      const palTex: any = (material as any).uniforms?.palette?.value;
+      const uvAttr: any = mergedGeometry.getAttribute("uv");
+      console.log('[MapTileLayer] material debug', {
+        materialType: (material as any).type,
+        hasMap: !!mapTex,
+        mapSize: mapTex && mapTex.image ? { w: mapTex.image.width, h: mapTex.image.height } : null,
+        mapFlipY: mapTex ? mapTex.flipY : undefined,
+        paletteReady: !!palTex,
+        paletteSize: palTex && palTex.image ? { w: palTex.image.width, h: palTex.image.height } : null,
+        paletteFlipY: palTex ? palTex.flipY : undefined,
+        hasUV: !!uvAttr,
+        uvCount: uvAttr ? uvAttr.count : 0,
+        defines: (material as any).defines,
+      });
+    } catch {}
     parent.add(mesh);
     this.disposables.add(mergedGeometry, material);
 
     // Create tile animations
     const animations: any[] = [];
-    for (const tile of this.allTiles) {
+    for (const tile of validTiles) {
       const tileNum = tile.tileNum;
       const tileData = tileSets.getTile(tileNum);
       if (!tileData) return;
